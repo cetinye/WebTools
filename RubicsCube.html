@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>2D Cube with Rotation Buttons</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      perspective: 600px;
+    }
+
+    #ui {
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 300px;
+      height: 150px;
+      font-family: monospace;
+    }
+
+    button {
+      margin: 5px 10px 10px 0;
+      padding: 10px;
+    }
+
+    #cube-container {
+      width: 180px;
+      height: 180px;
+      margin: 20px auto;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.2s ease;
+    }
+
+    .face {
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-template-rows: repeat(3, 60px);
+      gap: 0px;
+      background: #ddd;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .sticker {
+      width: 60px;
+      height: 60px;
+      border: 1px solid #333;
+      box-sizing: border-box;
+    }
+
+    #face-F {
+      transform: translateZ(90px);
+    }
+
+    #face-B {
+      transform: rotateY(180deg) translateZ(90px);
+    }
+
+    #face-U {
+      transform: rotateX(90deg) translateZ(90px);
+    }
+
+    #face-D {
+      transform: rotateX(-90deg) translateZ(90px);
+    }
+
+    #face-L {
+      transform: rotateY(-90deg) translateZ(90px);
+    }
+
+    #face-R {
+      transform: rotateY(90deg) translateZ(90px);
+    }
+
+    #buttons {
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="ui">
+    <h3>Rubik's Cube JSON</h3>
+    <textarea id="jsonInput">
+{
+  "U": ["white","white","white","white","white","white","white","white","white"],
+  "D": ["yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow","yellow"],
+  "F": ["green","green","green","green","green","green","green","green","green"],
+  "B": ["blue","blue","blue","blue","blue","blue","blue","blue","blue"],
+  "L": ["orange","orange","orange","orange","orange","orange","orange","orange","orange"],
+  "R": ["red","red","red","red","red","red","red","red","red"]
+}
+    </textarea>
+    <br />
+    <button id="renderBtn">Render Cube</button>
+    <button id="generateBtn">Generate Random Cube</button>
+  </div>
+
+  <div id="cube-container">
+    <div id="face-U" class="face"></div>
+    <div id="face-D" class="face"></div>
+    <div id="face-F" class="face"></div>
+    <div id="face-B" class="face"></div>
+    <div id="face-L" class="face"></div>
+    <div id="face-R" class="face"></div>
+  </div>
+
+  <div id="buttons">
+    <button id="rotateXPos">Rotate X +90°</button>
+    <button id="rotateXNeg">Rotate X -90°</button>
+    <button id="rotateYPos">Rotate Y +90°</button>
+    <button id="rotateYNeg">Rotate Y -90°</button>
+  </div>
+
+  <script>
+    const colorMap = {
+      white: '#ffffff',
+      yellow: '#ffff00',
+      red: '#ff0000',
+      orange: '#ffa500',
+      blue: '#0000ff',
+      green: '#00ff00'
+    };
+
+    const faces = ['U', 'D', 'F', 'B', 'L', 'R'];
+
+    function createStickers(faceElement, colors) {
+      faceElement.innerHTML = '';
+      colors.forEach(colorName => {
+        const div = document.createElement('div');
+        div.className = 'sticker';
+        div.style.backgroundColor = colorMap[colorName.toLowerCase()] || '#000000';
+        faceElement.appendChild(div);
+      });
+    }
+
+    function renderCube() {
+      let data;
+      try {
+        data = JSON.parse(document.getElementById('jsonInput').value);
+      } catch {
+        alert('Invalid JSON!');
+        return;
+      }
+
+      faces.forEach(face => {
+        const faceEl = document.getElementById('face-' + face);
+        const colors = data[face];
+        if (!colors || colors.length !== 9) {
+          alert(`Face ${face} data is invalid!`);
+          return;
+        }
+        createStickers(faceEl, colors);
+      });
+    }
+
+    let rotX = -30;
+    let rotY = 45;
+
+    function updateRotation() {
+      const cube = document.getElementById('cube-container');
+      cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    }
+
+    document.getElementById('rotateXPos').addEventListener('click', () => {
+      rotX += 90;
+      updateRotation();
+    });
+    document.getElementById('rotateXNeg').addEventListener('click', () => {
+      rotX -= 90;
+      updateRotation();
+    });
+    document.getElementById('rotateYPos').addEventListener('click', () => {
+      rotY += 90;
+      updateRotation();
+    });
+    document.getElementById('rotateYNeg').addEventListener('click', () => {
+      rotY -= 90;
+      updateRotation();
+    });
+
+    document.getElementById('renderBtn').addEventListener('click', () => {
+      renderCube();
+      updateRotation();
+    });
+
+    // --- RANDOM KÜP ÜRETİCİ ---
+
+    function getSolvedCube() {
+      return {
+        U: Array(9).fill("white"),
+        D: Array(9).fill("yellow"),
+        F: Array(9).fill("green"),
+        B: Array(9).fill("blue"),
+        L: Array(9).fill("orange"),
+        R: Array(9).fill("red"),
+      };
+    }
+
+    let cubeState;
+
+    const moveFuncs = {
+      U: rotateU, U_: () => { rotateU(); rotateU(); rotateU(); },
+      D: rotateD, D_: () => { rotateD(); rotateD(); rotateD(); },
+      F: rotateF, F_: () => { rotateF(); rotateF(); rotateF(); },
+      B: rotateB, B_: () => { rotateB(); rotateB(); rotateB(); },
+      L: rotateL, L_: () => { rotateL(); rotateL(); rotateL(); },
+      R: rotateR, R_: () => { rotateR(); rotateR(); rotateR(); },
+    };
+
+    function rotateFace(face) {
+      const c = cubeState[face];
+      cubeState[face] = [
+        c[6], c[3], c[0],
+        c[7], c[4], c[1],
+        c[8], c[5], c[2]
+      ];
+    }
+
+    function cycle(...positions) {
+      const temp = cubeState[positions[positions.length - 1][0]][positions[positions.length - 1][1]];
+      for (let i = positions.length - 1; i > 0; i--) {
+        const [fromFace, fromIdx] = positions[i - 1];
+        const [toFace, toIdx] = positions[i];
+        cubeState[toFace][toIdx] = cubeState[fromFace][fromIdx];
+      }
+      const [firstFace, firstIdx] = positions[0];
+      cubeState[firstFace][firstIdx] = temp;
+    }
+
+    function rotateU() {
+      rotateFace("U");
+      cycle(["F", 0], ["R", 0], ["B", 0], ["L", 0]);
+      cycle(["F", 1], ["R", 1], ["B", 1], ["L", 1]);
+      cycle(["F", 2], ["R", 2], ["B", 2], ["L", 2]);
+    }
+    function rotateD() {
+      rotateFace("D");
+      cycle(["F", 6], ["L", 6], ["B", 6], ["R", 6]);
+      cycle(["F", 7], ["L", 7], ["B", 7], ["R", 7]);
+      cycle(["F", 8], ["L", 8], ["B", 8], ["R", 8]);
+    }
+    function rotateF() {
+      rotateFace("F");
+      cycle(["U", 6], ["L", 8], ["D", 2], ["R", 0]);
+      cycle(["U", 7], ["L", 5], ["D", 1], ["R", 3]);
+      cycle(["U", 8], ["L", 2], ["D", 0], ["R", 6]);
+    }
+    function rotateB() {
+      rotateFace("B");
+      cycle(["U", 2], ["R", 8], ["D", 6], ["L", 0]);
+      cycle(["U", 1], ["R", 5], ["D", 7], ["L", 3]);
+      cycle(["U", 0], ["R", 2], ["D", 8], ["L", 6]);
+    }
+    function rotateL() {
+      rotateFace("L");
+      cycle(["U", 0], ["B", 8], ["D", 0], ["F", 0]);
+      cycle(["U", 3], ["B", 5], ["D", 3], ["F", 3]);
+      cycle(["U", 6], ["B", 2], ["D", 6], ["F", 6]);
+    }
+    function rotateR() {
+      rotateFace("R");
+      cycle(["U", 8], ["F", 8], ["D", 8], ["B", 0]);
+      cycle(["U", 5], ["F", 5], ["D", 5], ["B", 3]);
+      cycle(["U", 2], ["F", 2], ["D", 2], ["B", 6]);
+    }
+
+    function generateRandomCubeJSON(moves) {
+      cubeState = getSolvedCube();
+      const moveKeys = Object.keys(moveFuncs);
+      for (let i = 0; i < moves; i++) {
+        const move = moveKeys[Math.floor(Math.random() * moveKeys.length)];
+        moveFuncs[move]();
+      }
+      return JSON.stringify(cubeState, null, 2);
+    }
+
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      const randomCubeJSON = generateRandomCubeJSON(20);
+      document.getElementById("jsonInput").value = randomCubeJSON;
+      renderCube();
+    });
+
+    renderCube();
+    updateRotation();
+  </script>
+</body>
+
+</html>

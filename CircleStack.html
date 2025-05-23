@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Circle Stack View Quiz</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        textarea {
+            width: 300px;
+            height: 150px;
+            font-family: monospace;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+
+        .views {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .view-box {
+            cursor: pointer;
+            border: 2px solid transparent;
+            display: inline-block;
+        }
+
+        .view-box.correct {
+            border-color: green;
+        }
+
+        .view-box.wrong {
+            border-color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Circle Stack View Quiz</h2>
+    <textarea id="jsonInput" spellcheck="false"></textarea><br>
+    <button onclick="generateViews()">Generate Views</button>
+    <button onclick="generateRandomJsonAndViews()">Generate Random JSON</button>
+
+    <h3>Side View</h3>
+    <canvas id="sideView" width="200" height="300"></canvas>
+
+    <h3>Top View Options (Click the Correct One)</h3>
+    <div class="views" id="topViews"></div>
+
+    <script>
+        const COLORS = [
+            "red", "blue", "green", "orange", "purple", "cyan", "magenta", "yellow", "lime", "pink"
+        ];
+
+        function isValidCssColor(color) {
+            const div = document.createElement('div');
+            div.style.color = '';
+            div.style.color = color;
+            return div.style.color !== '';
+        }
+
+        function getSafeColor(color) {
+            const clean = (color || '').trim();
+            if (isValidCssColor(clean)) {
+                return clean;
+            }
+            return 'gray'; // fallback color
+        }
+
+        function drawSideView(ctx, data) {
+            ctx.clearRect(0, 0, 200, 300);
+            let y = 20;
+            data.forEach(circle => {
+                ctx.beginPath();
+                ctx.arc(100, y + circle.radius, circle.radius, 0, 2 * Math.PI);
+                ctx.fillStyle = getSafeColor(circle.color);
+                ctx.fill();
+                ctx.stroke();
+                y += 2 * circle.radius + 10;
+            });
+        }
+
+        function drawTopView(ctx, data) {
+            ctx.clearRect(0, 0, 200, 200);
+            data.slice().reverse().forEach(circle => {
+                ctx.beginPath();
+                ctx.arc(100, 100, circle.radius, 0, 2 * Math.PI);
+                ctx.fillStyle = getSafeColor(circle.color);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        function getAllPermutations(arr) {
+            if (arr.length <= 1) return [arr];
+            let perms = [];
+            for (let i = 0; i < arr.length; i++) {
+                let rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+                let restPerms = getAllPermutations(rest);
+                for (let perm of restPerms) {
+                    perms.push([arr[i], ...perm]);
+                }
+            }
+            return perms;
+        }
+
+        function generateViews() {
+            const input = document.getElementById('jsonInput').value;
+            let data;
+            try {
+                data = JSON.parse(input);
+            } catch {
+                alert("Invalid JSON!");
+                return;
+            }
+
+            const ctxSide = document.getElementById("sideView").getContext("2d");
+            drawSideView(ctxSide, data);
+
+            const correctColors = data.map(c => getSafeColor(c.color));
+
+            // Generate all unique permutations of colors
+            const uniquePerms = getAllPermutations(correctColors);
+
+            // Remove the correct order from options and shuffle rest
+            let otherOptions = uniquePerms.filter(perm =>
+                perm.join() !== correctColors.join()
+            );
+
+            // Shuffle otherOptions
+            for (let i = otherOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [otherOptions[i], otherOptions[j]] = [otherOptions[j], otherOptions[i]];
+            }
+
+            // Limit to max 3 wrong options or less if not enough permutations
+            otherOptions = otherOptions.slice(0, 3);
+
+            // Add correct option first
+            const options = [correctColors, ...otherOptions];
+
+            const container = document.getElementById("topViews");
+            container.innerHTML = '';
+
+            options.forEach(option => {
+                const optionData = option.map((color, i) => ({
+                    radius: data[i].radius,
+                    color
+                }));
+
+                const canvas = document.createElement("canvas");
+                canvas.width = 200;
+                canvas.height = 200;
+                const div = document.createElement("div");
+                div.className = "view-box";
+                div.appendChild(canvas);
+                container.appendChild(div);
+                const ctx = canvas.getContext("2d");
+                drawTopView(ctx, optionData);
+
+                div.onclick = () => {
+                    const selectedColors = option;
+                    const isCorrect = selectedColors.length === correctColors.length &&
+                        selectedColors.every((col, idx) => col === correctColors[idx]);
+
+                    if (isCorrect) {
+                        div.classList.add("correct");
+                        alert("✅ Correct!");
+                    } else {
+                        div.classList.add("wrong");
+                        alert("❌ Try again!");
+                    }
+                };
+            });
+        }
+
+        function generateRandomJson() {
+            const count = Math.floor(Math.random() * 4) + 3; // 3 to 6 circles to allow middle bigger circle
+            const data = [];
+
+            // Choose a "biggest circle" index (not first or last)
+            const biggestIndex = Math.floor(Math.random() * (count - 2)) + 1;
+
+            // Define max and min radius limits
+            const maxRadius = 80;
+            const minRadius = 20;
+
+            // Assign radius for biggest circle
+            const biggestRadius = Math.floor(minRadius + Math.random() * (maxRadius - minRadius));
+
+            // Fill radii for circles before biggest (smaller, random ascending order)
+            let currentRadius = minRadius;
+            for (let i = 0; i < biggestIndex; i++) {
+                currentRadius = Math.min(currentRadius + Math.floor(Math.random() * 15) + 5, biggestRadius - 5);
+                data[i] = { radius: currentRadius, color: COLORS[Math.floor(Math.random() * COLORS.length)] };
+            }
+
+            // Assign biggest circle
+            data[biggestIndex] = { radius: biggestRadius, color: COLORS[Math.floor(Math.random() * COLORS.length)] };
+
+            // Fill radii for circles after biggest (smaller, random descending order)
+            currentRadius = biggestRadius - 5;
+            for (let i = biggestIndex + 1; i < count; i++) {
+                currentRadius = Math.max(currentRadius - (Math.floor(Math.random() * 15) + 5), minRadius);
+                data[i] = { radius: currentRadius, color: COLORS[Math.floor(Math.random() * COLORS.length)] };
+            }
+
+            return data;
+        }
+
+        function generateRandomJsonAndViews() {
+            const randomData = generateRandomJson();
+            document.getElementById('jsonInput').value = JSON.stringify(randomData, null, 2);
+            generateViews();
+        }
+
+        // Initialize on page load
+        window.onload = () => {
+            generateRandomJsonAndViews();
+        };
+    </script>
+
+</body>
+
+</html>
