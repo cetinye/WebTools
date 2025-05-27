@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Guess Triangle Piece</title>
+    <style>
+        body {
+            background: #eef2f6;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        svg.main {
+            width: 400px;
+            height: 400px;
+            background: white;
+            border: 2px solid #ccc;
+        }
+
+        .options {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .option {
+            cursor: pointer;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            transform: scale(1.05);
+            border-color: #888;
+        }
+
+        .correct {
+            border-color: green !important;
+        }
+
+        .wrong {
+            border-color: red !important;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Hangi parçalar eksik?</h2>
+    <svg viewBox="0 0 200 200" class="main" id="svg"></svg>
+    <div class="options" id="options"></div>
+
+    <script>
+        const svg = document.getElementById("svg");
+        const optionsDiv = document.getElementById("options");
+
+        const midpoint = (p1, p2) => [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+        const centroid = (a, b, c) => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3];
+
+        // Noktalar
+        const A = [100, 10];
+        const B = [10, 180];
+        const C = [190, 180];
+        const G = centroid(A, B, C);
+
+        const AB = midpoint(A, B);
+        const BC = midpoint(B, C);
+        const CA = midpoint(C, A);
+
+        const iA = midpoint(A, G);
+        const iB = midpoint(B, G);
+        const iC = midpoint(C, G);
+
+        const iAB = midpoint(iA, iB);
+        const iBC = midpoint(iB, iC);
+        const iCA = midpoint(iC, iA);
+
+        // Dış 6 dörtgen
+        const outerPieces = [
+            [A, AB, iAB, iA], // 0
+            [AB, B, iB, iAB], // 1
+            [B, BC, iBC, iB], // 2
+            [BC, C, iC, iBC], // 3
+            [C, CA, iCA, iC], // 4
+            [CA, A, iA, iCA]  // 5
+        ];
+
+        // İç 6 üçgen
+        const innerPieces = [
+            [iA, iAB, G],   // 6
+            [iAB, iB, G],   // 7
+            [iB, iBC, G],   // 8
+            [iBC, iC, G],   // 9
+            [iC, iCA, G],   //10
+            [iCA, iA, G]    //11
+        ];
+
+        const pieces = [...outerPieces, ...innerPieces]; // index 0–5 dış, 6–11 iç
+
+        // Renk grupları
+        const GROUPS = {
+            pink: [0, 1, 6, 7],
+            green: [2, 3, 8, 9],
+            yellow: [4, 5, 10, 11]
+        };
+
+        const COLORS = {
+            pink: "#ff00ff",
+            green: "#33cc66",
+            yellow: "#cccc33"
+        };
+
+        const polys = [];
+
+        // SVG parçaları çiz
+        pieces.forEach((shape, i) => {
+            const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            poly.setAttribute("points", shape.map(p => p.join(",")).join(" "));
+
+            let color = "#e0e0e0"; // fallback
+            if (GROUPS.pink.includes(i)) color = COLORS.pink;
+            else if (GROUPS.green.includes(i)) color = COLORS.green;
+            else if (GROUPS.yellow.includes(i)) color = COLORS.yellow;
+
+            poly.setAttribute("fill", color);
+            poly.setAttribute("stroke", "white");
+            poly.setAttribute("stroke-width", "1");
+            poly.dataset.index = i;
+            svg.appendChild(poly);
+            polys.push({ index: i, points: shape, fill: color });
+        });
+
+        // 3 parçayı gizle
+        const hidden = [];
+        while (hidden.length < 3) {
+            const r = Math.floor(Math.random() * 12);
+            if (!hidden.includes(r)) hidden.push(r);
+        }
+
+        hidden.forEach(i => {
+            const el = svg.querySelector(`polygon[data-index="${i}"]`);
+            if (el) el.setAttribute("fill", "white");
+        });
+
+        const correct = [...hidden].sort((a, b) => a - b);
+        const allIndexes = Array.from({ length: 12 }, (_, i) => i);
+        const options = [correct];
+
+        while (options.length < 4) {
+            const pick = allIndexes.sort(() => 0.5 - Math.random()).slice(0, 3).sort((a, b) => a - b);
+            if (!options.some(opt => arraysEqual(opt, pick))) {
+                options.push(pick);
+            }
+        }
+
+        options.sort(() => 0.5 - Math.random());
+
+        // Seçenekler
+        options.forEach(opt => {
+            const mini = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            mini.setAttribute("viewBox", "0 0 200 200");
+            mini.setAttribute("width", "100");
+            mini.setAttribute("height", "100");
+            mini.classList.add("option");
+
+            opt.forEach(index => {
+                const shape = pieces[index];
+
+                let color = "#e0e0e0";
+                if (GROUPS.pink.includes(index)) color = COLORS.pink;
+                else if (GROUPS.green.includes(index)) color = COLORS.green;
+                else if (GROUPS.yellow.includes(index)) color = COLORS.yellow;
+
+                const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                poly.setAttribute("points", shape.map(p => p.join(",")).join(" "));
+                poly.setAttribute("fill", color);
+                poly.setAttribute("stroke", "black");
+                poly.setAttribute("stroke-width", "0.5");
+                mini.appendChild(poly);
+            });
+
+            mini.onclick = () => {
+                if (arraysEqual(opt, correct)) {
+                    mini.classList.add("correct");
+                    alert("✔️ Doğru!");
+                } else {
+                    mini.classList.add("wrong");
+                    alert("❌ Yanlış seçim.");
+                }
+            };
+
+            optionsDiv.appendChild(mini);
+        });
+
+        function arraysEqual(a, b) {
+            return a.length === b.length && a.every((v, i) => v === b[i]);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Guess Puzzle Piece</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+        }
+
+        button {
+            margin: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Yapboz Parçasını Tahmin Et</h2>
+    <input type="file" id="imageLoader" accept="image/*" />
+    <br /><br />
+    <canvas id="mainCanvas"></canvas>
+    <div id="choices"></div>
+
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const choicesDiv = document.getElementById('choices');
+        const gridSize = 3;
+        const tabSize = 20;
+        let pieceGrid = [];
+
+        imageLoader.addEventListener('change', handleImage, false);
+
+        function handleImage(e) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const pw = Math.floor(img.width / gridSize);
+                    const ph = Math.floor(img.height / gridSize);
+
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+
+                    // 1. Çıkıntı/boşluk bilgileri üret
+                    pieceGrid = [];
+                    for (let y = 0; y < gridSize; y++) {
+                        const row = [];
+                        for (let x = 0; x < gridSize; x++) {
+                            row.push({
+                                top: y === 0 ? 0 : -pieceGrid[y - 1][x].bottom,
+                                left: x === 0 ? 0 : -row[x - 1].right,
+                                right: x === gridSize - 1 ? 0 : Math.random() > 0.5 ? 1 : -1,
+                                bottom: y === gridSize - 1 ? 0 : Math.random() > 0.5 ? 1 : -1,
+                            });
+                        }
+                        pieceGrid.push(row);
+                    }
+
+                    // 2. Tüm parçaları oluştur
+                    const pieces = [];
+                    for (let y = 0; y < gridSize; y++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            const pieceCanvas = document.createElement('canvas');
+                            pieceCanvas.width = pw;
+                            pieceCanvas.height = ph;
+                            const pctx = pieceCanvas.getContext('2d');
+
+                            pctx.save();
+                            pctx.beginPath();
+                            createPuzzlePath(x, y, pw, ph)(pctx, 0, 0);
+                            pctx.clip();
+                            pctx.drawImage(img, x * pw, y * ph, pw, ph, 0, 0, pw, ph);
+                            pctx.restore();
+
+                            pieces.push({ x, y, canvas: pieceCanvas });
+                        }
+                    }
+
+                    // 3. Eksik parçayı seç
+                    const missingIndex = Math.floor(Math.random() * pieces.length);
+                    const missing = pieces[missingIndex];
+
+                    // 4. Eksik parçayı soru işareti ile doldur
+                    ctx.save();
+                    ctx.beginPath();
+                    createPuzzlePath(missing.x, missing.y, pw, ph)(ctx, missing.x * pw, missing.y * ph);
+                    ctx.fillStyle = '#3498db';
+                    ctx.fill();
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 48px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('?', missing.x * pw + pw / 2, missing.y * ph + ph / 2);
+                    ctx.restore();
+
+                    // 5. Sadece dış kenar çizgileri çiz
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "black";
+                    for (let y = 0; y < gridSize; y++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            // Sadece dış kenarlar çizilsin
+                            if (x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1) {
+                                ctx.beginPath();
+                                createPuzzlePath(x, y, pw, ph)(ctx, x * pw, y * ph);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+
+                    // 6. Seçenekleri göster
+                    const choices = [missing.canvas];
+                    while (choices.length < 4) {
+                        const r = Math.floor(Math.random() * pieces.length);
+                        if (!choices.includes(pieces[r].canvas)) {
+                            choices.push(pieces[r].canvas);
+                        }
+                    }
+                    choices.sort(() => Math.random() - 0.5);
+
+                    choicesDiv.innerHTML = '';
+                    choices.forEach(piece => {
+                        const btn = document.createElement('button');
+                        btn.appendChild(piece);
+                        btn.onclick = () => {
+                            if (piece === missing.canvas) {
+                                alert("✅ Doğru!");
+                            } else {
+                                alert("❌ Yanlış!");
+                            }
+                        };
+                        choicesDiv.appendChild(btn);
+                    });
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function createPuzzlePath(x, y, w, h) {
+            const shape = pieceGrid[y][x];
+            return function (ctx, ox, oy) {
+                const tab = tabSize;
+                ctx.moveTo(ox, oy);
+
+                // Top
+                if (shape.top === 0) {
+                    ctx.lineTo(ox + w, oy);
+                } else {
+                    ctx.lineTo(ox + w * 0.3, oy);
+                    ctx.bezierCurveTo(
+                        ox + w * 0.4, oy - tab * shape.top,
+                        ox + w * 0.6, oy - tab * shape.top,
+                        ox + w * 0.7, oy
+                    );
+                    ctx.lineTo(ox + w, oy);
+                }
+
+                // Right
+                if (shape.right === 0) {
+                    ctx.lineTo(ox + w, oy + h);
+                } else {
+                    ctx.lineTo(ox + w, oy + h * 0.3);
+                    ctx.bezierCurveTo(
+                        ox + w + tab * shape.right, oy + h * 0.4,
+                        ox + w + tab * shape.right, oy + h * 0.6,
+                        ox + w, oy + h * 0.7
+                    );
+                    ctx.lineTo(ox + w, oy + h);
+                }
+
+                // Bottom
+                if (shape.bottom === 0) {
+                    ctx.lineTo(ox, oy + h);
+                } else {
+                    ctx.lineTo(ox + w * 0.7, oy + h);
+                    ctx.bezierCurveTo(
+                        ox + w * 0.6, oy + h + tab * shape.bottom,
+                        ox + w * 0.4, oy + h + tab * shape.bottom,
+                        ox + w * 0.3, oy + h
+                    );
+                    ctx.lineTo(ox, oy + h);
+                }
+
+                // Left
+                if (shape.left === 0) {
+                    ctx.lineTo(ox, oy);
+                } else {
+                    ctx.lineTo(ox, oy + h * 0.7);
+                    ctx.bezierCurveTo(
+                        ox - tab * shape.left, oy + h * 0.6,
+                        ox - tab * shape.left, oy + h * 0.4,
+                        ox, oy + h * 0.3
+                    );
+                    ctx.lineTo(ox, oy);
+                }
+
+                ctx.closePath();
+            };
+        }
+    </script>
+</body>
+
+</html>

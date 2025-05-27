@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Guess Tile Piece</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 2px solid #444;
+            margin-top: 10px;
+        }
+
+        input,
+        select {
+            margin: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #choices button {
+            margin: 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Karışık Yapboz Parçası Tahmin Et</h2>
+    <input type="file" id="imageLoader" accept="image/*" />
+    <br>
+    Satır: <input type="number" id="rows" value="3" min="2" max="10" />
+    Sütun: <input type="number" id="cols" value="3" min="2" max="10" />
+    <button id="startBtn">Başlat</button>
+    <br>
+    <canvas id="mainCanvas"></canvas>
+    <div id="choices"></div>
+
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const startBtn = document.getElementById('startBtn');
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const choicesDiv = document.getElementById('choices');
+
+        let uploadedImgURL = null;
+
+        imageLoader.addEventListener('change', e => {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                uploadedImgURL = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        startBtn.addEventListener('click', () => {
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
+
+            if (!uploadedImgURL) {
+                alert("Lütfen önce bir görsel yükleyin.");
+                return;
+            }
+
+            const img = new Image();
+            img.onload = () => runPuzzleGame(img, rows, cols);
+            img.src = uploadedImgURL;
+        });
+
+        function runPuzzleGame(img, rows, cols) {
+            const pw = Math.floor(img.width / cols);
+            const ph = Math.floor(img.height / rows);
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Parçaları üret
+            let pieces = [];
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const canvasPiece = document.createElement('canvas');
+                    canvasPiece.width = pw;
+                    canvasPiece.height = ph;
+                    const pctx = canvasPiece.getContext('2d');
+                    pctx.drawImage(img, x * pw, y * ph, pw, ph, 0, 0, pw, ph);
+                    pieces.push({ originalX: x, originalY: y, canvas: canvasPiece });
+                }
+            }
+
+            // 2. Karıştır
+            const shuffledPieces = [...pieces];
+            shuffledPieces.sort(() => Math.random() - 0.5);
+
+            // 3. Eksik parça
+            const missingIndex = Math.floor(Math.random() * shuffledPieces.length);
+            const missing = shuffledPieces[missingIndex];
+
+            // 4. Tüm parçaları yerleştir ve çizgileri çiz
+            for (let i = 0; i < shuffledPieces.length; i++) {
+                const x = (i % cols) * pw;
+                const y = Math.floor(i / cols) * ph;
+
+                if (i === missingIndex) {
+                    // Soru işareti bölgesi
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(x, y, pw, ph);
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 48px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("?", x + pw / 2, y + ph / 2);
+                } else {
+                    ctx.drawImage(shuffledPieces[i].canvas, x, y);
+                }
+
+                // Grid çizgisi
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, pw, ph);
+            }
+
+            // 5. Seçenekler
+            const choices = [missing.canvas];
+            while (choices.length < 4) {
+                const rand = Math.floor(Math.random() * pieces.length);
+                const c = pieces[rand].canvas;
+                if (!choices.includes(c)) {
+                    choices.push(c);
+                }
+            }
+
+            choices.sort(() => Math.random() - 0.5);
+            choicesDiv.innerHTML = '';
+
+            choices.forEach(piece => {
+                const btn = document.createElement('button');
+                btn.appendChild(piece);
+                btn.onclick = () => {
+                    if (piece === missing.canvas) {
+                        alert("✅ Doğru!");
+                    } else {
+                        alert("❌ Yanlış!");
+                    }
+                };
+                choicesDiv.appendChild(btn);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Guess Image Piece</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        #canvasContainer {
+            position: relative;
+            display: inline-block;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+        }
+
+        #choices {
+            margin-top: 20px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        input {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Bir görsel yükleyin</h2>
+    <input type="file" id="imageLoader" accept="image/*" />
+    <div id="canvasContainer">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+    <div id="choices"></div>
+
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const choicesDiv = document.getElementById('choices');
+        let img = new Image();
+
+        let clipX = 0, clipY = 0, clipW = 100, clipH = 100;
+        let correctImageData;
+
+        imageLoader.addEventListener('change', handleImage, false);
+
+        function handleImage(e) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    clipW = img.width / 4;
+                    clipH = img.height / 4;
+                    clipX = Math.floor(Math.random() * (img.width - clipW));
+                    clipY = Math.floor(Math.random() * (img.height - clipH));
+
+                    // 1. Doğru parça alınır (önce!)
+                    correctImageData = ctx.getImageData(clipX, clipY, clipW, clipH);
+
+                    // 2. Seçenekler oluşturulur (önceden)
+                    const options = [correctImageData];
+                    const positions = [{ x: clipX, y: clipY }];
+
+                    while (options.length < 4) {
+                        let x = Math.floor(Math.random() * (canvas.width - clipW));
+                        let y = Math.floor(Math.random() * (canvas.height - clipH));
+
+                        if (!positions.some(p => Math.abs(p.x - x) < 10 && Math.abs(p.y - y) < 10)) {
+                            options.push(ctx.getImageData(x, y, clipW, clipH));
+                            positions.push({ x, y });
+                        }
+                    }
+
+                    // 3. Beyaz dikdörtgeni sonra çiz
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(clipX, clipY, clipW, clipH);
+                    ctx.fillStyle = "blue";
+                    ctx.font = "48px sans-serif";
+                    ctx.fillText("?", clipX + clipW / 2 - 14, clipY + clipH / 2 + 16);
+
+                    // 4. Seçenekleri karıştır ve göster
+                    showChoices(options, correctImageData);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function showChoices(options, correctData) {
+            const shuffled = options
+                .map(value => ({ value, sort: Math.random() }))
+                .sort((a, b) => a.sort - b.sort)
+                .map(({ value }) => value);
+
+            choicesDiv.innerHTML = '';
+            shuffled.forEach((data, index) => {
+                const choiceCanvas = document.createElement('canvas');
+                choiceCanvas.width = clipW;
+                choiceCanvas.height = clipH;
+                const choiceCtx = choiceCanvas.getContext('2d');
+                choiceCtx.putImageData(data, 0, 0);
+
+                const btn = document.createElement('button');
+                btn.appendChild(choiceCanvas);
+                btn.onclick = () => {
+                    if (data.data.toString() === correctData.data.toString()) {
+                        alert("✅ Doğru!");
+                    } else {
+                        alert("❌ Yanlış!");
+                    }
+                };
+                choicesDiv.appendChild(btn);
+            });
+        }
+    </script>
+</body>
+
+</html>
