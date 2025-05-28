@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pyramid Perspective</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            margin-bottom: 1rem;
+            background: white;
+        }
+
+        .options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .option-canvas {
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .option-canvas.selected {
+            border-color: #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Piramit Perspektif Oyunu</h2>
+    <canvas id="mainView" width="300" height="300"></canvas>
+    <div class="options">
+        <canvas class="option-canvas" width="100" height="100"></canvas>
+        <canvas class="option-canvas" width="100" height="100"></canvas>
+        <canvas class="option-canvas" width="100" height="100"></canvas>
+        <canvas class="option-canvas" width="100" height="100"></canvas>
+    </div>
+
+    <script>
+        const mainCanvas = document.getElementById('mainView');
+        const mainCtx = mainCanvas.getContext('2d');
+        const optionCanvases = document.querySelectorAll('.option-canvas');
+
+        const colors = ['#FF5733', '#F1C40F', '#9B59B6', '#1ABC9C', '#E74C3C', '#3498DB'];
+        let correctIndex = 1;
+        let selectedOption = null;
+        let currentColorOrder = [];
+        let currentSides = 6;
+
+        function getRandomColorOrder(length) {
+            const arr = Array.from({ length }, (_, i) => i);
+            return arr.sort(() => 0.5 - Math.random());
+        }
+
+        function drawWireframePyramid(ctx, sides, colorOrder) {
+            const cx = ctx.canvas.width / 2;
+            const cy = ctx.canvas.height * 0.65;
+            const r = ctx.canvas.width / 3;
+            const angle = (Math.PI * 2) / sides;
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            const points = [];
+            for (let i = 0; i < sides; i++) {
+                const x = cx + r * Math.cos(angle * i - Math.PI / 2);
+                const y = cy + r * Math.sin(angle * i - Math.PI / 2);
+                points.push({ x, y });
+            }
+
+            const apex = { x: cx, y: cy - r * 1.5 };
+
+            for (let i = 0; i < sides; i++) {
+                const a = points[i];
+                const b = points[(i + 1) % sides];
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < sides; i++) {
+                ctx.beginPath();
+                ctx.moveTo(apex.x, apex.y);
+                ctx.lineTo(points[i].x, points[i].y);
+                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function drawTopDownWithInnerLines(ctx, sides, colorOrder) {
+            const cx = ctx.canvas.width / 2;
+            const cy = ctx.canvas.height / 2;
+            const r = ctx.canvas.width / 2 - 10;
+            const angle = (Math.PI * 2) / sides;
+
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const points = [];
+
+            for (let i = 0; i < sides; i++) {
+                const x = cx + r * Math.cos(angle * i - Math.PI / 2);
+                const y = cy + r * Math.sin(angle * i - Math.PI / 2);
+                points.push({ x, y });
+            }
+
+            for (let i = 0; i < sides; i++) {
+                const a = points[i];
+                const b = points[(i + 1) % sides];
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < sides; i++) {
+                ctx.beginPath();
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(cx, cy);
+                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        function setupGame() {
+            const possibleSides = [5, 6];
+            currentSides = possibleSides[Math.floor(Math.random() * possibleSides.length)];
+            currentColorOrder = getRandomColorOrder(currentSides);
+            correctIndex = Math.floor(Math.random() * 4);
+
+            drawWireframePyramid(mainCtx, currentSides, currentColorOrder);
+
+            optionCanvases.forEach((canvas, idx) => {
+                const ctx = canvas.getContext('2d');
+                let variation = [...currentColorOrder];
+                if (idx !== correctIndex) {
+                    variation = getRandomColorOrder(currentSides);
+                }
+                drawTopDownWithInnerLines(ctx, currentSides, variation);
+
+                canvas.onclick = () => {
+                    optionCanvases.forEach(c => c.classList.remove('selected'));
+                    canvas.classList.add('selected');
+                    selectedOption = idx;
+
+                    if (selectedOption === correctIndex) {
+                        alert('Tebrikler, doğru tahmin!');
+                    } else {
+                        alert('Yanlış tahmin, tekrar deneyin.');
+                    }
+                    setupGame();
+                };
+            });
+        }
+
+        setupGame();
+    </script>
+</body>
+
+</html>
