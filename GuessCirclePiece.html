@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Circle Piece</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 40px);
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .red {
+            background-color: #f66;
+        }
+
+        .green {
+            background-color: #9c6;
+        }
+
+        .blue {
+            background-color: #6cf;
+        }
+
+        .empty {
+            background-color: #eee;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .option {
+            display: grid;
+            gap: 2px;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            border-color: #999;
+        }
+
+        .selected {
+            border: 4px solid gold;
+        }
+
+        .small {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Eksik Parçayı Bul</h2>
+    <div class="grid" id="mainGrid"></div>
+
+    <div class="options" id="options"></div>
+
+    <div id="result"></div>
+
+    <script>
+        const WIDTH = 6;
+        const HEIGHT = 6;
+        const baseColors = [
+            "red", "red", "red", "red", "red", "red",
+            "red", "green", "green", "green", "green", "red",
+            "red", "green", "blue", "blue", "green", "red",
+            "red", "green", "blue", "blue", "green", "red",
+            "red", "green", "green", "green", "green", "red",
+            "red", "red", "red", "red", "red", "red"
+        ];
+
+        function getXY(index) {
+            return [index % WIDTH, Math.floor(index / WIDTH)];
+        }
+
+        function normalizeShape(indices) {
+            const coords = indices.map(getXY);
+            const minX = Math.min(...coords.map(([x]) => x));
+            const minY = Math.min(...coords.map(([_, y]) => y));
+            return coords.map(([x, y]) => [x - minX, y - minY]);
+        }
+
+        function getRandomConnectedBlock(size = 4) {
+            const visited = new Set();
+            const neighbors = (index) => {
+                const res = [];
+                const x = index % WIDTH;
+                const y = Math.floor(index / WIDTH);
+                if (x > 0) res.push(index - 1);
+                if (x < WIDTH - 1) res.push(index + 1);
+                if (y > 0) res.push(index - WIDTH);
+                if (y < HEIGHT - 1) res.push(index + WIDTH);
+                return res;
+            };
+
+            const start = Math.floor(Math.random() * (WIDTH * HEIGHT));
+            const block = [start];
+            visited.add(start);
+
+            while (block.length < size) {
+                const current = block[Math.floor(Math.random() * block.length)];
+                const candidates = neighbors(current).filter(n => !visited.has(n));
+                if (candidates.length === 0) break;
+                const next = candidates[Math.floor(Math.random() * candidates.length)];
+                block.push(next);
+                visited.add(next);
+            }
+
+            return block;
+        }
+
+        const grid = document.getElementById("mainGrid");
+        const optionsContainer = document.getElementById("options");
+        const result = document.getElementById("result");
+
+        let colors = [...baseColors];
+        const blockSize = Math.floor(Math.random() * 3) + 3;
+        const missingBlock = getRandomConnectedBlock(blockSize);
+        const missingColors = missingBlock.map(index => colors[index]);
+        const shape = normalizeShape(missingBlock);
+
+        missingBlock.forEach(index => colors[index] = "empty");
+
+        colors.forEach(color => {
+            const cell = document.createElement("div");
+            cell.classList.add("cell", color);
+            grid.appendChild(cell);
+        });
+
+        const correctIndex = Math.floor(Math.random() * 4);
+        const options = [];
+        for (let i = 0; i < 4; i++) {
+            const option = document.createElement("div");
+            option.classList.add("option");
+            option.dataset.id = i;
+            option.style.gridTemplateColumns = `repeat(${Math.max(...shape.map(([x]) => x)) + 1}, 20px)`;
+
+            const fakeColors = ["red", "green", "blue"];
+            const pattern = (i === correctIndex ? missingColors : shape.map(() => fakeColors[Math.floor(Math.random() * 3)]));
+
+            const gridMap = new Map(shape.map((pos, idx) => [pos.join(","), pattern[idx]]));
+
+            const maxX = Math.max(...shape.map(([x]) => x));
+            const maxY = Math.max(...shape.map(([_, y]) => y));
+
+            for (let y = 0; y <= maxY; y++) {
+                for (let x = 0; x <= maxX; x++) {
+                    const dot = document.createElement("div");
+                    const color = gridMap.get(`${x},${y}`);
+                    if (color) dot.classList.add("cell", "small", color);
+                    else dot.style.visibility = "hidden";
+                    option.appendChild(dot);
+                }
+            }
+
+            options.push(option);
+            optionsContainer.appendChild(option);
+        }
+
+        options.forEach(option => {
+            option.addEventListener("click", () => {
+                options.forEach(o => o.classList.remove("selected"));
+                option.classList.add("selected");
+
+                if (option.dataset.id == correctIndex) {
+                    result.textContent = "Doğru cevap!";
+                    result.style.color = "green";
+                } else {
+                    result.textContent = "Yanlış cevap. Tekrar deneyin.";
+                    result.style.color = "red";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
