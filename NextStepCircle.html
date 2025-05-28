@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Next Step Circle</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin: 40px;
+        }
+
+        .sequence,
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            align-items: center;
+        }
+
+        .option {
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: border 0.3s;
+        }
+
+        .option:hover {
+            border-color: gray;
+        }
+
+        .feedback {
+            font-size: 1.2em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .arrow {
+            font-size: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Çark 3 Kez Döndü – Son Hal Hangisi?</h1>
+    <div class="sequence" id="sequence"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <script>
+        const numSlices = 6;
+        const colors = ["red", "green", "blue", "orange", "purple", "yellow", "pink", "cyan"];
+
+        function getRandomColors() {
+            const shuffled = [...colors].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, numSlices);
+        }
+
+        function rotateArray(arr, steps) {
+            return arr.slice(-steps).concat(arr.slice(0, -steps));
+        }
+
+        function createCircleSVG(id, sliceColors) {
+            const radius = 50;
+            const center = 60;
+            const angleStep = (2 * Math.PI) / numSlices;
+            let svg = `<svg width="120" height="120" viewBox="0 0 120 120" id="${id}">`;
+            for (let i = 0; i < numSlices; i++) {
+                const angle1 = i * angleStep;
+                const angle2 = (i + 1) * angleStep;
+                const x1 = center + radius * Math.cos(angle1);
+                const y1 = center + radius * Math.sin(angle1);
+                const x2 = center + radius * Math.cos(angle2);
+                const y2 = center + radius * Math.sin(angle2);
+                const largeArc = angle2 - angle1 > Math.PI ? 1 : 0;
+                svg += `<path d="M${center},${center} L${x1},${y1} A${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z"
+                 fill="${sliceColors[i]}" stroke="black"/>`;
+            }
+            svg += "</svg>";
+            return svg;
+        }
+
+        function createGame() {
+            const sequenceEl = document.getElementById("sequence");
+            const optionsEl = document.getElementById("options");
+            const feedbackEl = document.getElementById("feedback");
+            sequenceEl.innerHTML = "";
+            optionsEl.innerHTML = "";
+            feedbackEl.textContent = "";
+
+            const originalColors = getRandomColors();
+            const rotations = [1, 1, 1]; // toplam 3 adımda döndürme
+
+            let currentColors = [...originalColors];
+
+            // 3 adım çiz (soru işareti dahil)
+            for (let i = 0; i < 3; i++) {
+                sequenceEl.innerHTML += createCircleSVG(`step${i}`, currentColors);
+                sequenceEl.innerHTML += `<div class="arrow">→</div>`;
+                currentColors = rotateArray(currentColors, 1);
+            }
+
+            const correctAnswer = currentColors; // son dönüş
+
+            // Soru işareti göster
+            sequenceEl.innerHTML += `<div style="font-size: 60px;">❓</div>`;
+
+            const correctIndex = Math.floor(Math.random() * 4);
+
+            for (let i = 0; i < 4; i++) {
+                let optionColors;
+                if (i === correctIndex) {
+                    optionColors = correctAnswer;
+                } else {
+                    const offset = (Math.floor(Math.random() * (numSlices - 1)) + 1);
+                    optionColors = rotateArray(originalColors, offset);
+                    if (JSON.stringify(optionColors) === JSON.stringify(correctAnswer)) {
+                        optionColors = rotateArray(originalColors, (offset + 1) % numSlices);
+                    }
+                }
+
+                const div = document.createElement("div");
+                div.classList.add("option");
+                div.innerHTML = createCircleSVG(`opt${i}`, optionColors);
+                div.onclick = () => {
+                    if (i === correctIndex) {
+                        feedbackEl.textContent = "✅ Doğru cevap!";
+                        feedbackEl.style.color = "green";
+                    } else {
+                        feedbackEl.textContent = "❌ Yanlış cevap.";
+                        feedbackEl.style.color = "red";
+                    }
+                };
+                optionsEl.appendChild(div);
+            }
+        }
+
+        createGame();
+    </script>
+</body>
+
+</html>
