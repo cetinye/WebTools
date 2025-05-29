@@ -5,7 +5,7 @@ import os
 import time
 
 # CONFIGURATION
-NUM_QUESTIONS = 3
+NUM_QUESTIONS = 100
 SAVE_DIR = "C:/Users/cetin/Desktop/PyramidPerspectiveQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/PyramidPerspective.html"  # file:/// prefix is required
 
