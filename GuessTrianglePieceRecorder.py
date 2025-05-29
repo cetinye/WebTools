@@ -5,7 +5,7 @@ import os
 import time
 
 # === CONFIGURATION ===
-NUM_QUESTIONS = 30
+NUM_QUESTIONS = 1000
 SAVE_DIR = "C:/Users/cetin/Desktop/TrianglePieceQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/GuessTrianglePiece.html"  # file:/// gerekli
 
@@ -24,7 +24,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     time.sleep(0.1)  # SVG yüklenmesini bekle
 
     # --- Screenshot the main SVG (question) ---
-    question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
+    question_path = os.path.join(SAVE_DIR, f"{i}_question.png")
     svg_elem = driver.find_element(By.CSS_SELECTOR, "svg.main")
     svg_elem.screenshot(question_path)
 
@@ -38,7 +38,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     # --- Screenshot each option (svg.option) ---
     option_elems = driver.find_elements(By.CSS_SELECTOR, "svg.option")
     for idx, opt in enumerate(option_elems[:4]):
-        choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
+        choice_path = os.path.join(SAVE_DIR, f"{i}_{choice_labels[idx]}_choice_.png")
         opt.screenshot(choice_path)
 
     # --- Refresh the page for a new question ---
