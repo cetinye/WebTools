@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Perspective</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+
+        .stack {
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .options {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .option {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            border: 2px solid blue;
+        }
+
+        svg {
+            width: 100px;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Yukarıdan Bakış Açısını Seç</h2>
+    <div class="stack" id="stack"></div>
+
+    <div class="options">
+        <div class="option" onclick="checkAnswer(0)"><svg id="option0" viewBox="0 0 100 100"></svg></div>
+        <div class="option" onclick="checkAnswer(1)"><svg id="option1" viewBox="0 0 100 100"></svg></div>
+        <div class="option" onclick="checkAnswer(2)"><svg id="option2" viewBox="0 0 100 100"></svg></div>
+        <div class="option" onclick="checkAnswer(3)"><svg id="option3" viewBox="0 0 100 100"></svg></div>
+    </div>
+
+    <h3 id="result"></h3>
+
+    <script>
+        const prisms = ['cylinder', 'cube', 'pyramid'];
+        const colors = ['deepskyblue', 'darkorange', 'forestgreen', 'purple', 'gold', 'crimson'];
+        const shapeCount = 4;
+        let stackData = [];
+        let correctAnswer = 0;
+
+        function getRandom(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function shuffle(array) {
+            let copy = [...array];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function createTopViewSVG(type, color, size = 40) {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const shape = document.createElementNS(svgNS, 'rect');
+            const offset = (100 - size) / 2;
+            shape.setAttribute('x', offset);
+            shape.setAttribute('y', offset);
+            shape.setAttribute('width', size);
+            shape.setAttribute('height', size);
+            shape.setAttribute('fill', color);
+            return shape;
+        }
+
+        function createSideViewSVG(type, color, size = 40, yOffset = 0) {
+            const svgNS = "http://www.w3.org/2000/svg";
+            let shape;
+            if (type === 'cylinder') {
+                shape = document.createElementNS(svgNS, 'circle');
+                shape.setAttribute('cx', 50);
+                shape.setAttribute('cy', yOffset + size / 2);
+                shape.setAttribute('r', size / 2);
+            } else if (type === 'cube') {
+                shape = document.createElementNS(svgNS, 'rect');
+                const xOffset = (100 - size) / 2;
+                shape.setAttribute('x', xOffset);
+                shape.setAttribute('y', yOffset);
+                shape.setAttribute('width', size);
+                shape.setAttribute('height', size);
+            } else if (type === 'pyramid') {
+                const half = size / 2;
+                const xOffset = (100 - size) / 2;
+                shape = document.createElementNS(svgNS, 'polygon');
+                shape.setAttribute('points', `50,${yOffset} ${50 + half},${yOffset + size} ${50 - half},${yOffset + size}`);
+            }
+            shape.setAttribute('fill', color);
+            return shape;
+        }
+
+        function generateStackData() {
+            stackData = [];
+            let usedCombos = new Set();
+            while (stackData.length < shapeCount) {
+                let type = getRandom(prisms);
+                let color = getRandom(colors);
+                let size = 30 + Math.floor(Math.random() * 30);
+                let key = type + '_' + color;
+                if (!usedCombos.has(key)) {
+                    usedCombos.add(key);
+                    stackData.push({ type, color, size });
+                }
+            }
+        }
+
+        function renderStack() {
+            const stack = document.getElementById('stack');
+            stack.innerHTML = '';
+
+            const totalHeight = stackData.reduce((acc, item) => acc + item.size, 0);
+            const stackSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            stackSVG.setAttribute("viewBox", `0 0 100 ${totalHeight}`);
+            stackSVG.setAttribute("width", "100");
+            stackSVG.setAttribute("height", totalHeight);
+
+            let yOffset = 0;
+            for (let i = stackData.length - 1; i >= 0; i--) {
+                const shape = createSideViewSVG(stackData[i].type, stackData[i].color, stackData[i].size, yOffset);
+                stackSVG.appendChild(shape);
+                yOffset += stackData[i].size;
+            }
+
+            stack.appendChild(stackSVG);
+        }
+
+        function renderOptions() {
+            correctAnswer = Math.floor(Math.random() * 4);
+            for (let i = 0; i < 4; i++) {
+                const optionSVG = document.getElementById('option' + i);
+                optionSVG.innerHTML = '';
+                let data = i === correctAnswer ? stackData : shuffle(stackData).map(d => ({ ...d, color: getRandom(colors) }));
+                for (let j = 0; j < data.length; j++) {
+                    const shape = createTopViewSVG(data[j].type, data[j].color, data[j].size);
+                    optionSVG.appendChild(shape);
+                }
+            }
+        }
+
+        function checkAnswer(selected) {
+            const result = document.getElementById('result');
+            if (selected === correctAnswer) {
+                result.textContent = 'Doğru cevap!';
+                result.style.color = 'green';
+            } else {
+                result.textContent = 'Yanlış cevap. Tekrar dene!';
+                result.style.color = 'red';
+            }
+        }
+
+        function init() {
+            generateStackData();
+            renderStack();
+            renderOptions();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
