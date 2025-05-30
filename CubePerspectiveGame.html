@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CubePerspectiveGame</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Üstten Bakış Küp Oyunu</h1>
+    <canvas id="mainCanvas" width="300" height="300"></canvas>
+    <div class="options">
+        <canvas width="80" height="80" class="optionCanvas"></canvas>
+        <canvas width="80" height="80" class="optionCanvas"></canvas>
+        <canvas width="80" height="80" class="optionCanvas"></canvas>
+        <canvas width="80" height="80" class="optionCanvas"></canvas>
+    </div>
+
+    <script>
+        const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'];
+        const gridSize = 3;
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        function generateStructure() {
+            const cubes = [];
+            const heightMap = {};
+
+            while (cubes.length < 6) {
+                const x = getRandomInt(gridSize);
+                const y = getRandomInt(gridSize);
+                const key = `${x},${y}`;
+                const height = heightMap[key] = (heightMap[key] || 0);
+                cubes.push({ x, y, z: height, color: colors[getRandomInt(colors.length)] });
+                heightMap[key]++;
+            }
+
+            return cubes;
+        }
+
+        function draw3DCube(ctx, x, y, size, color) {
+            const half = size / 2;
+            const quarter = size / 4;
+
+            // Top face
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + half, y - quarter);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x + half, y + quarter);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.stroke();
+
+            // Left face
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + half, y + quarter);
+            ctx.lineTo(x + half, y + quarter + size);
+            ctx.lineTo(x, y + size);
+            ctx.closePath();
+            ctx.fillStyle = shadeColor(color, -15);
+            ctx.fill();
+            ctx.stroke();
+
+            // Right face
+            ctx.beginPath();
+            ctx.moveTo(x + size, y);
+            ctx.lineTo(x + half, y + quarter);
+            ctx.lineTo(x + half, y + quarter + size);
+            ctx.lineTo(x + size, y + size);
+            ctx.closePath();
+            ctx.fillStyle = shadeColor(color, -30);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "rgb(" + Math.min(255, Math.max(0, R)) + "," + Math.min(255, Math.max(0, G)) + "," + Math.min(255, Math.max(0, B)) + ")";
+        }
+
+        function drawMainScene(cubes) {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const size = 40;
+
+            // çizim sırası: arkadaki daha önce
+            cubes.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
+
+            for (let cube of cubes) {
+                const isoX = 150 + (cube.x - cube.y) * (size * 0.5);
+                const isoY = 100 + (cube.x + cube.y) * (size * 0.25) - cube.z * (size * 0.75);
+                draw3DCube(ctx, isoX, isoY, size, cube.color);
+            }
+        }
+
+        function generateTopView(cubes) {
+            const view = {};
+            for (let cube of cubes) {
+                const key = `${cube.x},${cube.y}`;
+                if (!view[key] || cube.z > view[key].z) {
+                    view[key] = cube;
+                }
+            }
+            return view;
+        }
+
+        function drawTopView(ctx, view) {
+            const size = 20;
+            ctx.clearRect(0, 0, 80, 80);
+            for (let key in view) {
+                const [x, y] = key.split(',').map(Number);
+                ctx.fillStyle = view[key].color;
+                ctx.fillRect(x * size, y * size, size, size);
+                ctx.strokeRect(x * size, y * size, size, size);
+            }
+        }
+
+        const structure = generateStructure();
+        drawMainScene(structure);
+
+        const correctView = generateTopView(structure);
+        const optionCanvases = document.querySelectorAll('.optionCanvas');
+        const correctIndex = getRandomInt(4);
+        const views = [];
+
+        for (let i = 0; i < 4; i++) {
+            if (i === correctIndex) {
+                views.push(correctView);
+            } else {
+                const dummy = generateTopView(generateStructure());
+                views.push(dummy);
+            }
+        }
+
+        optionCanvases.forEach((canvas, index) => {
+            const ctx = canvas.getContext('2d');
+            drawTopView(ctx, views[index]);
+            canvas.addEventListener('click', () => {
+                if (index === correctIndex) {
+                    alert("✅ Doğru Cevap!");
+                } else {
+                    alert("❌ Yanlış. Tekrar dene.");
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
