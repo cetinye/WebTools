@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Line Hexagon Perspective</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f4f4;
+        }
+
+        canvas {
+            background: white;
+            border: 1px solid #ccc;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .option {
+            border: 2px solid transparent;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            border-color: #555;
+        }
+
+        #feedback {
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Line Hexagon Perspective Game</h2>
+    <canvas id="prismCanvas" width="400" height="400"></canvas>
+    <div class="options">
+        <canvas class="option" width="100" height="100" id="opt1"></canvas>
+        <canvas class="option" width="100" height="100" id="opt2"></canvas>
+        <canvas class="option" width="100" height="100" id="opt3"></canvas>
+        <canvas class="option" width="100" height="100" id="opt4"></canvas>
+    </div>
+    <div id="feedback"></div>
+
+    <script>
+        const prismCtx = document.getElementById('prismCanvas').getContext('2d');
+        const allUsedCombinations = new Set();
+        const colorPool = ['red', 'purple', 'cyan', 'darkblue', 'green', 'orange'];
+
+        function drawHexPrism(ctx, centerX, centerY, size, height, edgeColors) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.lineWidth = 4;
+            const angle = Math.PI / 3;
+            let top = [], bottom = [];
+
+            for (let i = 0; i < 6; i++) {
+                top.push({
+                    x: centerX + size * Math.cos(i * angle),
+                    y: centerY + size * Math.sin(i * angle)
+                });
+                bottom.push({
+                    x: centerX + size * Math.cos(i * angle),
+                    y: centerY + size * Math.sin(i * angle) + height
+                });
+            }
+
+            for (let i = 0; i < 6; i++) {
+                ctx.strokeStyle = edgeColors[i % edgeColors.length];
+                ctx.beginPath();
+                ctx.moveTo(top[i].x, top[i].y);
+                ctx.lineTo(top[(i + 1) % 6].x, top[(i + 1) % 6].y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(bottom[i].x, bottom[i].y);
+                ctx.lineTo(bottom[(i + 1) % 6].x, bottom[(i + 1) % 6].y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(top[i].x, top[i].y);
+                ctx.lineTo(bottom[i].x, bottom[i].y);
+                ctx.stroke();
+            }
+        }
+
+        function drawTopView(ctx, size, rotation = 0, colorOrder = []) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.lineWidth = 4;
+            const centerX = ctx.canvas.width / 2;
+            const centerY = ctx.canvas.height / 2;
+            const angle = Math.PI / 3;
+
+            let points = [];
+            for (let i = 0; i < 6; i++) {
+                points.push({
+                    x: centerX + size * Math.cos(i * angle + rotation),
+                    y: centerY + size * Math.sin(i * angle + rotation)
+                });
+            }
+
+            for (let i = 0; i < 6; i++) {
+                ctx.strokeStyle = colorOrder[i % colorOrder.length];
+                ctx.beginPath();
+                ctx.moveTo(points[i].x, points[i].y);
+                ctx.lineTo(points[(i + 1) % 6].x, points[(i + 1) % 6].y);
+                ctx.stroke();
+            }
+        }
+
+        function generateUniqueCombination() {
+            let combo;
+            do {
+                combo = Array.from({ length: 6 }, () => colorPool[Math.floor(Math.random() * colorPool.length)]);
+            } while (allUsedCombinations.has(combo.join(',')));
+            allUsedCombinations.add(combo.join(','));
+            return combo;
+        }
+
+        function setupGame() {
+            document.getElementById('feedback').textContent = '';
+            const correct = generateUniqueCombination();
+            drawHexPrism(prismCtx, 200, 100, 60, 80, correct);
+
+            let options = [correct];
+            while (options.length < 4) {
+                const opt = generateUniqueCombination();
+                options.push(opt);
+            }
+
+            options = options.sort(() => Math.random() - 0.5);
+
+            options.forEach((opt, i) => {
+                const canvas = document.getElementById(`opt${i + 1}`);
+                const ctx = canvas.getContext('2d');
+                drawTopView(ctx, 35, 0, opt);
+                canvas.onclick = () => {
+                    const isCorrect = opt.join(',') === correct.join(',');
+                    document.getElementById('feedback').textContent = isCorrect ? 'Doğru!' : 'Yanlış!';
+                };
+            });
+        }
+
+        setupGame();
+    </script>
+</body>
+
+</html>
