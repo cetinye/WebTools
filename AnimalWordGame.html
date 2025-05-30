@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Animal Word Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .box {
+            border: 1px solid #ccc;
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .symbols {
+            font-size: 28px;
+        }
+
+        .option {
+            cursor: pointer;
+            margin: 5px;
+            padding: 10px;
+            display: inline-block;
+            border: 2px solid transparent;
+        }
+
+        .option:hover {
+            border-color: blue;
+        }
+
+        .correct {
+            border-color: green;
+        }
+
+        .wrong {
+            border-color: red;
+        }
+
+        #options {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
+
+    <div class="box">
+        <h3>SÖZCÜKLER</h3>
+        <div id="words"></div>
+    </div>
+
+    <div class="box">
+        <h3>EŞLEŞTİRME</h3>
+        <div id="mappings"></div>
+    </div>
+
+    <div class="box">
+        <h3>İSTENEN SÖZCÜK</h3>
+        <div id="targetWord"></div>
+    </div>
+
+    <div id="options" class="box">
+        <h3>SEÇENEKLER</h3>
+    </div>
+
+    <script>
+        const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵'];
+
+        const wordGroups = [
+            ['ALMAN', 'ANLAM', 'YALAN', 'YANAL'],
+            ['MASA', 'SABA', 'ASMA'],
+            ['KASA', 'SAKA', 'AKAS'],
+            ['TREN', 'RENT', 'TERN'],
+            ['KART', 'TRAK', 'AKTR'],
+            ['ELMA', 'LEMA', 'AMEL'],
+            ['BALIK', 'BILAK', 'KABLI'],
+            ['LİMON', 'MONLİ', 'OLİMN'],
+            ['ODA', 'ADO', 'DOA'],
+            ['KUŞ', 'ŞUK', 'UKŞ']
+        ];
+
+        function shuffle(arr) {
+            return arr.slice().sort(() => Math.random() - 0.5);
+        }
+
+        function createMapping(words) {
+            const uniqueLetters = Array.from(new Set(words.join('').split('')));
+            const map = {};
+            const shuffledEmojis = shuffle(animalEmojis);
+            uniqueLetters.forEach((char, i) => {
+                map[char] = shuffledEmojis[i % shuffledEmojis.length];
+            });
+            return map;
+        }
+
+        function wordToSymbols(word, map) {
+            return word.split('').map(l => map[l]).join(' ');
+        }
+
+        function initGame() {
+            const wordSet = shuffle(wordGroups)[0];
+            const letterToEmoji = createMapping(wordSet);
+            const shuffledWords = shuffle(wordSet);
+            const target = shuffledWords[Math.floor(Math.random() * shuffledWords.length)];
+
+            document.getElementById('words').textContent = wordSet.join(', ');
+            document.getElementById('targetWord').textContent = target;
+            document.getElementById('mappings').innerHTML = '';
+            document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
+
+            // Eşleştirme kutusu
+            shuffledWords.forEach(word => {
+                const p = document.createElement('p');
+                p.textContent = wordToSymbols(word, letterToEmoji);
+                document.getElementById('mappings').appendChild(p);
+            });
+
+            const correct = wordToSymbols(target, letterToEmoji);
+            const options = shuffle([correct, ...shuffledWords.filter(w => w !== target).slice(0, 3).map(w => wordToSymbols(w, letterToEmoji))]);
+
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option symbols';
+                div.textContent = opt;
+                div.addEventListener('click', () => {
+                    if (opt === correct) {
+                        div.classList.add('correct');
+                    } else {
+                        div.classList.add('wrong');
+                    }
+                });
+                document.getElementById('options').appendChild(div);
+            });
+        }
+
+        initGame();
+    </script>
+</body>
+
+</html>
