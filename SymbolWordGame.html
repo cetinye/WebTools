@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Simge Eşleştirme Oyunu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .box {
+            border: 1px solid #ccc;
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .symbols {
+            font-size: 24px;
+        }
+
+        .option {
+            cursor: pointer;
+            margin: 5px;
+            padding: 10px;
+            display: inline-block;
+            border: 2px solid transparent;
+        }
+
+        .option:hover {
+            border-color: blue;
+        }
+
+        .correct {
+            border-color: green;
+        }
+
+        .wrong {
+            border-color: red;
+        }
+
+        #options {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Simge Eşleştirme Oyunu</h1>
+
+    <div class="box">
+        <h3>SÖZCÜKLER</h3>
+        <div id="words"></div>
+    </div>
+
+    <div class="box">
+        <h3>SAYISAL EŞLEŞTİRME</h3>
+        <div id="mappings"></div>
+    </div>
+
+    <div class="box">
+        <h3>İSTENEN SÖZCÜK</h3>
+        <div id="targetWord"></div>
+    </div>
+
+    <div id="options" class="box">
+        <h3>SEÇENEKLER</h3>
+    </div>
+
+    <script>
+        const questionPool = [
+            ['KAPI', 'KEDİ', 'KAZA'],
+            ['GÜl', 'GÖL', 'GÜNEŞ'],
+            ['MUM', 'KUM', 'KAM'],
+            ['MASA', 'SABA', 'ASMA'],
+            ['TREN', 'RENK', 'NERİ'],
+            ['BABA', 'BANA', 'BARA'],
+            ['YEL', 'LEY', 'ELİ'],
+            ['KALP', 'KAPL', 'LAPK'],
+            ['KART', 'TRAK', 'AKTR'],
+            ['GEMİ', 'EMGİ', 'İGEM'],
+            ['KAZAK', 'KAKAZ', 'ZAKAK'],
+            ['BALIK', 'BILAK', 'KABLI'],
+            ['MARTI', 'TAMİR', 'MATİR'],
+            ['SİNEK', 'NESİK', 'KİSEN'],
+            ['ODA', 'ADO', 'DOA'],
+            ['ELMA', 'LEMA', 'AMEL'],
+            ['KASA', 'SAKA', 'AKAS'],
+            ['ZİL', 'İZL', 'ZLİ'],
+            ['TEPE', 'ETPE', 'ETEP'],
+            ['GÖZ', 'ÖZG', 'ZGÖ'],
+            ['KUŞ', 'ŞUK', 'UKŞ'],
+            ['TABA', 'BATA', 'ABTA'],
+            ['KİLİT', 'TİKİL', 'İKİTL'],
+            ['SABA', 'BASA', 'ASAB'],
+            ['LİMON', 'MONLİ', 'OLİMN']
+        ];
+
+        const symbols = ['♥', '♫', '☁', '★', '■', '▲'];
+
+        function shuffleArray(arr) {
+            return arr.slice().sort(() => Math.random() - 0.5);
+        }
+
+        function createMapping(words) {
+            const letters = new Set(words.join('').split(''));
+            if (letters.size > symbols.length) return null;
+            const shuffledSymbols = shuffleArray([...symbols]);
+            const map = {};
+            Array.from(letters).forEach((l, i) => {
+                map[l] = shuffledSymbols[i];
+            });
+            return map;
+        }
+
+        function wordToSymbols(word, map) {
+            return word.split('').map(c => map[c]).join(' ');
+        }
+
+        function initGame() {
+            let attempts = 0;
+            let validSet = null;
+            let letterToSymbol = null;
+
+            while (attempts < 100) {
+                const wordSet = shuffleArray(questionPool)[0];
+                const mapping = createMapping(wordSet);
+                if (mapping) {
+                    validSet = wordSet;
+                    letterToSymbol = mapping;
+                    break;
+                }
+                attempts++;
+            }
+
+            if (!validSet) {
+                document.getElementById('words').textContent = 'Soru yüklenemedi';
+                return;
+            }
+
+            const selectedWords = shuffleArray(validSet);
+            const target = selectedWords[Math.floor(Math.random() * selectedWords.length)];
+
+            document.getElementById('words').textContent = selectedWords.join(', ');
+            document.getElementById('targetWord').textContent = target;
+            document.getElementById('mappings').innerHTML = '';
+            document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
+
+            const mappingsDiv = document.getElementById('mappings');
+            selectedWords.forEach(word => {
+                const p = document.createElement('p');
+                p.textContent = wordToSymbols(word, letterToSymbol);
+                mappingsDiv.appendChild(p);
+            });
+
+            const correctOption = wordToSymbols(target, letterToSymbol);
+            const otherOptions = selectedWords.filter(w => w !== target).slice(0, 3);
+            const options = shuffleArray([correctOption, ...otherOptions.map(w => wordToSymbols(w, letterToSymbol))]);
+
+            const optionsDiv = document.getElementById('options');
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option symbols';
+                div.textContent = opt;
+                div.addEventListener('click', () => {
+                    if (opt === correctOption) {
+                        div.classList.add('correct');
+                    } else {
+                        div.classList.add('wrong');
+                    }
+                });
+                optionsDiv.appendChild(div);
+            });
+        }
+
+        initGame();
+    </script>
+</body>
+
+</html>
