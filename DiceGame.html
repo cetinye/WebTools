@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dice Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f7fa;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .dice-stack {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-bottom: 30px;
+        }
+
+        .dice-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .dice-sum {
+            width: 70px;
+            height: 70px;
+            background-color: #e53935;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            margin: 5px;
+        }
+
+        .die {
+            width: 60px;
+            height: 60px;
+            background-color: #e53935;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            padding: 5px;
+            margin: 5px;
+        }
+
+        .question-box {
+            width: 70px;
+            height: 70px;
+            background-color: #e53935;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            margin: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            margin: auto;
+        }
+
+        .empty {
+            visibility: hidden;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .options button {
+            padding: 0;
+            margin: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            width: 60px;
+            height: 60px;
+        }
+
+        .options button .die {
+            margin: 0;
+        }
+
+        .options button:hover .die {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="dice-stack">
+            <div class="dice-sum" id="sum-box">5</div>
+            <div class="dice-row">
+                <div id="known-dice"></div>
+                <div class="question-box">?</div>
+            </div>
+        </div>
+        <div class="options">
+            <button onclick="checkAnswer(this)"></button>
+            <button onclick="checkAnswer(this)"></button>
+            <button onclick="checkAnswer(this)"></button>
+            <button onclick="checkAnswer(this)"></button>
+        </div>
+    </div>
+
+    <script>
+        let correctAnswer;
+
+        const DICE_PATTERNS = {
+            1: [4],
+            2: [0, 8],
+            3: [0, 4, 8],
+            4: [0, 2, 6, 8],
+            5: [0, 2, 4, 6, 8],
+            6: [0, 2, 3, 5, 6, 8]
+        };
+
+        function createDie(value) {
+            const die = document.createElement('div');
+            die.className = 'die';
+
+            for (let i = 0; i < 9; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (!DICE_PATTERNS[value].includes(i)) dot.classList.add('empty');
+                die.appendChild(dot);
+            }
+            return die;
+        }
+
+        function rollDice() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        function generateOptions(correct) {
+            const options = new Set();
+            options.add(correct);
+            while (options.size < 4) {
+                const opt = rollDice();
+                if (!options.has(opt)) {
+                    options.add(opt);
+                }
+            }
+            return Array.from(options).sort(() => Math.random() - 0.5);
+        }
+
+        function newRound() {
+            const known = rollDice();
+            correctAnswer = rollDice();
+            const total = known + correctAnswer;
+
+            document.getElementById("sum-box").textContent = total;
+
+            const knownDiceContainer = document.getElementById("known-dice");
+            knownDiceContainer.innerHTML = '';
+            knownDiceContainer.appendChild(createDie(known));
+
+            const opts = generateOptions(correctAnswer);
+            const buttons = document.querySelectorAll(".options button");
+            buttons.forEach((btn, index) => {
+                btn.innerHTML = '';
+                btn.dataset.value = opts[index];
+                btn.appendChild(createDie(opts[index]));
+            });
+        }
+
+        function checkAnswer(button) {
+            const selected = parseInt(button.dataset.value);
+            if (selected === correctAnswer) {
+                alert("Doğru cevap!");
+            } else {
+                alert("Yanlış cevap. Doğru cevap: " + correctAnswer);
+            }
+            newRound();
+        }
+
+        newRound();
+    </script>
+</body>
+
+</html>
