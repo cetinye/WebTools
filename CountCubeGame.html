@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cube Counting Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: black;
+        }
+
+        .game-container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .cube-display {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 40px;
+            margin: 20px 0;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .cube-structure {
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            transform-style: preserve-3d;
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #000;
+            box-sizing: border-box;
+        }
+
+        .front {
+            background: #FFD700;
+            transform: translateZ(25px);
+        }
+
+        .back {
+            background: #FFA500;
+            transform: rotateY(180deg) translateZ(25px);
+        }
+
+        .right {
+            background: #FF8C00;
+            transform: rotateY(90deg) translateZ(25px);
+        }
+
+        .left {
+            background: #DAA520;
+            transform: rotateY(-90deg) translateZ(25px);
+        }
+
+        .top {
+            background: #FFFF99;
+            transform: rotateX(90deg) translateZ(25px);
+        }
+
+        .bottom {
+            background: #B8860B;
+            transform: rotateX(-90deg) translateZ(25px);
+        }
+
+        .answer-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .answer-btn {
+            background: white;
+            border: 2px solid #333;
+            color: black;
+            padding: 15px 25px;
+            font-size: 1.5em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .answer-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .answer-btn.correct {
+            background: #4CAF50;
+            border-color: #45a049;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        .answer-btn.incorrect {
+            background: #f44336;
+            border-color: #da190b;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .score {
+            font-size: 1.3em;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .next-btn {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .feedback {
+            font-size: 1.1em;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <h1>🎲 Cube Counting Challenge</h1>
+        <div class="instruction">How many cubes can you count in this structure?</div>
+
+        <div class="cube-display" id="cubeDisplay">
+            <!-- Cubes will be generated here -->
+        </div>
+
+        <div class="answer-section" id="answerSection">
+            <!-- Answer buttons will be generated here -->
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+        <div class="score">Score: <span id="score">0</span> / <span id="total">0</span></div>
+
+        <button class="next-btn" onclick="generateNewPuzzle()">New Puzzle</button>
+    </div>
+
+    <script>
+        let currentAnswer = 0;
+        let score = 0;
+        let totalQuestions = 0;
+        let answered = false;
+
+        // Define possible cube positions in a 3D grid
+        function generateCubeStructure() {
+            const minCubes = 8;
+            const maxCubes = 20;
+            const numCubes = Math.floor(Math.random() * (maxCubes - minCubes + 1)) + minCubes;
+
+            // Start with a base cube at origin
+            let positions = [{ x: 0, y: 0, z: 0 }];
+
+            // Add connected cubes
+            for (let i = 1; i < numCubes; i++) {
+                let validPositions = [];
+
+                // Find all adjacent positions to existing cubes
+                positions.forEach(pos => {
+                    const adjacent = [
+                        { x: pos.x + 1, y: pos.y, z: pos.z },
+                        { x: pos.x - 1, y: pos.y, z: pos.z },
+                        { x: pos.x, y: pos.y + 1, z: pos.z },
+                        { x: pos.x, y: pos.y - 1, z: pos.z },
+                        { x: pos.x, y: pos.y, z: pos.z + 1 },
+                        { x: pos.x, y: pos.y, z: pos.z - 1 }
+                    ];
+
+                    adjacent.forEach(adjPos => {
+                        // Check if position is not already occupied
+                        if (!positions.some(p => p.x === adjPos.x && p.y === adjPos.y && p.z === adjPos.z)) {
+                            // Avoid floating cubes - ensure at least one support
+                            if (adjPos.y <= 0 || positions.some(p =>
+                                p.x === adjPos.x && p.y === adjPos.y - 1 && p.z === adjPos.z)) {
+                                validPositions.push(adjPos);
+                            }
+                        }
+                    });
+                });
+
+                if (validPositions.length > 0) {
+                    const randomPos = validPositions[Math.floor(Math.random() * validPositions.length)];
+                    positions.push(randomPos);
+                }
+            }
+
+            return positions;
+        }
+
+        function renderCubes(positions) {
+            const container = document.getElementById('cubeDisplay');
+            container.innerHTML = '';
+
+            const structure = document.createElement('div');
+            structure.className = 'cube-structure';
+            structure.style.transform = 'rotateX(-20deg) rotateY(45deg)';
+
+            positions.forEach(pos => {
+                const cube = document.createElement('div');
+                cube.className = 'cube';
+
+                // Position cube in 3D space
+                const x = pos.x * 56;
+                const y = -pos.y * 56; // Negative because screen Y is inverted
+                const z = pos.z * 56;
+
+                cube.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+
+                // Create cube faces
+                const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+                faces.forEach(face => {
+                    const faceElement = document.createElement('div');
+                    faceElement.className = `cube-face ${face}`;
+                    cube.appendChild(faceElement);
+                });
+
+                structure.appendChild(cube);
+            });
+
+            container.appendChild(structure);
+            return positions.length;
+        }
+
+        function generateAnswerChoices(correctAnswer) {
+            const choices = [correctAnswer];
+
+            // Generate 3 incorrect answers
+            while (choices.length < 4) {
+                let wrongAnswer;
+                if (Math.random() < 0.5) {
+                    // Close to correct answer
+                    wrongAnswer = correctAnswer + Math.floor(Math.random() * 6) - 3;
+                } else {
+                    // Random answer in reasonable range
+                    wrongAnswer = Math.floor(Math.random() * 15) + 8;
+                }
+
+                if (wrongAnswer > 0 && !choices.includes(wrongAnswer)) {
+                    choices.push(wrongAnswer);
+                }
+            }
+
+            // Shuffle choices
+            return choices.sort(() => Math.random() - 0.5);
+        }
+
+        function renderAnswerButtons(choices, correctAnswer) {
+            const container = document.getElementById('answerSection');
+            container.innerHTML = '';
+
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.className = 'answer-btn';
+                button.textContent = choice;
+                button.onclick = () => checkAnswer(choice, correctAnswer, button);
+                container.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected, correct, buttonElement) {
+            if (answered) return;
+
+            answered = true;
+            totalQuestions++;
+
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.answer-btn');
+
+            if (selected === correct) {
+                score++;
+                buttonElement.classList.add('correct');
+                feedback.textContent = '🎉 Correct! Well done!';
+                feedback.style.color = '#4CAF50';
+            } else {
+                buttonElement.classList.add('incorrect');
+                feedback.textContent = `❌ Incorrect. The correct answer was ${correct}.`;
+                feedback.style.color = '#f44336';
+
+                // Highlight correct answer
+                buttons.forEach(btn => {
+                    if (parseInt(btn.textContent) === correct) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            // Disable all buttons
+            buttons.forEach(btn => btn.style.pointerEvents = 'none');
+
+            // Update score display
+            document.getElementById('score').textContent = score;
+            document.getElementById('total').textContent = totalQuestions;
+        }
+
+        function generateNewPuzzle() {
+            answered = false;
+            document.getElementById('feedback').textContent = '';
+
+            // Generate cube structure
+            const positions = generateCubeStructure();
+            currentAnswer = renderCubes(positions);
+
+            // Generate and render answer choices
+            const choices = generateAnswerChoices(currentAnswer);
+            renderAnswerButtons(choices, currentAnswer);
+        }
+
+        // Initialize game
+        generateNewPuzzle();
+    </script>
+</body>
+
+</html>

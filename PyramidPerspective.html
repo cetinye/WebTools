@@ -69,37 +69,42 @@
 
         function drawWireframePyramid(ctx, sides, colorOrder) {
             const cx = ctx.canvas.width / 2;
-            const cy = ctx.canvas.height * 0.65;
-            const r = ctx.canvas.width / 3;
+            const cy = ctx.canvas.height * 0.75;
+            const r = ctx.canvas.width / 3.2;
             const angle = (Math.PI * 2) / sides;
 
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+            // Create base points - simple isometric-like view
             const points = [];
             for (let i = 0; i < sides; i++) {
-                const x = cx + r * Math.cos(angle * i - Math.PI / 2);
-                const y = cy + r * Math.sin(angle * i - Math.PI / 2);
+                const baseAngle = angle * i + Math.PI / 8; // Rotate to the right
+                const x = cx + r * Math.cos(baseAngle);
+                const y = cy + r * Math.sin(baseAngle) * 0.5; // Moderate perspective
                 points.push({ x, y });
             }
 
-            const apex = { x: cx, y: cy - r * 1.5 };
+            // Simple apex position
+            const apex = { x: cx, y: cy - r * 1.4 };
 
+            // Draw all base edges with consistent color mapping
             for (let i = 0; i < sides; i++) {
                 const a = points[i];
                 const b = points[(i + 1) % sides];
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
                 ctx.lineTo(b.x, b.y);
-                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = colors[colorOrder[i]];
+                ctx.lineWidth = 2;
                 ctx.stroke();
             }
 
+            // Draw all edges from apex to base with consistent color mapping
             for (let i = 0; i < sides; i++) {
                 ctx.beginPath();
                 ctx.moveTo(apex.x, apex.y);
                 ctx.lineTo(points[i].x, points[i].y);
-                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.strokeStyle = colors[colorOrder[i]];
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
@@ -115,46 +120,69 @@
             const points = [];
 
             for (let i = 0; i < sides; i++) {
-                const x = cx + r * Math.cos(angle * i - Math.PI / 2);
-                const y = cy + r * Math.sin(angle * i - Math.PI / 2);
+                // Match the same rotation as the 3D view
+                const x = cx + r * Math.cos(angle * i + Math.PI / 8);
+                const y = cy + r * Math.sin(angle * i + Math.PI / 8);
                 points.push({ x, y });
             }
 
+            // Draw outer edges with consistent color mapping
             for (let i = 0; i < sides; i++) {
                 const a = points[i];
                 const b = points[(i + 1) % sides];
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
                 ctx.lineTo(b.x, b.y);
-                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
+                ctx.strokeStyle = colors[colorOrder[i]];
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
 
+            // Draw inner lines from center to vertices with consistent color mapping
             for (let i = 0; i < sides; i++) {
                 ctx.beginPath();
                 ctx.moveTo(points[i].x, points[i].y);
                 ctx.lineTo(cx, cy);
-                ctx.strokeStyle = colors[colorOrder[i % colorOrder.length]];
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = colors[colorOrder[i]];
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
             }
         }
 
         function setupGame() {
-            const possibleSides = [5, 6];
+            // Now includes triangle (3), square (4), pentagon (5), and hexagon (6) pyramids
+            const possibleSides = [3, 4, 5, 6];
             currentSides = possibleSides[Math.floor(Math.random() * possibleSides.length)];
             currentColorOrder = getRandomColorOrder(currentSides);
             correctIndex = Math.floor(Math.random() * 4);
 
             drawWireframePyramid(mainCtx, currentSides, currentColorOrder);
 
+            // Create unique variations for each option
+            const usedVariations = new Set();
+            const variations = [];
+
+            // Add the correct answer
+            variations[correctIndex] = [...currentColorOrder];
+            usedVariations.add(JSON.stringify(currentColorOrder));
+
+            // Generate unique wrong answers
             optionCanvases.forEach((canvas, idx) => {
                 const ctx = canvas.getContext('2d');
-                let variation = [...currentColorOrder];
-                if (idx !== correctIndex) {
-                    variation = getRandomColorOrder(currentSides);
+                let variation;
+
+                if (idx === correctIndex) {
+                    variation = [...currentColorOrder];
+                } else {
+                    // Keep generating until we get a unique variation
+                    do {
+                        variation = getRandomColorOrder(currentSides);
+                    } while (usedVariations.has(JSON.stringify(variation)));
+
+                    usedVariations.add(JSON.stringify(variation));
+                    variations[idx] = variation;
                 }
+
                 drawTopDownWithInnerLines(ctx, currentSides, variation);
 
                 canvas.onclick = () => {
