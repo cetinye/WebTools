@@ -2,12 +2,12 @@
 <html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Renk Küpü Mantık Oyunu</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: sans-serif;
             background-color: #f0f2f5;
             color: #333;
             display: flex;
@@ -65,53 +65,42 @@
         }
 
         .question-mark {
-            font-size: 50px;
+            font-size: 1;
             font-weight: bold;
-            color: #1877f2;
-            text-anchor: middle;
-            dominant-baseline: middle;
+            fill: #1877f2;
         }
 
         .options-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
 
         .option-btn {
-            background-color: #e7f3ff;
-            border: 2px solid #1877f2;
-            color: #1877f2;
-            padding: 15px;
-            font-size: 1.2em;
-            font-weight: bold;
+            width: 80px;
+            height: 80px;
+            border: 3px solid transparent;
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            text-transform: capitalize;
+            transition: transform 0.2s ease-in-out;
         }
 
         .option-btn:hover:not(:disabled) {
-            background-color: #1877f2;
-            color: white;
+            transform: scale(1.05);
         }
 
         .option-btn:disabled {
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
         .option-btn.correct {
-            background-color: #42b72a;
-            border-color: #3ba325;
-            color: white;
+            border-color: #42b72a;
         }
 
         .option-btn.incorrect {
-            background-color: #fa3e3e;
-            border-color: #e02828;
-            color: white;
+            border-color: #fa3e3e;
         }
 
         #feedback {
@@ -129,25 +118,16 @@
             font-size: 1.1em;
             border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
     </style>
 </head>
 
 <body>
-
     <div class="game-container">
         <h1>Renk Küpü Mantık Oyunu</h1>
-        <p>Küp her adımda aynı yöne doğru döndürülmektedir. Beyaz yüzeyde hangi renk olmalıdır?</p>
-
-        <div class="cube-sequence" id="cube-sequence">
-        </div>
-
-        <div class="options-container" id="options-container">
-        </div>
-
+        <div class="cube-sequence" id="cube-sequence"></div>
+        <div class="options-container" id="options-container"></div>
         <div id="feedback"></div>
-
         <button id="new-game-btn">Yeni Oyun</button>
     </div>
 
@@ -159,10 +139,7 @@
             const newGameBtn = document.getElementById('new-game-btn');
 
             let correctAnswer;
-            let cubeState;
-            let currentRotationFunction; // Stores the randomly selected rotation for the game
 
-            // Define colors for the cube faces, mapped to standard die numbers
             const faceColors = {
                 1: 'red',
                 2: 'green',
@@ -172,25 +149,26 @@
                 6: 'orange'
             };
 
-            /**
-             * Creates an SVG representation of a 3D-like cube with colored faces.
-             * @param {Object} faces - An object indicating the number (and thus color) on each visible face (top, front, right).
-             * 'question' key can be true to draw a white face with a question mark on the front.
-             * @returns {SVGElement} The SVG element representing the cube.
-             */
             function createCubeSVG(faces) {
                 const svgNS = "http://www.w3.org/2000/svg";
                 const svg = document.createElementNS(svgNS, "svg");
                 svg.setAttribute('viewBox', '-2 -2 4 4');
 
-                // Define polygon data for each cube face in the 3D projection
                 const faceDefs = {
-                    top: { points: "0,-1.5 1.73,-0.75 0,0 -1.73,-0.75", fill: faceColors[faces.top] || '#f7f7f7' },
-                    front: { points: "-1.73,-0.75 0,0 0,1.5 -1.73,0.75", fill: faces.question ? 'white' : (faceColors[faces.front] || '#e0e0e0') },
-                    right: { points: "1.73,-0.75 1.73,0.75 0,1.5 0,0", fill: faceColors[faces.right] || '#cccccc' }
+                    top: {
+                        points: "0,-1.5 1.73,-0.75 0,0 -1.73,-0.75",
+                        fill: (faces.question && faces.tracked === 'top') ? 'white' : (faceColors[faces.top] || '#f7f7f7')
+                    },
+                    front: {
+                        points: "-1.73,-0.75 0,0 0,1.5 -1.73,0.75",
+                        fill: (faces.question && faces.tracked === 'front') ? 'white' : (faceColors[faces.front] || '#e0e0e0')
+                    },
+                    right: {
+                        points: "1.73,-0.75 1.73,0.75 0,1.5 0,0",
+                        fill: (faces.question && faces.tracked === 'right') ? 'white' : (faceColors[faces.right] || '#cccccc')
+                    }
                 };
 
-                // Draw the polygon faces
                 Object.values(faceDefs).forEach(face => {
                     const polygon = document.createElementNS(svgNS, "polygon");
                     polygon.setAttribute("points", face.points);
@@ -200,12 +178,23 @@
                     svg.appendChild(polygon);
                 });
 
-                // Add question mark if requested for the front face
-                if (faces.question) {
+                if (faces.question && ['top', 'front', 'right'].includes(faces.tracked)) {
                     const qMark = document.createElementNS(svgNS, "text");
-                    qMark.setAttribute("x", "-0.865"); // Center of the 'front' face polygon's x-coordinates
-                    qMark.setAttribute("y", "0.375");  // Center of the 'front' face polygon's y-coordinates
-                    qMark.classList.add("question-mark");
+
+                    const positions = {
+                        top: { x: 0, y: -0.6 },
+                        front: { x: -0.87, y: 0.375 },
+                        right: { x: 0.87, y: 0.375 }
+                    };
+
+                    const pos = positions[faces.tracked];
+
+                    qMark.setAttribute("x", pos.x);
+                    qMark.setAttribute("y", pos.y);
+                    qMark.setAttribute("text-anchor", "middle");
+                    qMark.setAttribute("dominant-baseline", "middle");
+                    qMark.setAttribute("font-size", "1");
+                    qMark.setAttribute("fill", "#1877f2");
                     qMark.textContent = "?";
                     svg.appendChild(qMark);
                 }
@@ -213,10 +202,6 @@
                 return svg;
             }
 
-            /**
-             * Shuffles an array in place using the Fisher-Yates algorithm.
-             * @param {Array} array The array to shuffle.
-             */
             function shuffleArray(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -224,114 +209,196 @@
                 }
             }
 
-            // Define the four possible rotation functions
-            const rotationFunctions = [
-                // Roll Forward: front -> top, top -> back, back -> bottom, bottom -> front
-                () => {
-                    const { front, back, top, bottom } = cubeState;
-                    cubeState.front = top; cubeState.top = back;
-                    cubeState.back = bottom; cubeState.bottom = front;
-                },
-                // Roll Backward: front -> bottom, bottom -> back, back -> top, top -> front
-                () => {
-                    const { front, back, top, bottom } = cubeState;
-                    cubeState.front = bottom; cubeState.bottom = back;
-                    cubeState.back = top; cubeState.top = front;
-                },
-                // Tilt Left: top -> right, right -> bottom, bottom -> left, left -> top
-                () => {
-                    const { top, bottom, left, right } = cubeState;
-                    cubeState.top = right; cubeState.right = bottom;
-                    cubeState.bottom = left; cubeState.left = top;
-                },
-                // Tilt Right: top -> left, left -> bottom, bottom -> right, right -> top
-                () => {
-                    const { top, bottom, left, right } = cubeState;
-                    cubeState.top = left; cubeState.left = bottom;
-                    cubeState.bottom = right; cubeState.right = top;
-                }
-            ];
+            // Dönüş fonksiyonları
+            const rotations = {
+                rollForward: (cube, tracked) => {
+                    const newCube = { ...cube };
+                    const { front, back, top, bottom } = cube;
+                    newCube.front = top;
+                    newCube.top = back;
+                    newCube.back = bottom;
+                    newCube.bottom = front;
 
-            /**
-             * Initializes a new game round.
-             * Sets up the cube sequence, the correct answer, and the answer options.
-             */
+                    const trackingMap = { front: "top", top: "back", back: "bottom", bottom: "front" };
+                    const newTracked = trackingMap[tracked] || tracked;
+
+                    return { cube: newCube, tracked: newTracked };
+                },
+
+                rollBackward: (cube, tracked) => {
+                    const newCube = { ...cube };
+                    const { front, back, top, bottom } = cube;
+                    newCube.front = bottom;
+                    newCube.bottom = back;
+                    newCube.back = top;
+                    newCube.top = front;
+
+                    const trackingMap = { front: "bottom", bottom: "back", back: "top", top: "front" };
+                    const newTracked = trackingMap[tracked] || tracked;
+
+                    return { cube: newCube, tracked: newTracked };
+                },
+
+                tiltLeft: (cube, tracked) => {
+                    const newCube = { ...cube };
+                    const { top, bottom, left, right } = cube;
+                    newCube.top = right;
+                    newCube.right = bottom;
+                    newCube.bottom = left;
+                    newCube.left = top;
+
+                    const trackingMap = { top: "right", right: "bottom", bottom: "left", left: "top" };
+                    const newTracked = trackingMap[tracked] || tracked;
+
+                    return { cube: newCube, tracked: newTracked };
+                },
+
+                tiltRight: (cube, tracked) => {
+                    const newCube = { ...cube };
+                    const { top, bottom, left, right } = cube;
+                    newCube.top = left;
+                    newCube.left = bottom;
+                    newCube.bottom = right;
+                    newCube.right = top;
+
+                    const trackingMap = { top: "left", left: "bottom", bottom: "right", right: "top" };
+                    const newTracked = trackingMap[tracked] || tracked;
+
+                    return { cube: newCube, tracked: newTracked };
+                }
+            };
+
+            function findValidRotationSequence() {
+                const visibleFaces = ['top', 'front', 'right'];
+                const rotationNames = Object.keys(rotations);
+
+                // Tüm olası dönüş kombinasyonlarını dene
+                for (let attempts = 0; attempts < 500; attempts++) {
+                    // Rastgele başlangıç durumu
+                    let cubeState = { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 };
+                    let trackedFace = visibleFaces[Math.floor(Math.random() * visibleFaces.length)]; // Görünür yüzeyden başla
+
+                    // Rastgele karıştırma
+                    const mixCount = Math.floor(Math.random() * 15) + 10;
+                    for (let i = 0; i < mixCount; i++) {
+                        const randomRotation = rotationNames[Math.floor(Math.random() * rotationNames.length)];
+                        const result = rotations[randomRotation](cubeState, trackedFace);
+                        cubeState = result.cube;
+                        trackedFace = result.tracked;
+                    }
+
+                    // Her dönüş fonksiyonunu dene
+                    for (let rotationName of rotationNames) {
+                        let testCube = { ...cubeState };
+                        let testTracked = trackedFace;
+
+                        // 3 adım simüle et
+                        for (let step = 0; step < 3; step++) {
+                            const result = rotations[rotationName](testCube, testTracked);
+                            testCube = result.cube;
+                            testTracked = result.tracked;
+                        }
+
+                        // 3 adım sonunda (4. adımda) takip edilen yüzey görünür olmalı
+                        if (visibleFaces.includes(testTracked)) {
+                            console.log(`Geçerli kombinasyon bulundu: ${rotationName}, son pozisyon: ${testTracked}`);
+                            return {
+                                initialCube: cubeState,
+                                initialTracked: trackedFace,
+                                rotationName: rotationName
+                            };
+                        }
+                    }
+                }
+
+                console.warn("Geçerli kombinasyon bulunamadı, varsayılan kullanılıyor");
+                // Yedek plan: rollForward ile top takibi
+                return {
+                    initialCube: { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 },
+                    initialTracked: "top",
+                    rotationName: "rollForward"
+                };
+            }
+
             function newGame() {
-                // Clear previous game elements
                 cubeSequenceContainer.innerHTML = '';
                 optionsContainer.innerHTML = '';
                 feedbackEl.textContent = '';
-                feedbackEl.style.color = '';
 
-                // Initialize cube faces with standard die numbers (which map to colors)
-                // This corresponds to the standard die layout where opposite faces sum to 7
-                cubeState = { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 };
+                // Geçerli bir dönüş dizisi bul
+                const gameSetup = findValidRotationSequence();
+                let cubeState = gameSetup.initialCube;
+                let trackedFace = gameSetup.initialTracked;
+                const rotationFunction = rotations[gameSetup.rotationName];
 
-                // Randomize initial cube orientation with several arbitrary rotations
-                const initialOrientations = Math.floor(Math.random() * 10) + 5;
-                for (let i = 0; i < initialOrientations; i++) {
-                    rotationFunctions[Math.floor(Math.random() * rotationFunctions.length)]();
+                // 4 adımı oluştur ve doğru cevabı belirle
+                const steps = [];
+                let finalCubeState, finalTrackedFace;
+
+                for (let i = 0; i < 4; i++) {
+                    steps.push({
+                        top: cubeState.top,
+                        front: cubeState.front,
+                        right: cubeState.right,
+                        tracked: trackedFace
+                    });
+
+                    if (i < 3) {
+                        const result = rotationFunction(cubeState, trackedFace);
+                        cubeState = result.cube;
+                        trackedFace = result.tracked;
+                    }
+
+                    // Son adımda doğru cevabı kaydet
+                    if (i === 3) {
+                        finalCubeState = cubeState;
+                        finalTrackedFace = trackedFace;
+                    }
                 }
 
-                // Select a random rotation function for this game's sequence
-                currentRotationFunction = rotationFunctions[Math.floor(Math.random() * rotationFunctions.length)];
+                // Doğru cevabı belirle (4. adımdaki takip edilen yüzeyin rengi)
+                correctAnswer = faceColors[finalCubeState[finalTrackedFace]];
 
-                // Display the first 3 states of the cube
-                for (let i = 1; i <= 3; i++) {
+                // Küp görsellerini çiz
+                const visibleFaces = ['top', 'front', 'right'];
+                steps.forEach((faces, index) => {
                     const cubeContainer = document.createElement('div');
                     cubeContainer.className = 'cube-container';
-                    // Pass the current cube state to createCubeSVG
-                    const facesToShow = { top: cubeState.top, front: cubeState.front, right: cubeState.right };
-                    cubeContainer.appendChild(createCubeSVG(facesToShow));
+
+                    const showFaces = { ...faces };
+                    if (index === 3 && visibleFaces.includes(faces.tracked)) {
+                        showFaces.question = true;
+                    }
+
+                    cubeContainer.appendChild(createCubeSVG(showFaces));
                     const label = document.createElement('div');
                     label.className = 'label';
-                    label.textContent = `${i}. HÂLİ`; // "State"
+                    label.textContent = `${index + 1}.`;
                     cubeContainer.appendChild(label);
                     cubeSequenceContainer.appendChild(cubeContainer);
+                });
 
-                    // Apply the chosen rotation for the next state
-                    currentRotationFunction();
-                }
-
-                // Store the correct answer (the color of the front face after the rotations)
-                correctAnswer = faceColors[cubeState.front];
-
-                // Add the 4th cube, which will have a white front face with a question mark
-                const questionContainer = document.createElement('div');
-                questionContainer.className = 'cube-container';
-                // Pass true for the 'question' parameter to draw the special target face
-                questionContainer.appendChild(createCubeSVG({ top: cubeState.top, front: cubeState.front, right: cubeState.right, question: true }));
-                const qLabel = document.createElement('div');
-                qLabel.className = 'label';
-                qLabel.textContent = `4. HÂLİ`;
-                questionContainer.appendChild(qLabel);
-                cubeSequenceContainer.appendChild(questionContainer);
-
-                // Create answer options (colors)
+                // Şıkları üret
                 const options = [correctAnswer];
                 const allColors = Object.values(faceColors);
                 const otherColors = allColors.filter(color => color !== correctAnswer);
                 shuffleArray(otherColors);
-                // Add 3 other random unique colors as options
                 options.push(...otherColors.slice(0, 3));
-                shuffleArray(options); // Shuffle all options to randomize button order
+                shuffleArray(options);
 
                 options.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'option-btn';
-                    btn.textContent = opt;
+                    btn.style.backgroundColor = opt;
+                    btn.style.borderColor = opt;
                     btn.onclick = () => checkAnswer(opt, btn);
                     optionsContainer.appendChild(btn);
                 });
+
+                window.correctIndex = options.findIndex(opt => opt === correctAnswer);
             }
 
-            /**
-             * Checks the selected answer against the correct answer and provides feedback.
-             * @param {string} selected The color string selected by the user.
-             * @param {HTMLButtonElement} btn The button element that was clicked.
-             */
             function checkAnswer(selected, btn) {
-                // Disable all option buttons after a choice is made
                 const buttons = optionsContainer.querySelectorAll('.option-btn');
                 buttons.forEach(b => b.disabled = true);
 
@@ -343,23 +410,42 @@
                     feedbackEl.textContent = `Yanlış! Doğru cevap "${correctAnswer}" olmalıydı.`;
                     feedbackEl.style.color = '#fa3e3e';
                     btn.classList.add('incorrect');
-                    // Highlight the correct answer if the user was wrong
                     buttons.forEach(b => {
-                        if (b.textContent === correctAnswer) {
+                        // Butona tıklanan rengi al ve normalize et
+                        const btnColor = b.style.backgroundColor;
+                        const colorName = getColorNameFromStyle(btnColor);
+                        if (colorName === correctAnswer) {
                             b.classList.add('correct');
                         }
                     });
                 }
             }
 
-            // Event listener for the "New Game" button
-            newGameBtn.addEventListener('click', newGame);
+            // CSS renk stilinden renk adını çeviren yardımcı fonksiyon
+            function getColorNameFromStyle(styleColor) {
+                const colorMap = {
+                    'red': 'red',
+                    'green': 'green',
+                    'blue': 'blue',
+                    'yellow': 'yellow',
+                    'purple': 'purple',
+                    'orange': 'orange',
+                    'rgb(255, 0, 0)': 'red',
+                    'rgb(0, 128, 0)': 'green',
+                    'rgb(0, 0, 255)': 'blue',
+                    'rgb(255, 255, 0)': 'yellow',
+                    'rgb(128, 0, 128)': 'purple',
+                    'rgb(255, 165, 0)': 'orange'
+                };
 
-            // Initialize the game when the page loads
+                const normalized = styleColor.replace(/\s/g, '').toLowerCase();
+                return colorMap[normalized] || styleColor;
+            }
+
+            newGameBtn.addEventListener('click', newGame);
             newGame();
         });
     </script>
-
 </body>
 
 </html>
