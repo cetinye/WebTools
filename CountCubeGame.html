@@ -211,43 +211,53 @@
 
         // Define possible cube positions in a 3D grid
         function generateCubeStructure() {
-            const minCubes = 8;
             const maxCubes = 20;
-            const numCubes = Math.floor(Math.random() * (maxCubes - minCubes + 1)) + minCubes;
+            const minCubes = 10;
+            const totalCubes = Math.floor(Math.random() * (maxCubes - minCubes + 1)) + minCubes;
 
-            // Start with a base cube at origin
-            let positions = [{ x: 0, y: 0, z: 0 }];
+            const directions = [
+                { x: 1, z: 0 },
+                { x: -1, z: 0 },
+                { x: 0, z: 1 },
+                { x: 0, z: -1 }
+            ];
 
-            // Add connected cubes
-            for (let i = 1; i < numCubes; i++) {
-                let validPositions = [];
+            const used = new Set();
+            const columns = new Map(); // key: "x,z", value: height
+            const positions = [];
 
-                // Find all adjacent positions to existing cubes
-                positions.forEach(pos => {
-                    const adjacent = [
-                        { x: pos.x + 1, y: pos.y, z: pos.z },
-                        { x: pos.x - 1, y: pos.y, z: pos.z },
-                        { x: pos.x, y: pos.y + 1, z: pos.z },
-                        { x: pos.x, y: pos.y - 1, z: pos.z },
-                        { x: pos.x, y: pos.y, z: pos.z + 1 },
-                        { x: pos.x, y: pos.y, z: pos.z - 1 }
-                    ];
+            // Start with first cube at ground
+            positions.push({ x: 0, y: 0, z: 0 });
+            used.add("0,0,0");
+            columns.set("0,0", 1); // height 1 (only ground layer)
 
-                    adjacent.forEach(adjPos => {
-                        // Check if position is not already occupied
-                        if (!positions.some(p => p.x === adjPos.x && p.y === adjPos.y && p.z === adjPos.z)) {
-                            // Avoid floating cubes - ensure at least one support
-                            if (adjPos.y <= 0 || positions.some(p =>
-                                p.x === adjPos.x && p.y === adjPos.y - 1 && p.z === adjPos.z)) {
-                                validPositions.push(adjPos);
-                            }
+            while (positions.length < totalCubes) {
+                const baseKeys = Array.from(columns.keys());
+                const baseKey = baseKeys[Math.floor(Math.random() * baseKeys.length)];
+                const [bx, bz] = baseKey.split(',').map(Number);
+
+                // Try adding a neighbor ground cube
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const nx = bx + dir.x;
+                const nz = bz + dir.z;
+                const colKey = `${nx},${nz}`;
+                const groundKey = `${nx},0,${nz}`;
+
+                if (!columns.has(colKey)) {
+                    // Compute height based on depth (x + z)
+                    const depthFactor = nx + nz;
+                    const height = Math.min(3, 1 + Math.floor(Math.abs(depthFactor) % 3)); // varies 1–3
+
+                    // Build full column up to height
+                    for (let y = 0; y < height; y++) {
+                        const cubeKey = `${nx},${y},${nz}`;
+                        if (!used.has(cubeKey)) {
+                            used.add(cubeKey);
+                            positions.push({ x: nx, y: y, z: nz });
                         }
-                    });
-                });
+                    }
 
-                if (validPositions.length > 0) {
-                    const randomPos = validPositions[Math.floor(Math.random() * validPositions.length)];
-                    positions.push(randomPos);
+                    columns.set(colKey, height);
                 }
             }
 
@@ -262,14 +272,32 @@
             structure.className = 'cube-structure';
             structure.style.transform = 'rotateX(-20deg) rotateY(45deg)';
 
+            // === STEP 1: Calculate bounding box ===
+            const xs = positions.map(p => p.x);
+            const ys = positions.map(p => p.y);
+            const zs = positions.map(p => p.z);
+
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+            const minZ = Math.min(...zs);
+            const maxZ = Math.max(...zs);
+
+            const offsetX = (minX + maxX) / 2;
+            const offsetY = (minY + maxY) / 2;
+            const offsetZ = (minZ + maxZ) / 2;
+
+            // === STEP 2: Create and position cubes ===
             positions.forEach(pos => {
                 const cube = document.createElement('div');
                 cube.className = 'cube';
 
-                // Position cube in 3D space
-                const x = pos.x * 56;
-                const y = -pos.y * 56; // Negative because screen Y is inverted
-                const z = pos.z * 56;
+                const cubeSize = 56; // 50px + 6px borders
+
+                const x = (pos.x - offsetX) * cubeSize;
+                const y = -(pos.y - offsetY) * cubeSize;
+                const z = (pos.z - offsetZ) * cubeSize;
 
                 cube.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
 
@@ -287,6 +315,7 @@
             container.appendChild(structure);
             return positions.length;
         }
+
 
         function generateAnswerChoices(correctAnswer) {
             const choices = [correctAnswer];
@@ -322,6 +351,8 @@
                 button.onclick = () => checkAnswer(choice, correctAnswer, button);
                 container.appendChild(button);
             });
+
+            document.getElementById('correctIndex').textContent = choices.indexOf(correctAnswer);
         }
 
         function checkAnswer(selected, correct, buttonElement) {
@@ -372,9 +403,11 @@
             renderAnswerButtons(choices, currentAnswer);
         }
 
-        // Initialize game
-        generateNewPuzzle();
+        setTimeout(() => {
+            generateNewPuzzle();
+        }, 500);
     </script>
+    <div id="correctIndex" style="display: none;"></div>
 </body>
 
 </html>

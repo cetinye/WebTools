@@ -22,22 +22,28 @@
 
         nav {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 20px;
-            width: 520px;
-            /* 2 sütun * 250px + gap */
         }
 
         a {
             text-decoration: none;
             background-color: #007bff;
             color: white;
-            padding: 15px 20px;
+            padding: 20px 20px;
             border-radius: 8px;
             text-align: center;
             font-weight: bold;
             transition: background-color 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .red-button {
+            background-color: #ff0000;
+        }
+
+        .red-button:hover {
+            background-color: #b30000;
         }
 
         a:hover {
@@ -49,6 +55,7 @@
 <body>
 
     <h1>Web Tools</h1>
+    <h2> Kırmızılar eklendi, maviler eklenecek.</h2>
 
     <nav>
         <a href="CircleStack.html">Circle Stack</a>
@@ -57,13 +64,13 @@
         <a href="GuessImagePiece.html">Guess Image Piece</a>
         <a href="GuessPuzzlePiece.html">Guess Puzzle Piece</a>
         <a href="GuessTilePiece.html">Guess Tile Piece</a>
-        <a href="GuessTrianglePiece.html">Guess Triangle Piece</a>
-        <a href="GuessCirclePiece.html">Guess Circle Piece</a>
+        <a href="GuessTrianglePiece.html" class="red-button">Guess Triangle Piece</a>
+        <a href="GuessCirclePiece.html" class="red-button">Guess Circle Piece</a>
         <a href="ShapeEncryption.html">Shape Encryption</a>
         <a href="LetterEncryption.html">Letter Encryption</a>
-        <a href="PyramidPerspective.html">Pyramid Perspective</a>
-        <a href="NextStepCircle.html">Next Step Circle</a>
-        <a href="DiceGame.html">Dice Game</a>
+        <a href="PyramidPerspective.html" class="red-button">Pyramid Perspective</a>
+        <a href="NextStepCircle.html" class="red-button">Next Step Circle</a>
+        <a href="DiceGame.html" class="red-button">Dice Game</a>
         <a href="SymbolWordGame.html">Symbol Word Game</a>
         <a href="AnimalWordGame.html">Animal Word Game</a>
         <a href="CubePerspectiveGame.html">Cube Perspective Game</a>
@@ -71,7 +78,7 @@
         <a href="LineHexagonPerspective.html">Line Hexagon Perspective</a>
         <a href="CubeGapPerspectiveGame.html">Cube Gap Perspective Game</a>
         <a href="NumberSeriesMemory.html">Number Series Memory</a>
-        <a href="CountCubeGame.html">Count Cube Game</a>
+        <a href="CountCubeGame.html" class="red-button">Count Cube Game</a>
         <a href="DiceRotationGame.html">Dice Rotation Game</a>
     </nav>
 
