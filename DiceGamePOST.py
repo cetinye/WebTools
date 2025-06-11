@@ -37,9 +37,9 @@ for i in range(1, NUM_QUESTIONS + 1):
 
     # === Soru görünümünü al
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-    game_container = driver.find_element(By.CLASS_NAME, "game-container")
-    game_container.screenshot(question_path)
-    resize_image(question_path, (1190, 330))
+    question_elem = driver.find_element(By.ID, "question-area")
+    question_elem.screenshot(question_path)
+    resize_image(question_path, (1000, 300))
 
     # === Bekle: 4 şık gelsin
     WebDriverWait(driver, 5).until(lambda d: len(d.find_elements(By.CSS_SELECTOR, ".options button")) == 4)
