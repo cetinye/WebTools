@@ -134,6 +134,9 @@
         </div>
     </div>
 
+    <!-- ✅ Doğru şık burada saklanıyor -->
+    <div id="correctIndex" style="display: none;"></div>
+
     <script>
         let correctAnswer;
 
@@ -188,11 +191,17 @@
 
             const opts = generateOptions(correctAnswer);
             const buttons = document.querySelectorAll(".options button");
+            let correctIndex = -1;
+
             buttons.forEach((btn, index) => {
                 btn.innerHTML = '';
                 btn.dataset.value = opts[index];
                 btn.appendChild(createDie(opts[index]));
+                if (opts[index] === correctAnswer) correctIndex = index;
             });
+
+            // ✅ doğru şık indeksini yaz
+            document.getElementById("correctIndex").textContent = correctIndex;
         }
 
         function checkAnswer(button) {
