@@ -159,6 +159,15 @@
 
         options.sort(() => 0.5 - Math.random());
 
+        // options dizisi random hale getirildikten hemen sonra
+        const correctIndex = options.findIndex(opt => arraysEqual(opt, correct));
+
+        const correctIndexDiv = document.createElement("div");
+        correctIndexDiv.id = "correctIndex";
+        correctIndexDiv.style.display = "none";
+        correctIndexDiv.textContent = correctIndex;
+        document.body.appendChild(correctIndexDiv);
+
         // Seçenekler
         options.forEach(opt => {
             const mini = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -199,7 +208,9 @@
         function arraysEqual(a, b) {
             return a.length === b.length && a.every((v, i) => v === b[i]);
         }
+        document.body.insertAdjacentHTML("beforeend", `<div id="correctIndex" style="display: none;">${correctIndex}</div>`);
     </script>
+    <div id="correctIndex" style="display: none;">2</div>
 </body>
 
 </html>
