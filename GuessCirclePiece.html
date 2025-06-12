@@ -39,6 +39,14 @@
             background-color: #6cf;
         }
 
+        .yellow {
+            background-color: #fd7;
+        }
+
+        .purple {
+            background-color: #c9f;
+        }
+
         .empty {
             background-color: #eee;
         }
@@ -159,19 +167,35 @@
             grid.appendChild(cell);
         });
 
-        const correctIndex = Math.floor(Math.random() * 4);
+        const fakeColors = ["red", "green", "blue", "yellow", "purple"];
+        const generatedPatterns = new Set();
+        generatedPatterns.add(missingColors.join("-"));
+
+        function generateUniquePattern() {
+            while (true) {
+                const candidate = shape.map(() => fakeColors[Math.floor(Math.random() * fakeColors.length)]);
+                const key = candidate.join("-");
+                if (!generatedPatterns.has(key)) {
+                    generatedPatterns.add(key);
+                    return candidate;
+                }
+            }
+        }
+
         const options = [];
+        const correctIndex = Math.floor(Math.random() * 4);
+
         for (let i = 0; i < 4; i++) {
             const option = document.createElement("div");
             option.classList.add("option");
             option.dataset.id = i;
             option.style.gridTemplateColumns = `repeat(${Math.max(...shape.map(([x]) => x)) + 1}, 20px)`;
 
-            const fakeColors = ["red", "green", "blue"];
-            const pattern = (i === correctIndex ? missingColors : shape.map(() => fakeColors[Math.floor(Math.random() * 3)]));
+            const pattern = (i === correctIndex)
+                ? missingColors
+                : generateUniquePattern();
 
             const gridMap = new Map(shape.map((pos, idx) => [pos.join(","), pattern[idx]]));
-
             const maxX = Math.max(...shape.map(([x]) => x));
             const maxY = Math.max(...shape.map(([_, y]) => y));
 
@@ -203,9 +227,9 @@
                 }
             });
         });
+
         document.body.insertAdjacentHTML("beforeend", `<div id="correctIndex" style="display: none;">${correctIndex}</div>`);
     </script>
-    <div id="correctIndex" style="display: none;">${correctIndex}</div>
 </body>
 
 </html>
