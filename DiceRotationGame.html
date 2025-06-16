@@ -60,8 +60,8 @@
         }
 
         .cube-container svg {
-            width: 100px;
-            height: 100px;
+            width: 140px;
+            height: 140px;
         }
 
         .question-mark {
@@ -152,19 +152,19 @@
             function createCubeSVG(faces) {
                 const svgNS = "http://www.w3.org/2000/svg";
                 const svg = document.createElementNS(svgNS, "svg");
-                svg.setAttribute('viewBox', '-2 -2 4 4');
+                svg.setAttribute('viewBox', '-1.5 -1.5 3 3'); // Daha orantılı bir alan
 
                 const faceDefs = {
                     top: {
-                        points: "0,-1.5 1.73,-0.75 0,0 -1.73,-0.75",
+                        points: "0,-1 1,-0.5 0,0 -1,-0.5",
                         fill: (faces.question && faces.tracked === 'top') ? 'white' : (faceColors[faces.top] || '#f7f7f7')
                     },
                     front: {
-                        points: "-1.73,-0.75 0,0 0,1.5 -1.73,0.75",
+                        points: "-1,-0.5 0,0 0,1 -1,0.5",
                         fill: (faces.question && faces.tracked === 'front') ? 'white' : (faceColors[faces.front] || '#e0e0e0')
                     },
                     right: {
-                        points: "1.73,-0.75 1.73,0.75 0,1.5 0,0",
+                        points: "1,-0.5 1,0.5 0,1 0,0",
                         fill: (faces.question && faces.tracked === 'right') ? 'white' : (faceColors[faces.right] || '#cccccc')
                     }
                 };
@@ -182,9 +182,9 @@
                     const qMark = document.createElementNS(svgNS, "text");
 
                     const positions = {
-                        top: { x: 0, y: -0.6 },
-                        front: { x: -0.87, y: 0.375 },
-                        right: { x: 0.87, y: 0.375 }
+                        top: { x: 0, y: -0.45 },
+                        front: { x: -0.5, y: 0.275 },
+                        right: { x: 0.5, y: 0.275 }
                     };
 
                     const pos = positions[faces.tracked];
@@ -193,7 +193,7 @@
                     qMark.setAttribute("y", pos.y);
                     qMark.setAttribute("text-anchor", "middle");
                     qMark.setAttribute("dominant-baseline", "middle");
-                    qMark.setAttribute("font-size", "1");
+                    qMark.setAttribute("font-size", "0.6");
                     qMark.setAttribute("fill", "#1877f2");
                     qMark.textContent = "?";
                     svg.appendChild(qMark);
