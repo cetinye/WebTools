@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Renk Küpü Mantık Oyunu</title>
+    <title>Küp Mantık Oyunu</title>
     <style>
         body {
             font-family: sans-serif;
@@ -33,12 +33,6 @@
             margin-bottom: 20px;
         }
 
-        p {
-            font-size: 1.1em;
-            color: #606770;
-            margin-bottom: 30px;
-        }
-
         .cube-sequence {
             display: flex;
             justify-content: center;
@@ -64,26 +58,25 @@
             height: 140px;
         }
 
-        .question-mark {
-            font-size: 1;
-            font-weight: bold;
-            fill: #1877f2;
-        }
-
         .options-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
+            justify-content: center;
         }
 
         .option-btn {
             width: 80px;
             height: 80px;
-            border: 3px solid transparent;
+            border: 3px solid #ccc;
             border-radius: 12px;
             cursor: pointer;
             transition: transform 0.2s ease-in-out;
+            font-size: 2.5em;
+            /* For symbols */
+            background-color: #f7f7f7;
+            color: #333;
         }
 
         .option-btn:hover:not(:disabled) {
@@ -96,11 +89,13 @@
         }
 
         .option-btn.correct {
-            border-color: #42b72a;
+            border-color: #42b72a !important;
+            background-color: #e8f5e9;
         }
 
         .option-btn.incorrect {
-            border-color: #fa3e3e;
+            border-color: #fa3e3e !important;
+            background-color: #ffebee;
         }
 
         #feedback {
@@ -111,24 +106,38 @@
         }
 
         #new-game-btn {
-            background-color: #42b72a;
+            background-color: #1877f2;
             color: white;
             border: none;
             padding: 12px 25px;
             font-size: 1.1em;
             border-radius: 8px;
             cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
         }
     </style>
 </head>
 
 <body>
     <div class="game-container">
-        <h1>Renk Küpü Mantık Oyunu</h1>
+        <h1 id="game-title">Renk Küpü Mantık Oyunu</h1>
         <div class="cube-sequence" id="cube-sequence"></div>
         <div class="options-container" id="options-container"></div>
         <div id="feedback"></div>
         <button id="new-game-btn">Yeni Oyun</button>
+        <div class="game-controls">
+            <label>
+                <input type="checkbox" id="symbol-mode-toggle">
+                Sembol Modu
+            </label>
+        </div>
     </div>
 
     <script>
@@ -137,58 +146,52 @@
             const optionsContainer = document.getElementById('options-container');
             const feedbackEl = document.getElementById('feedback');
             const newGameBtn = document.getElementById('new-game-btn');
+            const symbolModeToggle = document.getElementById('symbol-mode-toggle');
+            const gameTitle = document.getElementById('game-title');
 
             let correctAnswer;
+            let useSymbols = true; // The boolean switch for the new mechanic
 
-            const faceColors = {
-                1: 'red',
-                2: 'green',
-                3: 'blue',
-                4: 'yellow',
-                5: 'purple',
-                6: 'orange'
-            };
+            const faceColors = { 1: 'red', 2: 'green', 3: 'blue', 4: 'yellow', 5: 'purple', 6: 'orange' };
+            const faceSymbols = ['★', '♥', '♦', '♣', '♠', '●'];
 
-            function createCubeSVG(faces) {
+            function createCubeSVG(faces, faceMap, useSymbols) {
                 const svgNS = "http://www.w3.org/2000/svg";
                 const svg = document.createElementNS(svgNS, "svg");
-                svg.setAttribute('viewBox', '-1.5 -1.5 3 3'); // Daha orantılı bir alan
+                svg.setAttribute('viewBox', '-1.5 -1.5 3 3');
 
                 const faceDefs = {
-                    top: {
-                        points: "0,-1 1,-0.5 0,0 -1,-0.5",
-                        fill: (faces.question && faces.tracked === 'top') ? 'white' : (faceColors[faces.top] || '#f7f7f7')
-                    },
-                    front: {
-                        points: "-1,-0.5 0,0 0,1 -1,0.5",
-                        fill: (faces.question && faces.tracked === 'front') ? 'white' : (faceColors[faces.front] || '#e0e0e0')
-                    },
-                    right: {
-                        points: "1,-0.5 1,0.5 0,1 0,0",
-                        fill: (faces.question && faces.tracked === 'right') ? 'white' : (faceColors[faces.right] || '#cccccc')
-                    }
+                    top: { key: 'top', points: "0,-1 1,-0.5 0,0 -1,-0.5", defaultFill: '#f7f7f7', value: faces.top, textPos: { x: 0, y: -0.45 } },
+                    front: { key: 'front', points: "-1,-0.5 0,0 0,1 -1,0.5", defaultFill: '#e0e0e0', value: faces.front, textPos: { x: -0.5, y: 0.275 } },
+                    right: { key: 'right', points: "1,-0.5 1,0.5 0,1 0,0", defaultFill: '#cccccc', value: faces.right, textPos: { x: 0.5, y: 0.275 } }
                 };
 
                 Object.values(faceDefs).forEach(face => {
+                    const isQuestionFace = faces.question && faces.tracked === face.key;
+
                     const polygon = document.createElementNS(svgNS, "polygon");
                     polygon.setAttribute("points", face.points);
-                    polygon.setAttribute("fill", face.fill);
+                    polygon.setAttribute("fill", isQuestionFace ? 'white' : (useSymbols ? face.defaultFill : faceMap[face.value]));
                     polygon.setAttribute("stroke", "#555");
                     polygon.setAttribute("stroke-width", "0.05");
                     svg.appendChild(polygon);
+
+                    if (useSymbols && !isQuestionFace) {
+                        const symbolText = document.createElementNS(svgNS, "text");
+                        symbolText.setAttribute("x", face.textPos.x);
+                        symbolText.setAttribute("y", face.textPos.y);
+                        symbolText.setAttribute("text-anchor", "middle");
+                        symbolText.setAttribute("dominant-baseline", "middle");
+                        symbolText.setAttribute("font-size", "0.6");
+                        symbolText.setAttribute("fill", "#333");
+                        symbolText.textContent = faceMap[face.value];
+                        svg.appendChild(symbolText);
+                    }
                 });
 
                 if (faces.question && ['top', 'front', 'right'].includes(faces.tracked)) {
                     const qMark = document.createElementNS(svgNS, "text");
-
-                    const positions = {
-                        top: { x: 0, y: -0.45 },
-                        front: { x: -0.5, y: 0.275 },
-                        right: { x: 0.5, y: 0.275 }
-                    };
-
-                    const pos = positions[faces.tracked];
-
+                    const pos = faceDefs[faces.tracked].textPos;
                     qMark.setAttribute("x", pos.x);
                     qMark.setAttribute("y", pos.y);
                     qMark.setAttribute("text-anchor", "middle");
@@ -198,7 +201,6 @@
                     qMark.textContent = "?";
                     svg.appendChild(qMark);
                 }
-
                 return svg;
             }
 
@@ -209,62 +211,30 @@
                 }
             }
 
-            // Dönüş fonksiyonları
             const rotations = {
                 rollForward: (cube, tracked) => {
-                    const newCube = { ...cube };
                     const { front, back, top, bottom } = cube;
-                    newCube.front = top;
-                    newCube.top = back;
-                    newCube.back = bottom;
-                    newCube.bottom = front;
-
+                    const newCube = { ...cube, front: top, top: back, back: bottom, bottom: front };
                     const trackingMap = { front: "top", top: "back", back: "bottom", bottom: "front" };
-                    const newTracked = trackingMap[tracked] || tracked;
-
-                    return { cube: newCube, tracked: newTracked };
+                    return { cube: newCube, tracked: trackingMap[tracked] || tracked };
                 },
-
                 rollBackward: (cube, tracked) => {
-                    const newCube = { ...cube };
                     const { front, back, top, bottom } = cube;
-                    newCube.front = bottom;
-                    newCube.bottom = back;
-                    newCube.back = top;
-                    newCube.top = front;
-
+                    const newCube = { ...cube, front: bottom, bottom: back, back: top, top: front };
                     const trackingMap = { front: "bottom", bottom: "back", back: "top", top: "front" };
-                    const newTracked = trackingMap[tracked] || tracked;
-
-                    return { cube: newCube, tracked: newTracked };
+                    return { cube: newCube, tracked: trackingMap[tracked] || tracked };
                 },
-
                 tiltLeft: (cube, tracked) => {
-                    const newCube = { ...cube };
                     const { top, bottom, left, right } = cube;
-                    newCube.top = right;
-                    newCube.right = bottom;
-                    newCube.bottom = left;
-                    newCube.left = top;
-
+                    const newCube = { ...cube, top: right, right: bottom, bottom: left, left: top };
                     const trackingMap = { top: "right", right: "bottom", bottom: "left", left: "top" };
-                    const newTracked = trackingMap[tracked] || tracked;
-
-                    return { cube: newCube, tracked: newTracked };
+                    return { cube: newCube, tracked: trackingMap[tracked] || tracked };
                 },
-
                 tiltRight: (cube, tracked) => {
-                    const newCube = { ...cube };
                     const { top, bottom, left, right } = cube;
-                    newCube.top = left;
-                    newCube.left = bottom;
-                    newCube.bottom = right;
-                    newCube.right = top;
-
+                    const newCube = { ...cube, top: left, left: bottom, bottom: right, right: top };
                     const trackingMap = { top: "left", left: "bottom", bottom: "right", right: "top" };
-                    const newTracked = trackingMap[tracked] || tracked;
-
-                    return { cube: newCube, tracked: newTracked };
+                    return { cube: newCube, tracked: trackingMap[tracked] || tracked };
                 }
             };
 
@@ -272,52 +242,29 @@
                 const visibleFaces = ['top', 'front', 'right'];
                 const rotationNames = Object.keys(rotations);
 
-                // Tüm olası dönüş kombinasyonlarını dene
                 for (let attempts = 0; attempts < 500; attempts++) {
-                    // Rastgele başlangıç durumu
                     let cubeState = { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 };
-                    let trackedFace = visibleFaces[Math.floor(Math.random() * visibleFaces.length)]; // Görünür yüzeyden başla
+                    let trackedFace = visibleFaces[Math.floor(Math.random() * visibleFaces.length)];
 
-                    // Rastgele karıştırma
                     const mixCount = Math.floor(Math.random() * 15) + 10;
                     for (let i = 0; i < mixCount; i++) {
                         const randomRotation = rotationNames[Math.floor(Math.random() * rotationNames.length)];
-                        const result = rotations[randomRotation](cubeState, trackedFace);
-                        cubeState = result.cube;
-                        trackedFace = result.tracked;
+                        ({ cube: cubeState, tracked: trackedFace } = rotations[randomRotation](cubeState, trackedFace));
                     }
 
-                    // Her dönüş fonksiyonunu dene
                     for (let rotationName of rotationNames) {
                         let testCube = { ...cubeState };
                         let testTracked = trackedFace;
-
-                        // 3 adım simüle et
                         for (let step = 0; step < 3; step++) {
-                            const result = rotations[rotationName](testCube, testTracked);
-                            testCube = result.cube;
-                            testTracked = result.tracked;
+                            ({ cube: testCube, tracked: testTracked } = rotations[rotationName](testCube, testTracked));
                         }
-
-                        // 3 adım sonunda (4. adımda) takip edilen yüzey görünür olmalı
                         if (visibleFaces.includes(testTracked)) {
-                            console.log(`Geçerli kombinasyon bulundu: ${rotationName}, son pozisyon: ${testTracked}`);
-                            return {
-                                initialCube: cubeState,
-                                initialTracked: trackedFace,
-                                rotationName: rotationName
-                            };
+                            return { initialCube: cubeState, initialTracked: trackedFace, rotationName: rotationName };
                         }
                     }
                 }
-
-                console.warn("Geçerli kombinasyon bulunamadı, varsayılan kullanılıyor");
-                // Yedek plan: rollForward ile top takibi
-                return {
-                    initialCube: { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 },
-                    initialTracked: "top",
-                    rotationName: "rollForward"
-                };
+                console.warn("Valid combination not found, using default.");
+                return { initialCube: { front: 1, back: 6, top: 2, bottom: 5, left: 4, right: 3 }, initialTracked: "top", rotationName: "rollForward" };
             }
 
             function newGame() {
@@ -325,52 +272,38 @@
                 optionsContainer.innerHTML = '';
                 feedbackEl.textContent = '';
 
-                // Geçerli bir dönüş dizisi bul
+                useSymbols = symbolModeToggle.checked;
+                gameTitle.textContent = useSymbols ? 'Sembol Küpü Mantık Oyunu' : 'Renk Küpü Mantık Oyunu';
+
+                let faceMap;
+                if (useSymbols) {
+                    const shuffledSymbols = [...faceSymbols];
+                    shuffleArray(shuffledSymbols);
+                    faceMap = { 1: shuffledSymbols[0], 2: shuffledSymbols[1], 3: shuffledSymbols[2], 4: shuffledSymbols[3], 5: shuffledSymbols[4], 6: shuffledSymbols[5] };
+                } else {
+                    faceMap = faceColors;
+                }
+
                 const gameSetup = findValidRotationSequence();
                 let cubeState = gameSetup.initialCube;
                 let trackedFace = gameSetup.initialTracked;
                 const rotationFunction = rotations[gameSetup.rotationName];
 
-                // 4 adımı oluştur ve doğru cevabı belirle
                 const steps = [];
-                let finalCubeState, finalTrackedFace;
-
                 for (let i = 0; i < 4; i++) {
-                    steps.push({
-                        top: cubeState.top,
-                        front: cubeState.front,
-                        right: cubeState.right,
-                        tracked: trackedFace
-                    });
-
-                    if (i < 3) {
-                        const result = rotationFunction(cubeState, trackedFace);
-                        cubeState = result.cube;
-                        trackedFace = result.tracked;
-                    }
-
-                    // Son adımda doğru cevabı kaydet
+                    steps.push({ top: cubeState.top, front: cubeState.front, right: cubeState.right, tracked: trackedFace });
                     if (i === 3) {
-                        finalCubeState = cubeState;
-                        finalTrackedFace = trackedFace;
+                        correctAnswer = faceMap[cubeState[trackedFace]];
+                    } else {
+                        ({ cube: cubeState, tracked: trackedFace } = rotationFunction(cubeState, trackedFace));
                     }
                 }
 
-                // Doğru cevabı belirle (4. adımdaki takip edilen yüzeyin rengi)
-                correctAnswer = faceColors[finalCubeState[finalTrackedFace]];
-
-                // Küp görsellerini çiz
-                const visibleFaces = ['top', 'front', 'right'];
                 steps.forEach((faces, index) => {
                     const cubeContainer = document.createElement('div');
                     cubeContainer.className = 'cube-container';
-
-                    const showFaces = { ...faces };
-                    if (index === 3 && visibleFaces.includes(faces.tracked)) {
-                        showFaces.question = true;
-                    }
-
-                    cubeContainer.appendChild(createCubeSVG(showFaces));
+                    const showFaces = { ...faces, question: (index === 3) };
+                    cubeContainer.appendChild(createCubeSVG(showFaces, faceMap, useSymbols));
                     const label = document.createElement('div');
                     label.className = 'label';
                     label.textContent = `${index + 1}.`;
@@ -378,24 +311,24 @@
                     cubeSequenceContainer.appendChild(cubeContainer);
                 });
 
-                // Şıkları üret
-                const options = [correctAnswer];
-                const allColors = Object.values(faceColors);
-                const otherColors = allColors.filter(color => color !== correctAnswer);
-                shuffleArray(otherColors);
-                options.push(...otherColors.slice(0, 3));
+                const allItems = Object.values(faceMap);
+                const otherItems = allItems.filter(item => item !== correctAnswer);
+                shuffleArray(otherItems);
+                const options = [correctAnswer, ...otherItems.slice(0, 3)];
                 shuffleArray(options);
 
                 options.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'option-btn';
-                    btn.style.backgroundColor = opt;
-                    btn.style.borderColor = opt;
+                    btn.dataset.value = opt;
+                    if (useSymbols) {
+                        btn.textContent = opt;
+                    } else {
+                        btn.style.backgroundColor = opt;
+                    }
                     btn.onclick = () => checkAnswer(opt, btn);
                     optionsContainer.appendChild(btn);
                 });
-
-                window.correctIndex = options.findIndex(opt => opt === correctAnswer);
             }
 
             function checkAnswer(selected, btn) {
@@ -411,39 +344,16 @@
                     feedbackEl.style.color = '#fa3e3e';
                     btn.classList.add('incorrect');
                     buttons.forEach(b => {
-                        // Butona tıklanan rengi al ve normalize et
-                        const btnColor = b.style.backgroundColor;
-                        const colorName = getColorNameFromStyle(btnColor);
-                        if (colorName === correctAnswer) {
+                        if (b.dataset.value === correctAnswer) {
                             b.classList.add('correct');
                         }
                     });
                 }
             }
 
-            // CSS renk stilinden renk adını çeviren yardımcı fonksiyon
-            function getColorNameFromStyle(styleColor) {
-                const colorMap = {
-                    'red': 'red',
-                    'green': 'green',
-                    'blue': 'blue',
-                    'yellow': 'yellow',
-                    'purple': 'purple',
-                    'orange': 'orange',
-                    'rgb(255, 0, 0)': 'red',
-                    'rgb(0, 128, 0)': 'green',
-                    'rgb(0, 0, 255)': 'blue',
-                    'rgb(255, 255, 0)': 'yellow',
-                    'rgb(128, 0, 128)': 'purple',
-                    'rgb(255, 165, 0)': 'orange'
-                };
-
-                const normalized = styleColor.replace(/\s/g, '').toLowerCase();
-                return colorMap[normalized] || styleColor;
-            }
-
             newGameBtn.addEventListener('click', newGame);
-            newGame();
+            symbolModeToggle.addEventListener('change', newGame);
+            newGame(); // Initial game start
         });
     </script>
 </body>
