@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Top Down Circle Perspective</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            max-width: 95%;
+        }
+
+        #question-overlay {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            transition: top 0.2s ease;
+        }
+
+        .icon {
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .arrow {
+            font-size: 24px;
+            line-height: 1;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        #main {
+            margin-top: 100px;
+            display: block;
+        }
+
+        #options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .option {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option:hover {
+            transform: scale(1.05);
+        }
+
+        .correct {
+            outline: 4px solid green;
+        }
+
+        .wrong {
+            outline: 4px solid red;
+        }
+
+        button {
+            margin: 30px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <div id="question-overlay">
+            <div class="icon">👁️</div>
+            <div class="arrow">⬇️</div>
+        </div>
+
+        <svg id="main" width="800" height="500"></svg>
+    </div>
+
+    <div id="options"></div>
+    <div id="correctIndex" style="display: none;"></div>
+    <button onclick="startGame()">Yeni Soru</button>
+
+    <script>
+        const ENABLE_RANDOM_ORDER = true;
+        const MIN_LAYERS = 2;
+        const MAX_LAYERS = 4;
+
+        const COLORS = [
+            "#f94144", "#f3722c", "#f8961e", "#f9c74f",
+            "#90be6d", "#43aa8b", "#577590", "#277da1",
+            "#6a1b9a", "#00bcd4", "#ef6c00", "#512da8", "#009688", "#ff6f91"
+        ];
+
+        const svgMain = document.getElementById("main");
+        const optionsDiv = document.getElementById("options");
+        const questionOverlay = document.getElementById("question-overlay");
+
+        const base = {
+            x: 400,
+            y: 320,
+            rxOuter: 160,
+            ryOuter: 80,
+            height: 40,
+            rxInnerFactor: 0.85
+        };
+
+        function getRandomColor(exclude = []) {
+            const filtered = COLORS.filter(c => !exclude.includes(c));
+            return filtered[Math.floor(Math.random() * filtered.length)];
+        }
+
+        function generateRandomStack(count) {
+            const stack = [];
+            let usedColors = [];
+            for (let i = 0; i < count; i++) {
+                const outer = getRandomColor(usedColors);
+                usedColors.push(outer);
+                const inner = getRandomColor(usedColors);
+                usedColors.push(inner);
+                stack.push({ outer, inner });
+            }
+
+            if (ENABLE_RANDOM_ORDER) {
+                for (let i = stack.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [stack[i], stack[j]] = [stack[j], stack[i]];
+                }
+            }
+
+            return stack;
+        }
+
+        function drawMainStack(stack) {
+            svgMain.innerHTML = '';
+            let { x, y, rxOuter, ryOuter, height, rxInnerFactor } = base;
+
+            const firstTopY = y - (height * 0.9 * (stack.length - 1));
+            questionOverlay.style.top = (firstTopY - 50) + "px";
+
+            for (let i = 0; i < stack.length; i++) {
+                const outer = stack[i].outer;
+                const inner = stack[i].inner;
+                const rxInner = rxOuter * rxInnerFactor;
+                const ryInner = ryOuter * rxInnerFactor;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `
+          M${x - rxOuter},${y}
+          A${rxOuter},${ryOuter} 0 0 1 ${x + rxOuter},${y}
+          L${x + rxOuter},${y + height}
+          A${rxOuter},${ryOuter} 0 0 1 ${x - rxOuter},${y + height}
+          Z
+        `);
+                path.setAttribute("fill", outer);
+                svgMain.appendChild(path);
+
+                const topOuter = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                topOuter.setAttribute("cx", x);
+                topOuter.setAttribute("cy", y);
+                topOuter.setAttribute("rx", rxOuter);
+                topOuter.setAttribute("ry", ryOuter);
+                topOuter.setAttribute("fill", outer);
+                svgMain.appendChild(topOuter);
+
+                const topInner = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                topInner.setAttribute("cx", x);
+                topInner.setAttribute("cy", y);
+                topInner.setAttribute("rx", rxInner);
+                topInner.setAttribute("ry", ryInner);
+                topInner.setAttribute("fill", inner);
+                svgMain.appendChild(topInner);
+
+                rxOuter = rxInner * 0.85;
+                ryOuter = ryInner * 0.85;
+                y -= height * 0.9;
+            }
+        }
+
+        function drawOption(stack, isCorrect) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", 160);
+            svg.setAttribute("height", 160);
+            svg.classList.add("option");
+
+            const cx = 80, cy = 80;
+            let rx = 70, ry = 70;
+
+            const colors = stack.flatMap(layer => [layer.outer, layer.inner]);
+
+            for (let i = 0; i < colors.length; i++) {
+                const ring = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                ring.setAttribute("cx", cx);
+                ring.setAttribute("cy", cy);
+                ring.setAttribute("rx", rx);
+                ring.setAttribute("ry", ry);
+                ring.setAttribute("fill", colors[i]);
+                svg.appendChild(ring);
+
+                rx *= 0.85;
+                ry *= 0.85;
+            }
+
+            svg.onclick = () => {
+                if (isCorrect) {
+                    svg.classList.add("correct");
+                } else {
+                    svg.classList.add("wrong");
+                    document.querySelector('[data-correct="true"]')?.classList.add("correct");
+                }
+            };
+
+            svg.dataset.correct = isCorrect;
+            optionsDiv.appendChild(svg);
+        }
+
+        function startGame() {
+            optionsDiv.innerHTML = '';
+
+            const layerCount = Math.floor(Math.random() * 3) + 2; // 2 ile 4 arasında rastgele
+            const stacks = new Set();
+
+            const correctStack = generateRandomStack(layerCount);
+            stacks.add(JSON.stringify(correctStack));
+            drawMainStack(correctStack);
+
+            const options = [{ stack: correctStack, isCorrect: true }];
+            while (options.length < 4) {
+                const newStack = generateRandomStack(layerCount);
+                if (!stacks.has(JSON.stringify(newStack))) {
+                    stacks.add(JSON.stringify(newStack));
+                    options.push({ stack: newStack, isCorrect: false });
+                }
+            }
+
+            const shuffled = options.sort(() => Math.random() - 0.5);
+            const correctIndex = shuffled.findIndex(opt => opt.isCorrect);
+            document.getElementById("correctIndex").textContent = correctIndex;
+
+            shuffled.forEach(opt => drawOption(opt.stack, opt.isCorrect));
+        }
+
+        startGame();
+    </script>
+</body>
+
+</html>
