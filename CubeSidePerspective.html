@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>İzometrik Görünüm Oyunu</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            justify-content: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        canvas {
+            border: 2px solid #aaa;
+            margin: 10px;
+            background-color: #fff;
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .option {
+            border: 3px solid #333;
+            cursor: pointer;
+            background: #fff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .option:hover {
+            transform: scale(1.05);
+        }
+
+        .option.correct-answer {
+            border-color: green;
+            box-shadow: 0 0 15px rgba(0, 128, 0, 0.7);
+        }
+
+        .option.wrong-answer {
+            border-color: red;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Bu Yapıya Yukarıdan (Tepeden) Bakılsaydı Hangisi Gözükürdü?</h2>
+    <canvas id="mainCanvas" width="500" height="500"></canvas>
+    <div class="options" id="optionsContainer"></div>
+    <button onclick="startGame()">Yeni Oyun</button>
+
+    <script>
+        const canvas = document.getElementById("mainCanvas");
+        const ctx = canvas.getContext("2d");
+        const CUBE_SIZE = 40;
+        const GRID_SIZE = 3;
+        const MAX_HEIGHT = 4;
+
+        const colors = {
+            red: ['#ff4d4d', '#cc0000', '#990000'],
+            blue: ['#4d4dff', '#0000cc', '#000099'],
+            yellow: ['#ffff66', '#cccc00', '#999900'],
+            green: ['#66ff66', '#00cc00', '#009900'],
+            purple: ['#e6a1e6', '#a100a1', '#6b006b']
+        };
+        const colorKeys = Object.keys(colors);
+
+        function drawIsometricCube(x, y, color) {
+            const [top, left, right] = colors[color];
+            const s = CUBE_SIZE;
+
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(x - s, y - s / 2);
+            ctx.lineTo(x - s, y + s / 2);
+            ctx.lineTo(x, y + s);
+            ctx.lineTo(x, y);
+            ctx.closePath();
+            ctx.fillStyle = left;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + s, y - s / 2);
+            ctx.lineTo(x + s, y + s / 2);
+            ctx.lineTo(x, y + s);
+            ctx.closePath();
+            ctx.fillStyle = right;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + s, y - s / 2);
+            ctx.lineTo(x, y - s);
+            ctx.lineTo(x - s, y - s / 2);
+            ctx.closePath();
+            ctx.fillStyle = top;
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawTopViewIndicator(ctx, canvasWidth) {
+            ctx.save();
+            const centerX = canvasWidth / 2;
+            const startY = 40;
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            ctx.strokeText('👁️', centerX, startY - 10);
+            ctx.fillText('👁️', centerX, startY - 10);
+            ctx.strokeText('⬇️', centerX, startY + 20);
+            ctx.fillText('⬇️', centerX, startY + 20);
+            ctx.restore();
+        }
+
+        function generateStructure() {
+            let structure;
+            let valid = false;
+            while (!valid) {
+                structure = [];
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    structure[x] = [];
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        const height = Math.floor(Math.random() * MAX_HEIGHT);
+                        structure[x][y] = [];
+                        for (let z = 0; z < height; z++) {
+                            const color = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                            structure[x][y].push(color);
+                        }
+                    }
+                }
+                const top = getTopView(structure);
+                valid = top.flat().some(cell => cell !== null);
+            }
+            return structure;
+        }
+
+        function drawStructure(structure) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cubesToDraw = [];
+
+            for (let x = 0; x < GRID_SIZE; x++) {
+                for (let y = 0; y < GRID_SIZE; y++) {
+                    for (let z = 0; z < MAX_HEIGHT; z++) {
+                        const cubeColor = structure[x][y][z];
+                        if (cubeColor) {
+                            const isoX = canvas.width / 2 + (x - y) * (CUBE_SIZE * 0.87);
+                            const isoY = canvas.height / 2 + (x + y) * (CUBE_SIZE * 0.44) - z * CUBE_SIZE;
+                            cubesToDraw.push({ isoX: isoX, isoY: isoY, z: z, gridX: x, gridY: y, color: cubeColor });
+                        }
+                    }
+                }
+            }
+
+            cubesToDraw.sort((a, b) => {
+                if (a.gridY !== b.gridY) return a.gridY - b.gridY;
+                if (a.gridX !== b.gridX) return a.gridX - b.gridX;
+                return a.z - b.z;
+            });
+
+            cubesToDraw.forEach(cube => drawIsometricCube(cube.isoX, cube.isoY, cube.color));
+            drawTopViewIndicator(ctx, canvas.width);
+        }
+
+        function getTopView(structure) {
+            const view = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    let topColor = null;
+                    for (let z = MAX_HEIGHT - 1; z >= 0; z--) {
+                        if (structure[x][y][z]) {
+                            topColor = structure[x][y][z];
+                            break;
+                        }
+                    }
+                    view[y][x] = topColor;
+                }
+            }
+            return view;
+        }
+
+        function drawView(view, container, isCorrect = false) {
+            const optionCanvas = document.createElement("canvas");
+            optionCanvas.width = 90;
+            optionCanvas.height = 90;
+            optionCanvas.className = 'option';
+            const optCtx = optionCanvas.getContext('2d');
+
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    const color = view[row][col];
+                    optCtx.fillStyle = color ? colors[color][1] : "#ddd";
+                    optCtx.fillRect(col * 30 + 1, row * 30 + 1, 28, 28);
+                    optCtx.strokeStyle = "#000";
+                    optCtx.strokeRect(col * 30 + 1, row * 30 + 1, 28, 28);
+                }
+            }
+
+            optionCanvas.onclick = () => {
+                document.querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('correct-answer', 'wrong-answer');
+                });
+
+                if (isCorrect) {
+                    optionCanvas.classList.add('correct-answer');
+                    setTimeout(() => { alert("✅ Doğru cevap!"); }, 100);
+                } else {
+                    optionCanvas.classList.add('wrong-answer');
+                    const correctOption = document.querySelector('.option.is-correct');
+                    if (correctOption) {
+                        correctOption.classList.add('correct-answer');
+                    }
+                    setTimeout(() => { alert("❌ Yanlış cevap!"); }, 100);
+                }
+            }
+
+            if (isCorrect) {
+                optionCanvas.classList.add('is-correct');
+            }
+
+            container.appendChild(optionCanvas);
+        }
+
+        function generateWrongView(correctView) {
+            const view = JSON.parse(JSON.stringify(correctView));
+            let changesMade = 0;
+            const minChanges = 1;
+            const maxAttempts = 50;
+
+            for (let attempt = 0; attempt < maxAttempts && changesMade < minChanges; attempt++) {
+                const r = Math.floor(Math.random() * GRID_SIZE);
+                const c = Math.floor(Math.random() * GRID_SIZE);
+
+                const originalValue = correctView[r][c];
+                let newValue = view[r][c];
+
+                if (originalValue !== null) {
+                    if (Math.random() < 0.6) {
+                        let newColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                        while (newColor === originalValue && colorKeys.length > 1) {
+                            newColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                        }
+                        newValue = newColor;
+                    } else {
+                        newValue = null;
+                    }
+                } else {
+                    newValue = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                }
+
+                if (newValue !== originalValue) {
+                    view[r][c] = newValue;
+                    changesMade++;
+                }
+            }
+
+            return view;
+        }
+
+        function startGame() {
+            const structure = generateStructure();
+            drawStructure(structure);
+
+            const correctView = getTopView(structure);
+            const wrongViews = [];
+
+            let attempts = 0;
+            while (wrongViews.length < 3 && attempts < 100) {
+                const wrong = generateWrongView(correctView);
+                const isDuplicate = JSON.stringify(wrong) === JSON.stringify(correctView) ||
+                    wrongViews.some(v => JSON.stringify(v) === JSON.stringify(wrong));
+                if (!isDuplicate) {
+                    wrongViews.push(wrong);
+                }
+                attempts++;
+            }
+
+            const allOptions = [
+                { view: correctView, correct: true },
+                ...wrongViews.map(v => ({ view: v, correct: false }))
+            ].sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById("optionsContainer");
+            container.innerHTML = '';
+            allOptions.forEach(opt => drawView(opt.view, container, opt.correct));
+        }
+
+        startGame();
+    </script>
+</body>
+
+</html>
