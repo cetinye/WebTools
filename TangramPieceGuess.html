@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tangram Piece Guess</title>
+    <style>
+        /* Stil kodunda değişiklik yok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            text-align: center;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            width: 90%;
+        }
+
+        #main-target-display {
+            width: 100%;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background-color: #fcfcfc;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 350px;
+        }
+
+        #main-target-display svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            width: 400px;
+            height: 350px;
+        }
+
+        #options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .option-box {
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .option-box:hover {
+            border-color: #aed6f1;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .option-box.selected {
+            border-color: #3498db;
+            box-shadow: 0 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .option-box.correct {
+            border-color: #27ae60;
+            background-color: #e6f7ee;
+            box-shadow: 0 0 0 5px rgba(39, 174, 96, 0.3);
+        }
+
+        .option-box.incorrect {
+            border-color: #e74c3c;
+            background-color: #fbecec;
+            animation: shake 0.3s ease-in-out;
+            box-shadow: 0 0 0 5px rgba(231, 76, 60, 0.3);
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .option-box svg {
+            width: 100%;
+            height: auto;
+            max-width: 200px;
+            max-height: 150px;
+            display: block;
+        }
+
+        .color-orange {
+            fill: #FF9800;
+        }
+
+        .color-blue {
+            fill: #2196F3;
+        }
+
+        .color-purple {
+            fill: #9C27B0;
+        }
+
+        .color-red {
+            fill: #F44336;
+        }
+
+        .color-green {
+            fill: #4CAF50;
+        }
+
+        .color-yellow {
+            fill: #FFEB3B;
+        }
+
+        .color-teal {
+            fill: #009688;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-align: center;
+            min-height: 25px;
+        }
+
+        #message.correct-msg {
+            color: #27ae60;
+        }
+
+        #message.incorrect-msg {
+            color: #e74c3c;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <div id="main-target-display">
+            <p>Akıllı şekil üretiliyor...</p>
+        </div>
+        <div id="options-container">
+            <p>Seçenekler üretiliyor...</p>
+        </div>
+        <div id="message"></div>
+        <button onclick="checkSelection()">Cevabı Kontrol Et</button>
+        <button onclick="nextPuzzle()">Yeni Şekil Üret</button>
+    </div>
+
+    <script>
+        const mainTargetDisplay = document.getElementById('main-target-display');
+        const optionsContainer = document.getElementById('options-container');
+        const messageDiv = document.getElementById('message');
+        let correctShapeData = [];
+        let selectedOption = null;
+
+        const pieceColors = ['orange', 'blue', 'purple', 'red', 'green', 'yellow', 'teal'];
+        const TOLERANCE = 0.1;
+
+        // Her parçanın köşe ve "bağlantı noktası" bilgileri
+        const piecesData = {
+            largeTriangle: {
+                vertices: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 100 }],
+                connections: [
+                    { p1: 0, p2: 1, len: 100, mid: { x: 50, y: 0 }, norm: { x: 0, y: -1 } },
+                    { p1: 1, p2: 2, len: 141.4, mid: { x: 50, y: 50 }, norm: { x: 0.707, y: 0.707 } },
+                    { p1: 2, p2: 0, len: 100, mid: { x: 0, y: 50 }, norm: { x: -1, y: 0 } },
+                ]
+            },
+            mediumTriangle: {
+                vertices: [{ x: 0, y: 0 }, { x: 70.7, y: 0 }, { x: 0, y: 70.7 }],
+                connections: [
+                    { p1: 0, p2: 1, len: 70.7, mid: { x: 35.35, y: 0 }, norm: { x: 0, y: -1 } },
+                    { p1: 1, p2: 2, len: 100, mid: { x: 35.35, y: 35.35 }, norm: { x: 0.707, y: 0.707 } },
+                    { p1: 2, p2: 0, len: 70.7, mid: { x: 0, y: 35.35 }, norm: { x: -1, y: 0 } },
+                ]
+            },
+            smallTriangle: {
+                vertices: [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 0, y: 50 }],
+                connections: [
+                    { p1: 0, p2: 1, len: 50, mid: { x: 25, y: 0 }, norm: { x: 0, y: -1 } },
+                    { p1: 1, p2: 2, len: 70.7, mid: { x: 25, y: 25 }, norm: { x: 0.707, y: 0.707 } },
+                    { p1: 2, p2: 0, len: 50, mid: { x: 0, y: 25 }, norm: { x: -1, y: 0 } },
+                ]
+            },
+            square: {
+                vertices: [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 50, y: 50 }, { x: 0, y: 50 }],
+                connections: [
+                    { p1: 0, p2: 1, len: 50, mid: { x: 25, y: 0 }, norm: { x: 0, y: -1 } },
+                    { p1: 1, p2: 2, len: 50, mid: { x: 50, y: 25 }, norm: { x: 1, y: 0 } },
+                    { p1: 2, p2: 3, len: 50, mid: { x: 25, y: 50 }, norm: { x: 0, y: 1 } },
+                    { p1: 3, p2: 0, len: 50, mid: { x: 0, y: 25 }, norm: { x: -1, y: 0 } },
+                ]
+            },
+            parallelogram: {
+                vertices: [{ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 75, y: 50 }, { x: 25, y: 50 }],
+                connections: [
+                    { p1: 0, p2: 1, len: 50, mid: { x: 25, y: 0 }, norm: { x: 0, y: -1 } },
+                    { p1: 1, p2: 2, len: 55.9, mid: { x: 62.5, y: 25 }, norm: { x: 0.89, y: -0.45 } },
+                    { p1: 2, p2: 3, len: 50, mid: { x: 50, y: 50 }, norm: { x: 0, y: 1 } },
+                    { p1: 3, p2: 0, len: 55.9, mid: { x: 12.5, y: 25 }, norm: { x: -0.89, y: 0.45 } },
+                ]
+            }
+        };
+
+        // --- Çarpışma Kontrolü (Hala Gerekli) ---
+        function getTransformedVertices(piece) {
+            const vertices = piecesData[piece.type].vertices;
+            const angleRad = piece.angle * Math.PI / 180;
+            const cos = Math.cos(angleRad); const sin = Math.sin(angleRad);
+            return vertices.map(v => ({ x: v.x * cos - v.y * sin + piece.pos.x, y: v.x * sin + v.y * cos + piece.pos.y }));
+        }
+        function project(vertices, axis) {
+            let min = Infinity, max = -Infinity;
+            for (const v of vertices) { const p = v.x * axis.x + v.y * axis.y; if (p < min) min = p; if (p > max) max = p; }
+            return { min, max };
+        }
+        function polygonsIntersect(polyA, polyB) {
+            const verticesA = getTransformedVertices(polyA); const verticesB = getTransformedVertices(polyB);
+            const polygons = [verticesA, verticesB];
+            for (let i = 0; i < polygons.length; i++) {
+                const polygon = polygons[i];
+                for (let j = 0; j < polygon.length; j++) {
+                    const v1 = polygon[j]; const v2 = polygon[(j + 1) % polygon.length];
+                    const edge = { x: v2.x - v1.x, y: v2.y - v1.y }; const axis = { x: -edge.y, y: edge.x };
+                    const p1 = project(verticesA, axis); const p2 = project(verticesB, axis);
+                    if (p1.min > p2.max - TOLERANCE || p2.min > p1.max - TOLERANCE) return false;
+                }
+            }
+            return true;
+        }
+
+        function checkSelection() {
+            if (!selectedOption) {
+                messageDiv.textContent = "Lütfen bir seçenek seçin!";
+                messageDiv.className = 'incorrect-msg';
+                return;
+            }
+
+            // Seçilen kutu içindeki 'isCorrect' bilgisine ulaş
+            const isCorrect = selectedOption.isCorrect;
+            const allBoxes = document.querySelectorAll('.option-box');
+
+            // Tüm kutuları temizle
+            allBoxes.forEach(box => {
+                box.classList.remove('correct', 'incorrect', 'selected');
+            });
+
+            // Seçilen kutuya sınıf ekle
+            if (isCorrect) {
+                selectedOption.element.classList.add('correct');
+                messageDiv.textContent = "Doğru! Harikasın!";
+                messageDiv.className = 'correct-msg';
+            } else {
+                selectedOption.element.classList.add('incorrect');
+                messageDiv.textContent = "Yanlış cevap. Doğru olan yeşil kutudur.";
+                messageDiv.className = 'incorrect-msg';
+
+                // Doğru kutuyu bulup yeşil yap
+                allBoxes.forEach(box => {
+                    if (box._isCorrect === true) {
+                        box.classList.add('correct');
+                    }
+                });
+            }
+        }
+
+
+        // --- YENİ "BAĞLANTI NOKTASI" ÜRETİM ALGORİTMASI ---
+        function generateRandomShape() {
+            let masterAttempts = 0;
+            while (masterAttempts < 100) { // Donmaya karşı ana döngü
+                masterAttempts++;
+                let availablePieces = [{ type: 'largeTriangle' }, { type: 'largeTriangle' }, { type: 'mediumTriangle' }, { type: 'square' }, { type: 'parallelogram' }, { type: 'smallTriangle' }, { type: 'smallTriangle' }];
+                shuffleArray(availablePieces);
+
+                let placedPieces = [];
+                let openConnections = [];
+
+                // 1. Tohum parçayı yerleştir
+                const firstPieceType = availablePieces.pop().type;
+                const firstPiece = { type: firstPieceType, pos: { x: 0, y: 0 }, angle: 0, colorIndex: 0 };
+                placedPieces.push(firstPiece);
+                piecesData[firstPieceType].connections.forEach((conn, index) => {
+                    openConnections.push({ pieceIndex: 0, connectionIndex: index });
+                });
+
+                let success = true;
+                while (availablePieces.length > 0) {
+                    const nextPieceType = availablePieces[availablePieces.length - 1].type;
+                    let isPlaced = false;
+
+                    shuffleArray(openConnections);
+
+                    for (let i = 0; i < openConnections.length && !isPlaced; i++) {
+                        const anchorConnRef = openConnections[i];
+                        const newPieceConns = piecesData[nextPieceType].connections.slice();
+                        shuffleArray(newPieceConns);
+
+                        for (const snappingConnDef of newPieceConns) {
+                            if (Math.abs(anchorConnRef.len - snappingConnDef.len) > TOLERANCE) continue;
+
+                            const { newPiece, isValid } = tryPlacingPiece(nextPieceType, placedPieces, anchorConnRef, snappingConnDef);
+
+                            if (isValid) {
+                                newPiece.colorIndex = placedPieces.length;
+                                placedPieces.push(newPiece);
+                                availablePieces.pop();
+
+                                openConnections.splice(i, 1);
+                                const newPieceIndex = placedPieces.length - 1;
+                                piecesData[nextPieceType].connections.forEach((conn, index) => {
+                                    if (index !== newPieceConns.indexOf(snappingConnDef)) {
+                                        openConnections.push({ pieceIndex: newPieceIndex, connectionIndex: index, len: conn.len });
+                                    }
+                                });
+                                isPlaced = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPlaced) { success = false; break; }
+                }
+
+                if (success) {
+                    let finalCenter = { x: 0, y: 0 }; let totalVertices = 0;
+                    placedPieces.forEach(p => { const vertices = getTransformedVertices(p); vertices.forEach(v => { finalCenter.x += v.x; finalCenter.y += v.y; }); totalVertices += vertices.length; });
+                    finalCenter.x /= totalVertices; finalCenter.y /= totalVertices;
+                    const shiftX = 200 - finalCenter.x; const shiftY = 175 - finalCenter.y;
+                    return placedPieces.map(p => ({ ...p, pos: { x: p.pos.x + shiftX, y: p.pos.y + shiftY } }));
+                }
+            }
+            console.error("Üretim başarısız. Güvenli mod şekli kullanılıyor.");
+            return generateFallbackShape();
+        }
+
+        function tryPlacingPiece(nextPieceType, placedPieces, anchorConnRef, snappingConnDef) {
+            const anchorPiece = placedPieces[anchorConnRef.pieceIndex];
+            const anchorConnDef = piecesData[anchorPiece.type].connections[anchorConnRef.connectionIndex];
+
+            // 1. Anchor bağlantı noktasının dünya koordinatlarını bul
+            const anchorAngleRad = anchorPiece.angle * Math.PI / 180;
+            const cosA = Math.cos(anchorAngleRad); const sinA = Math.sin(anchorAngleRad);
+            const anchorMidPointWorld = {
+                x: anchorConnDef.mid.x * cosA - anchorConnDef.mid.y * sinA + anchorPiece.pos.x,
+                y: anchorConnDef.mid.x * sinA + anchorConnDef.mid.y * cosA + anchorPiece.pos.y
+            };
+            const anchorNormalWorld = {
+                x: anchorConnDef.norm.x * cosA - anchorConnDef.norm.y * sinA,
+                y: anchorConnDef.norm.x * sinA + anchorConnDef.norm.y * cosA
+            };
+
+            // 2. Yeni parçanın açısını hesapla
+            const snappingNormalLocal = snappingConnDef.norm;
+            const angleToAlign = Math.atan2(anchorNormalWorld.y, anchorNormalWorld.x) - Math.atan2(snappingNormalLocal.y, snappingNormalLocal.x) + Math.PI;
+            const newAngle = angleToAlign * 180 / Math.PI;
+
+            // 3. Yeni parçanın pozisyonunu hesapla
+            const cosN = Math.cos(angleToAlign); const sinN = Math.sin(angleToAlign);
+            const snappingMidPointLocal = snappingConnDef.mid;
+            const snappingMidPointRotated = {
+                x: snappingMidPointLocal.x * cosN - snappingMidPointLocal.y * sinN,
+                y: snappingMidPointLocal.x * sinN + snappingMidPointLocal.y * cosN
+            };
+            const newPos = {
+                x: anchorMidPointWorld.x - snappingMidPointRotated.x,
+                y: anchorMidPointWorld.y - snappingMidPointRotated.y
+            };
+            const newPiece = { type: nextPieceType, pos: newPos, angle: newAngle };
+
+            // 4. Çarpışma kontrolü
+            for (let j = 0; j < placedPieces.length; j++) {
+                if (polygonsIntersect(newPiece, placedPieces[j])) return { isValid: false };
+            }
+            return { newPiece, isValid: true };
+        }
+
+        // Diğer fonksiyonlar (createSVGFromShapeData, loadPuzzle, checkSelection, vs.)
+        // büyük ölçüde aynı kalabilir, sadece renk ataması gibi küçük detaylar değişir.
+
+        function generateFallbackShape() { return [{ "type": "largeTriangle", "pos": { "x": 139.6, "y": 204.3 }, "angle": -90, "colorIndex": 0 }, { "type": "square", "pos": { "x": 139.6, "y": 154.3 }, "angle": 0, "colorIndex": 1 }, { "type": "largeTriangle", "pos": { "x": 225, "y": 118.8 }, "angle": 45, "colorIndex": 2 }]; }
+        function createSVGFromShapeData(shapeData, viewBox = "0 0 400 350") {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", viewBox);
+            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+            shapeData.forEach(piece => {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const vertices = piecesData[piece.type].vertices;
+
+                // 🧩 Eksik olan satır buydu:
+                const d = "M" + vertices.map(v => `${v.x} ${v.y}`).join(" L") + " Z";
+                path.setAttribute("d", d);  // <--- Bu satır eksikti!
+
+                path.setAttribute("class", `color-${pieceColors[piece.colorIndex]}`);
+                path.setAttribute("transform", `translate(${piece.pos.x} ${piece.pos.y}) rotate(${piece.angle})`);
+                svg.appendChild(path);
+            });
+
+            return svg;
+        }
+
+        function offsetPiecesByDirection(shapeData, gap = 12) {
+            return shapeData.map(piece => {
+                const dx = piece.pos.x;
+                const dy = piece.pos.y;
+                const length = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                const offsetX = (dx / length) * gap;
+                const offsetY = (dy / length) * gap;
+
+                return {
+                    ...piece,
+                    pos: {
+                        x: piece.pos.x + offsetX,
+                        y: piece.pos.y + offsetY
+                    }
+                };
+            });
+        }
+
+        function scaleShapeFromCenter(shapeData, scale = 1.08) {
+            // Tüm vertex'lerden genel şekil merkezini bul
+            let totalX = 0, totalY = 0, count = 0;
+            shapeData.forEach(piece => {
+                const verts = getTransformedVertices(piece);
+                verts.forEach(v => {
+                    totalX += v.x;
+                    totalY += v.y;
+                    count++;
+                });
+            });
+            const center = { x: totalX / count, y: totalY / count };
+
+            // Her parçayı o merkeze göre ölçekle
+            return shapeData.map(piece => {
+                return {
+                    ...piece,
+                    pos: {
+                        x: center.x + (piece.pos.x - center.x) * scale,
+                        y: center.y + (piece.pos.y - center.y) * scale
+                    }
+                };
+            });
+        }
+
+
+        function loadPuzzle() {
+            console.log("loadPuzzle çalıştı");
+
+            mainTargetDisplay.innerHTML = '<p>Şekil üretiliyor...</p>';
+            optionsContainer.innerHTML = '';
+            document.querySelectorAll('button').forEach(b => b.disabled = true);
+
+            setTimeout(() => {
+                correctShapeData = generateRandomShape();
+                console.log("correctShapeData", correctShapeData);
+
+                mainTargetDisplay.innerHTML = '';
+                mainTargetDisplay.appendChild(createSVGFromShapeData(correctShapeData));
+
+                const correctOption = uniformGapToShape(correctShapeData, 20);
+                const wrong1 = generateColorVariation(uniformGapToShape(correctShapeData, 20));
+                const wrong2 = generateColorVariation(uniformGapToShape(correctShapeData, 20));
+                const wrong3 = generateColorVariation(uniformGapToShape(correctShapeData, 20));
+
+                const options = shuffleArray([
+                    { data: correctOption, isCorrect: true },
+                    { data: wrong1, isCorrect: false },
+                    { data: wrong2, isCorrect: false },
+                    { data: wrong3, isCorrect: false }
+                ]);
+
+                options.forEach((opt) => {
+                    const box = document.createElement('div');
+                    box.classList.add('option-box');
+
+                    const svg = createSVGFromShapeData(opt.data);
+                    box.appendChild(svg);
+
+                    // Bu bilgiyi kutuya ekliyoruz:
+                    box._isCorrect = opt.isCorrect;
+                    box.dataset.shape = JSON.stringify(opt.data); // karşılaştırma için
+
+                    box.addEventListener('click', () => {
+                        document.querySelectorAll('.option-box').forEach(b => b.classList.remove('selected'));
+                        box.classList.add('selected');
+                        selectedOption = box;
+                    });
+
+                    optionsContainer.appendChild(box);
+                });
+
+                selectedOption = null;
+                messageDiv.textContent = '';
+                messageDiv.className = '';
+                document.querySelectorAll('button').forEach(b => b.disabled = false);
+            }, 100);
+        }
+
+
+        function uniformGapToShape(shapeData, gap = 10) {
+            // Şeklin geometrik merkezini hesapla
+            let totalX = 0, totalY = 0, count = 0;
+
+            shapeData.forEach(piece => {
+                const verts = getTransformedVertices(piece);
+                verts.forEach(v => {
+                    totalX += v.x;
+                    totalY += v.y;
+                    count++;
+                });
+            });
+
+            const center = { x: totalX / count, y: totalY / count };
+
+            // Her parçanın merkezini bul ve sabit uzaklıkla dışarı kaydır
+            return shapeData.map(piece => {
+                const verts = getTransformedVertices(piece);
+                const pieceCenter = verts.reduce((acc, v) => ({
+                    x: acc.x + v.x,
+                    y: acc.y + v.y
+                }), { x: 0, y: 0 });
+
+                pieceCenter.x /= verts.length;
+                pieceCenter.y /= verts.length;
+
+                const dx = pieceCenter.x - center.x;
+                const dy = pieceCenter.y - center.y;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                const offsetX = (dx / len) * gap;
+                const offsetY = (dy / len) * gap;
+
+                return {
+                    ...piece,
+                    pos: {
+                        x: piece.pos.x + offsetX,
+                        y: piece.pos.y + offsetY
+                    }
+                };
+            });
+        }
+
+
+        function applyGapsToShape(shapeData, gap = 8) {
+            // Önce tüm parçaların merkezini hesapla
+            let totalX = 0, totalY = 0, totalCount = 0;
+
+            shapeData.forEach(piece => {
+                const verts = getTransformedVertices(piece);
+                verts.forEach(v => {
+                    totalX += v.x;
+                    totalY += v.y;
+                    totalCount++;
+                });
+            });
+
+            const center = { x: totalX / totalCount, y: totalY / totalCount };
+
+            // Her parçayı kendi merkezine göre dışa doğru kaydır
+            return shapeData.map(piece => {
+                const verts = getTransformedVertices(piece);
+                const pieceCenter = verts.reduce((acc, v) => ({
+                    x: acc.x + v.x,
+                    y: acc.y + v.y
+                }), { x: 0, y: 0 });
+
+                pieceCenter.x /= verts.length;
+                pieceCenter.y /= verts.length;
+
+                const dir = {
+                    x: pieceCenter.x - center.x,
+                    y: pieceCenter.y - center.y
+                };
+
+                const length = Math.sqrt(dir.x * dir.x + dir.y * dir.y) || 1;
+                const norm = { x: dir.x / length, y: dir.y / length };
+
+                return {
+                    ...piece,
+                    pos: {
+                        x: piece.pos.x + norm.x * gap,
+                        y: piece.pos.y + norm.y * gap
+                    }
+                };
+            });
+        }
+
+        function generateGappedVersion(originalData) {
+            return originalData.map(piece => ({
+                ...piece,
+                pos: {
+                    x: piece.pos.x + Math.random() * 20 - 10,
+                    y: piece.pos.y + Math.random() * 20 - 10
+                },
+                angle: piece.angle,  // aynı açı
+                colorIndex: piece.colorIndex  // aynı renk
+            }));
+        }
+
+        function generateColorVariation(originalData) {
+            // Farklı renkler atamak için karıştır
+            const newColors = shuffleArray([...Array(pieceColors.length).keys()]);
+            return originalData.map((piece, idx) => ({
+                ...piece,
+                colorIndex: newColors[idx % newColors.length]
+            }));
+        }
+
+        function selectOption(box) {
+            if (selectedOption) { selectedOption.classList.remove('selected', 'correct', 'incorrect'); }
+            document.querySelectorAll('.option-box').forEach(b => b.classList.remove('correct', 'incorrect'));
+            selectedOption = box; selectedOption.classList.add('selected');
+        }
+        function checkSelection() {
+            if (!selectedOption) { messageDiv.textContent = "Lütfen bir seçenek seçin!"; messageDiv.className = 'incorrect-msg'; return; }
+            // Stringify/parse ile derinlemesine karşılaştırma için objeleri yeniden oluştur
+            const selectedData = JSON.parse(selectedOption.dataset.shape);
+            const correctData = correctShapeData;
+
+            // Karşılaştırmayı daha az kırılgan hale getirelim. Sadece tipler ve renkler eşleşsin.
+            let isCorrect = true;
+            if (selectedData.length !== correctData.length) {
+                isCorrect = false;
+            } else {
+                for (let i = 0; i < selectedData.length; i++) {
+                    // Pozisyon ve açıdaki küçük kaymaları tolere etmek için bu alanları karşılaştırmıyoruz
+                    if (selectedData[i].type !== correctData[i].type || selectedData[i].colorIndex !== correctData[i].colorIndex) {
+                        isCorrect = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isCorrect) {
+                messageDiv.textContent = "Doğru! Harikasın!"; messageDiv.className = 'correct-msg'; selectedOption.classList.add('correct');
+            } else {
+                messageDiv.textContent = "Yanlış cevap."; messageDiv.className = 'incorrect-msg'; selectedOption.classList.add('incorrect');
+                document.querySelectorAll('.option-box').forEach(box => {
+                    if (box.dataset.shape === JSON.stringify(correctShapeData)) {
+                        box.classList.add('correct');
+                    }
+                });
+            }
+        }
+        function nextPuzzle() { loadPuzzle(); }
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        document.addEventListener('DOMContentLoaded', loadPuzzle);
+    </script>
+</body>
+
+</html>
