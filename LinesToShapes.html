@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lines To Shapes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .box {
+            width: 150px;
+            height: 150px;
+            border: 2px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+        }
+
+        .arrow {
+            font-size: 30px;
+            margin: 0 10px;
+        }
+
+        .shape-option {
+            display: inline-block;
+            margin: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .shape-option:hover {
+            border-color: #888;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+        }
+
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .question-area {
+            transform: scale(1);
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Çizgi sayısına göre doğru şekli seç!</h2>
+
+    <!-- Örnek -->
+    <div class="row">
+        <div class="box" id="example-lines"></div>
+        <div class="arrow">➡️</div>
+        <div class="box" id="example-shape"></div>
+    </div>
+
+    <!-- Soru -->
+    <div class="row question-area">
+        <div class="box" id="question-lines"></div>
+        <div class="arrow">➡️</div>
+        <div class="box"><strong style="font-size: 40px;">❓</strong></div>
+    </div>
+
+    <!-- Seçenekler -->
+    <div id="options"></div>
+    <div id="result"></div>
+    <button onclick="generateQuestion()">Yeni Soru</button>
+
+    <script>
+        function drawLines(element, count) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext("2d");
+            const spacing = canvas.width / (count + 1);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < count; i++) {
+                ctx.beginPath();
+                ctx.moveTo((i + 1) * spacing, 20);
+                ctx.lineTo((i + 1) * spacing, 80);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "#333";
+                ctx.stroke();
+            }
+            element.innerHTML = "";
+            element.appendChild(canvas);
+        }
+
+        function drawPolygon(sides, size = 35) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext("2d");
+
+            const centerX = 50, centerY = 50;
+            const angle = (2 * Math.PI) / sides;
+
+            ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                const x = centerX + size * Math.cos(angle * i - Math.PI / 2);
+                const y = centerY + size * Math.sin(angle * i - Math.PI / 2);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = "#30cbd0";
+            ctx.fill();
+
+            return canvas;
+        }
+
+        function generateQuestion() {
+            const minSides = 3, maxSides = 10;
+
+            const exampleSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
+            let questionSides;
+            do {
+                questionSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
+            } while (questionSides === exampleSides);
+
+            // Örnek
+            drawLines(document.getElementById("example-lines"), exampleSides);
+            const exampleShape = document.getElementById("example-shape");
+            exampleShape.innerHTML = "";
+            exampleShape.appendChild(drawPolygon(exampleSides));
+
+            // Soru
+            drawLines(document.getElementById("question-lines"), questionSides);
+
+            // Şıklar
+            const answers = new Set([questionSides]);
+            while (answers.size < 4) {
+                const fake = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
+                if (fake !== exampleSides) answers.add(fake);
+            }
+
+            const shuffled = Array.from(answers).sort(() => Math.random() - 0.5);
+            const optionsDiv = document.getElementById("options");
+            optionsDiv.innerHTML = "";
+            const resultDiv = document.getElementById("result");
+            resultDiv.textContent = "";
+
+            shuffled.forEach(sides => {
+                const div = document.createElement("div");
+                div.className = "shape-option";
+                const shape = drawPolygon(sides);
+                div.appendChild(shape);
+                div.onclick = () => {
+                    if (sides === questionSides) {
+                        resultDiv.textContent = "✅ Doğru cevap!";
+                        resultDiv.style.color = "green";
+                    } else {
+                        resultDiv.textContent = `❌ Yanlış. Doğru cevap ${questionSides} kenarlı şekildi.`;
+                        resultDiv.style.color = "red";
+                    }
+                };
+                optionsDiv.appendChild(div);
+            });
+        }
+
+        generateQuestion();
+    </script>
+</body>
+
+</html>
