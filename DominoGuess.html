@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domino Guess</title>
+    <style>
+        /* Genel Sayfa Stilleri */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            padding: 20px 0;
+        }
+
+        /* Oyunun Ana Konteyneri */
+        .game-container {
+            background-color: #ffffff;
+            padding: 20px 30px 30px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #1c1e21;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .rule-text {
+            font-size: 0.9em;
+            color: #606770;
+            margin-bottom: 20px;
+        }
+
+        /* Domino Izgarası */
+        .domino-grid {
+            display: flex;
+            flex-direction: column;
+            /* GÜNCELLEME: Dikey boşluk artık gap ile değil, aşağıda satırların margin'i ile kontrol ediliyor */
+            margin-bottom: 25px;
+        }
+
+        .domino-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            /* Bu, dominolar arası yatay boşluk içindir */
+            margin-bottom: 35px;
+            /* GÜNCELLEME: Satırlar arası dikey boşluk eklendi */
+        }
+
+        /* GÜNCELLEME: Son satırın altındaki gereksiz boşluğu kaldırır */
+        .domino-grid .domino-row:last-child {
+            margin-bottom: 0;
+        }
+
+
+        /* Tek bir domino taşı stili */
+        .domino {
+            width: 100px;
+            height: 50px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        /* Domino'nun iki yarısı */
+        .domino .half {
+            width: 50%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 3px;
+        }
+
+        .domino .divider {
+            width: 2px;
+            height: 80%;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 2px;
+        }
+
+        .pip {
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+            align-self: center;
+            justify-self: center;
+        }
+
+        /* Zar yüzeyleri için pozisyonlama */
+        .half.face-1 .pip:nth-child(1) {
+            grid-area: 2 / 2;
+        }
+
+        .half.face-2 .pip:nth-child(1) {
+            grid-area: 1 / 1;
+        }
+
+        .half.face-2 .pip:nth-child(2) {
+            grid-area: 3 / 3;
+        }
+
+        .half.face-3 .pip:nth-child(1) {
+            grid-area: 1 / 1;
+        }
+
+        .half.face-3 .pip:nth-child(2) {
+            grid-area: 2 / 2;
+        }
+
+        .half.face-3 .pip:nth-child(3) {
+            grid-area: 3 / 3;
+        }
+
+        .half.face-4 .pip:nth-child(1) {
+            grid-area: 1 / 1;
+        }
+
+        .half.face-4 .pip:nth-child(2) {
+            grid-area: 1 / 3;
+        }
+
+        .half.face-4 .pip:nth-child(3) {
+            grid-area: 3 / 1;
+        }
+
+        .half.face-4 .pip:nth-child(4) {
+            grid-area: 3 / 3;
+        }
+
+        .half.face-5 .pip:nth-child(1) {
+            grid-area: 1 / 1;
+        }
+
+        .half.face-5 .pip:nth-child(2) {
+            grid-area: 1 / 3;
+        }
+
+        .half.face-5 .pip:nth-child(3) {
+            grid-area: 2 / 2;
+        }
+
+        .half.face-5 .pip:nth-child(4) {
+            grid-area: 3 / 1;
+        }
+
+        .half.face-5 .pip:nth-child(5) {
+            grid-area: 3 / 3;
+        }
+
+        .half.face-6 .pip:nth-child(1) {
+            grid-area: 1 / 1;
+        }
+
+        .half.face-6 .pip:nth-child(2) {
+            grid-area: 1 / 3;
+        }
+
+        .half.face-6 .pip:nth-child(3) {
+            grid-area: 2 / 1;
+        }
+
+        .half.face-6 .pip:nth-child(4) {
+            grid-area: 2 / 3;
+        }
+
+        .half.face-6 .pip:nth-child(5) {
+            grid-area: 3 / 1;
+        }
+
+        .half.face-6 .pip:nth-child(6) {
+            grid-area: 3 / 3;
+        }
+
+        .question-mark {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100px;
+            height: 50px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Cevap Seçenekleri Konteyneri */
+        #options-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            min-height: 70px;
+            padding: 10px 0;
+        }
+
+        /* Seçenek Olan Domino Stilleri */
+        .option-domino {
+            cursor: pointer;
+        }
+
+        .option-domino:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .option-domino.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .option-domino.disabled:hover {
+            transform: none;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-domino.correct-answer {
+            border: 3px solid #28a745;
+        }
+
+        .option-domino.incorrect-answer {
+            border: 3px solid #dc3545;
+            opacity: 1;
+        }
+
+        #result {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 25px;
+        }
+
+        .correct {
+            color: #28a745;
+        }
+
+        .incorrect {
+            color: #dc3545;
+        }
+
+        #new-game-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            background-color: #1877f2;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #new-game-btn:hover {
+            background-color: #166fe5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <div id="domino-grid"></div>
+        <div id="options-container"></div>
+        <div id="result"></div>
+        <button id="new-game-btn">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const gridContainer = document.getElementById('domino-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const resultElement = document.getElementById('result');
+            const newGameButton = document.getElementById('new-game-btn');
+
+            const colorPalette = [
+                { bg: '#4a90e2', border: '#357ABD' }, { bg: '#9013fe', border: '#7A10D9' },
+                { bg: '#7ed321', border: '#68B31B' }, { bg: '#f5a623', border: '#d48d1e' },
+                { bg: '#d0021b', border: '#a50115' }
+            ];
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function generatePuzzleRow() {
+                let L1, R1, L2, R2, L3, R3;
+                do { L1 = Math.floor(Math.random() * 4) + 3; L2 = Math.floor(Math.random() * (L1 - 1)) + 1; L3 = L1 - L2; } while (L3 < 1);
+                do { R1 = Math.floor(Math.random() * 4) + 3; R2 = Math.floor(Math.random() * (R1 - 1)) + 1; R3 = R1 - R2; } while (R3 < 1);
+                return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
+            }
+
+            function startGame() {
+                gridContainer.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                resultElement.innerHTML = '';
+
+                const shuffledColors = shuffleArray([...colorPalette]);
+                let correctAnswer = null;
+
+                for (let i = 0; i < 3; i++) {
+                    const rowData = generatePuzzleRow();
+                    const rowElement = document.createElement('div');
+                    rowElement.className = 'domino-row';
+                    const colorInfo = shuffledColors[i % shuffledColors.length];
+
+                    if (i === 2) {
+                        correctAnswer = { ...rowData[2] };
+                        rowData[2] = null;
+                    }
+
+                    rowData.forEach(dom => {
+                        let domEl;
+                        if (dom) {
+                            domEl = createDominoElement(dom.left, dom.right);
+                        } else {
+                            domEl = document.createElement('div');
+                            domEl.className = 'question-mark';
+                            domEl.textContent = '?';
+                        }
+                        domEl.style.backgroundColor = colorInfo.bg;
+                        domEl.style.borderColor = colorInfo.border;
+                        rowElement.appendChild(domEl);
+                    });
+                    gridContainer.appendChild(rowElement);
+                }
+
+                const answerOptions = [{ ...correctAnswer, isCorrect: true }];
+                while (answerOptions.length < 4) {
+                    const wrongL = Math.floor(Math.random() * 6) + 1;
+                    const wrongR = Math.floor(Math.random() * 6) + 1;
+                    const isDuplicate = answerOptions.some(opt => opt.left === wrongL && opt.right === wrongR);
+                    if (!isDuplicate) {
+                        answerOptions.push({ left: wrongL, right: wrongR, isCorrect: false });
+                    }
+                }
+
+                shuffleArray(answerOptions).forEach(option => {
+                    const optionDomino = createDominoElement(option.left, option.right);
+                    optionDomino.classList.add('option-domino');
+                    optionDomino.dataset.correct = option.isCorrect;
+
+                    const colorInfo = shuffledColors[2 % shuffledColors.length];
+                    optionDomino.style.backgroundColor = colorInfo.bg;
+                    optionDomino.style.borderColor = colorInfo.border;
+
+                    optionDomino.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(optionDomino);
+                });
+            }
+
+            function createDominoElement(left, right) {
+                const domino = document.createElement('div');
+                domino.className = 'domino';
+                const leftHalf = document.createElement('div');
+                leftHalf.className = `half face-${left}`;
+                for (let i = 0; i < left; i++) leftHalf.appendChild(document.createElement('div')).className = 'pip';
+                const divider = document.createElement('div');
+                divider.className = 'divider';
+                const rightHalf = document.createElement('div');
+                rightHalf.className = `half face-${right}`;
+                for (let i = 0; i < right; i++) rightHalf.appendChild(document.createElement('div')).className = 'pip';
+                domino.appendChild(leftHalf);
+                domino.appendChild(divider);
+                domino.appendChild(rightHalf);
+                return domino;
+            }
+
+            function handleOptionClick(event) {
+                const clickedDomino = event.currentTarget;
+                const isCorrect = clickedDomino.dataset.correct === 'true';
+
+                if (isCorrect) {
+                    resultElement.textContent = '🎉 Doğru Cevap! Tebrikler! 🎉';
+                    resultElement.className = 'correct';
+                } else {
+                    resultElement.textContent = '❌ Yanlış cevap.';
+                    resultElement.className = 'incorrect';
+                    clickedDomino.classList.add('incorrect-answer');
+                }
+
+                document.querySelectorAll('.option-domino').forEach(dom => {
+                    dom.classList.add('disabled');
+                    if (dom.dataset.correct === 'true') {
+                        dom.classList.add('correct-answer');
+                    }
+                });
+            }
+
+            newGameButton.addEventListener('click', startGame);
+            startGame();
+        });
+    </script>
+
+</body>
+
+</html>
