@@ -89,7 +89,7 @@
 
         .option-box {
             background-color: var(--main-card-bg);
-            border-radius: 10px;
+            border-radius: 0;
             padding: 10px;
             box-shadow: 0 2px 8px var(--shadow-color);
             cursor: pointer;
@@ -102,7 +102,7 @@
 
         .option-cell {
             transition: transform 0.2s ease-in-out, z-index 0s 0.1s;
-            border-radius: 4px;
+            border-radius: 0;
         }
 
         .option-box:hover {
@@ -160,48 +160,105 @@
             }
 
             function generatePuzzleData() {
-                const gridRows = 2;
-                const gridCols = Math.random() < 0.5 ? 2 : 3;
+                const size = Math.random() < 0.5 ? 3 : 4;
+                const gridRows = size;
+                const gridCols = size;
                 gameState.gridCols = gridCols;
                 gameState.gridRows = gridRows;
 
-                const heights = Array(gridRows).fill(null).map(() => Array(gridCols).fill(0));
+                let structure;
+                let blocks;
+
+                do {
+                    structure = Array(gridRows).fill(null).map(() => Array(gridCols).fill(null));
+                    let blockCount = 0;
+                    const targetBlockCount = random.int(size + 1, size * size - Math.floor(size / 2));
+
+                    const startR = random.int(0, gridRows - 1);
+                    const startC = random.int(0, gridCols - 1);
+                    structure[startR][startC] = { r: startR, c: startC, height: 0, color: 'placeholder' };
+                    blockCount++;
+
+                    const getNeighbors = (r, c) => {
+                        const neighbors = [];
+                        if (r > 0) neighbors.push({ r: r - 1, c: c });
+                        if (r < gridRows - 1) neighbors.push({ r: r + 1, c: c });
+                        if (c > 0) neighbors.push({ r: r, c: c - 1 });
+                        if (c < gridCols - 1) neighbors.push({ r: r, c: c + 1 });
+                        return neighbors;
+                    };
+
+                    let frontier = [];
+                    getNeighbors(startR, startC).forEach(n => {
+                        if (!structure[n.r][n.c]) { frontier.push(n); }
+                    });
+
+                    while (blockCount < targetBlockCount && frontier.length > 0) {
+                        random.shuffle(frontier);
+                        const nextCell = frontier.pop();
+                        if (structure[nextCell.r][nextCell.c]) continue;
+                        structure[nextCell.r][nextCell.c] = { r: nextCell.r, c: nextCell.c, height: 0, color: 'placeholder' };
+                        blockCount++;
+                        getNeighbors(nextCell.r, nextCell.c).forEach(n => {
+                            if (!structure[n.r][n.c] && !frontier.some(f => f.r === n.r && f.c === n.c)) {
+                                frontier.push(n);
+                            }
+                        });
+                    }
+                    blocks = structure.flat().filter(Boolean);
+                } while (blocks.length < size + 1);
+
                 for (let r = gridRows - 1; r >= 0; r--) {
                     for (let c = gridCols - 1; c >= 0; c--) {
-                        const rightBlockHeight = (c < gridCols - 1) ? heights[r][c + 1] : 0;
-                        const belowBlockHeight = (r < gridRows - 1) ? heights[r + 1][c] : 0;
-                        const tallestOccludingBlock = Math.max(rightBlockHeight, belowBlockHeight);
-                        heights[r][c] = tallestOccludingBlock + random.int(1, 2);
+                        if (structure[r][c]) {
+                            const frontBlockHeight = (r < gridRows - 1 && structure[r + 1][c]) ? structure[r + 1][c].height : 0;
+                            const sideBlockHeight = (c < gridCols - 1 && structure[r][c + 1]) ? structure[r][c + 1].height : 0;
+                            const tallestOccludingBlock = Math.max(frontBlockHeight, sideBlockHeight);
+                            structure[r][c].height = tallestOccludingBlock + random.int(1, 2);
+                        }
                     }
                 }
 
-                const structure = [];
                 const availableColors = [...COLORS];
                 random.shuffle(availableColors);
-                for (let r = 0; r < gridRows; r++) {
-                    const row = [];
-                    for (let c = 0; c < gridCols; c++) {
-                        row.push({ color: availableColors[(r * gridCols + c) % availableColors.length], height: heights[r][c], r, c });
-                    }
-                    structure.push(row);
-                }
+                let colorIndex = 0;
+                blocks.forEach(block => {
+                    block.color = availableColors[colorIndex % availableColors.length];
+                    colorIndex++;
+                });
 
-                const correctOptionData = structure.map(row => row.map(cell => ({ color: cell.color, height: cell.height })));
+                const correctOptionData = structure.map(row =>
+                    row.map(cell => (cell ? { color: cell.color, height: cell.height } : null))
+                );
+
+                const originalColors = blocks.map(cell => cell.color);
+
+                const usedColorPermutations = [JSON.stringify(originalColors)];
                 const options = [correctOptionData];
-                const originalHeights = structure.flat().map(cell => cell.height);
 
                 while (options.length < 4) {
-                    const shuffledHeights = [...originalHeights];
-                    random.shuffle(shuffledHeights);
-                    const newOption = [];
-                    for (let r = 0; r < gridRows; r++) {
-                        const newRow = [];
-                        for (let c = 0; c < gridCols; c++) {
-                            newRow.push({ color: structure[r][c].color, height: shuffledHeights[r * gridCols + c] });
+                    const shuffledColors = [...originalColors];
+                    random.shuffle(shuffledColors);
+                    const newPermutationString = JSON.stringify(shuffledColors);
+
+                    if (!usedColorPermutations.includes(newPermutationString)) {
+                        usedColorPermutations.push(newPermutationString);
+
+                        const newOption = [];
+                        let localColorIndex = 0;
+                        for (let r = 0; r < gridRows; r++) {
+                            const newRow = [];
+                            for (let c = 0; c < gridCols; c++) {
+                                if (structure[r][c]) {
+                                    newRow.push({ color: shuffledColors[localColorIndex], height: structure[r][c].height });
+                                    localColorIndex++;
+                                } else {
+                                    newRow.push(null);
+                                }
+                            }
+                            // DÜZELTME: Hatalı satır kaldırıldı ve bu doğru satır eklendi.
+                            newOption.push(newRow);
                         }
-                        newOption.push(newRow);
-                    }
-                    if (!options.some(opt => JSON.stringify(opt) === JSON.stringify(newOption))) {
                         options.push(newOption);
                     }
                 }
@@ -212,23 +269,23 @@
                 gameState.correctIndex = options.findIndex(opt => JSON.stringify(opt) === JSON.stringify(correctOptionData));
             }
 
+
             function renderPuzzle() {
                 puzzleContainer.innerHTML = '';
                 optionsContainer.innerHTML = '';
 
-                const { gridRows, gridCols } = gameState;
-                const blocksToRender = gameState.structure.flat();
+                const blocksToRender = gameState.structure.flat().filter(Boolean);
+
+                if (blocksToRender.length === 0) return;
+
                 blocksToRender.sort((a, b) => (a.r + a.c) - (b.r + b.c));
 
-                // --- YENİ, GARANTİLİ ORTALAMA MANTIĞI ---
-                // 1. Önce tüm prizmaların kaplayacağı alanı hesapla
                 let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                 const blockPositions = blocksToRender.map(({ height, r, c }) => {
                     const totalBlockHeight = height * TILE_Z;
                     const topPointX = (c - r) * (TILE_W / 2);
                     const topPointY = (c + r) * (TILE_H / 2) - totalBlockHeight;
 
-                    // Bu prizmanın kapladığı alanın sınırlarını bul
                     const currentMinX = topPointX - TILE_W / 2;
                     const currentMaxX = topPointX + TILE_W / 2;
                     const currentMinY = topPointY;
@@ -239,23 +296,21 @@
                     minY = Math.min(minY, currentMinY);
                     maxY = Math.max(maxY, currentMaxY);
 
-                    return { topPointX, topPointY, totalBlockHeight, color: gameState.structure[r][c].color };
+                    return { topPointX, topPointY, totalBlockHeight, color: c < gameState.structure[r].length ? gameState.structure[r][c].color : '' };
                 });
 
-                // 2. Prizma grubunu ortalamak için gereken ofseti hesapla
                 const shapeWidth = maxX - minX;
                 const shapeHeight = maxY - minY;
                 const offsetX = (puzzleContainer.offsetWidth - shapeWidth) / 2 - minX;
                 const offsetY = (puzzleContainer.offsetHeight - shapeHeight) / 2 - minY;
 
-                // 3. Prizmaları ve ikonları bu ofseti kullanarak çiz
                 blockPositions.forEach(({ topPointX, topPointY, totalBlockHeight, color }) => {
                     const finalX = topPointX + offsetX;
                     const finalY = topPointY + offsetY;
 
                     const leftFace = document.createElement('div');
                     leftFace.className = 'prism-face';
-                    leftFace.style.cssText = `width:${TILE_W / 2}px; height:${totalBlockHeight}px; left:${finalX - TILE_W / 2}px; top:${finalY + TILE_H / 2}px; background:${darkenColor(color, 25)}; clip-path:polygon(0% 0%, 100% ${TILE_H / 2}px, 100% 100%, 0% calc(100% - ${TILE_H / 2}px));`;
+                    leftFace.style.cssText = `width:${TILE_W / 2 + 1}px; height:${totalBlockHeight}px; left:${finalX - TILE_W / 2}px; top:${finalY + TILE_H / 2}px; background:${darkenColor(color, 25)}; clip-path:polygon(0% 0%, 100% ${TILE_H / 2}px, 100% 100%, 0% calc(100% - ${TILE_H / 2}px));`;
 
                     const rightFace = document.createElement('div');
                     rightFace.className = 'prism-face';
@@ -263,7 +318,7 @@
 
                     const topFace = document.createElement('div');
                     topFace.className = 'prism-face';
-                    topFace.style.cssText = `width:${TILE_W}px; height:${TILE_H}px; left:${finalX - TILE_W / 2}px; top:${finalY}px; background:${color}; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);`;
+                    topFace.style.cssText = `width:${TILE_W}px; height:${TILE_H}px; left:${finalX - TILE_W / 2}px; top:${finalY + 1}px; background:${color}; clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);`;
 
                     puzzleContainer.appendChild(leftFace);
                     puzzleContainer.appendChild(rightFace);
@@ -274,7 +329,8 @@
                 indicator.className = 'view-indicator';
                 indicator.innerHTML = `<i class="fas fa-eye"></i><i class="fas fa-arrow-down"></i>`;
                 indicator.style.left = `${(minX + maxX) / 2 + offsetX}px`;
-                indicator.style.top = `${minY + offsetY - 70}px`;
+                // DÜZELTME: İkonun pozisyonu sabitlendi.
+                indicator.style.top = `30px`;
                 puzzleContainer.appendChild(indicator);
 
                 // SEÇENEKLER
@@ -282,17 +338,20 @@
                     const optionBox = document.createElement('div');
                     optionBox.className = 'option-box';
                     optionBox.dataset.index = index;
-                    optionBox.style.gridTemplateColumns = `repeat(${gridCols}, 48px)`;
-                    optionBox.style.gridTemplateRows = `repeat(${gridRows}, 48px)`;
+                    optionBox.style.gridTemplateColumns = `repeat(${gameState.gridCols}, 48px)`;
+                    optionBox.style.gridTemplateRows = `repeat(${gameState.gridRows}, 48px)`;
 
-                    optionData.flat().forEach(({ color, height }) => {
+                    optionData.flat().forEach(cellInfo => {
                         const cell = document.createElement('div');
                         cell.className = 'option-cell';
                         cell.style.width = '48px';
                         cell.style.height = '48px';
-                        cell.style.backgroundColor = color;
-                        cell.style.transform = `scale(${1 + height * 0.04})`;
-                        cell.style.zIndex = height;
+
+                        if (cellInfo) {
+                            cell.style.backgroundColor = cellInfo.color;
+                        } else {
+                            cell.style.backgroundColor = 'transparent';
+                        }
                         optionBox.appendChild(cell);
                     });
 
@@ -300,7 +359,6 @@
                     optionsContainer.appendChild(optionBox);
                 });
 
-                // Python'un okuyabilmesi için doğru index'i body etiketine yaz.
                 document.body.dataset.correctIndex = gameState.correctIndex;
             }
 
