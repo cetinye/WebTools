@@ -3,89 +3,151 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Guess Tile Piece</title>
+    <title>Karışık Yapboz Parçası Tahmin Et</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             text-align: center;
             margin-top: 20px;
+            background-color: #f0f2f5;
+        }
+
+        #gameContainer {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+
+        h1 {
+            color: #1c1e21;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            background-color: #f7f8fa;
+        }
+
+        #controls label {
+            margin: 0 10px;
+            font-weight: bold;
+            color: #606770;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            font-size: 16px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #startBtn {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
+            background-color: #1877f2;
+            color: white;
+            font-weight: bold;
+        }
+
+        #startBtn:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
         }
 
         canvas {
             border: 2px solid #444;
             margin-top: 10px;
-        }
-
-        input,
-        select {
-            margin: 10px;
-            font-size: 16px;
-        }
-
-        button {
-            margin: 10px;
-            padding: 5px 10px;
-            font-size: 16px;
-            cursor: pointer;
+            max-width: 90vw;
+            height: auto;
         }
 
         #choices button {
             margin: 5px;
-            border: none;
+            border: 2px solid transparent;
             background: none;
             cursor: pointer;
+            padding: 0;
+            border-radius: 4px;
+        }
+
+        #choices button:hover {
+            border-color: #1877f2;
         }
     </style>
 </head>
 
 <body>
-    <h2>Karışık Yapboz Parçası Tahmin Et</h2>
-    <input type="file" id="imageLoader" accept="image/*" />
-    <br>
-    Satır: <input type="number" id="rows" value="3" min="2" max="10" />
-    Sütun: <input type="number" id="cols" value="3" min="2" max="10" />
-    <button id="startBtn">Başlat</button>
-    <br>
-    <canvas id="mainCanvas"></canvas>
-    <div id="choices"></div>
+    <h1>Karışık Yapboz Parçasını Bul</h1>
+    <div id="gameContainer">
+        <div id="controls">
+            <label>Satır: <input type="number" id="rows" value="3" min="2" max="10" /></label>
+            <label>Sütun: <input type="number" id="cols" value="3" min="2" max="10" /></label>
+            <button id="startBtn">Yeni Oyun Başlat</button>
+        </div>
+
+        <canvas id="mainCanvas"></canvas>
+        <div id="choices"></div>
+    </div>
 
     <script>
-        const imageLoader = document.getElementById('imageLoader');
         const startBtn = document.getElementById('startBtn');
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const choicesDiv = document.getElementById('choices');
 
-        let uploadedImgURL = null;
-
-        imageLoader.addEventListener('change', e => {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                uploadedImgURL = event.target.result;
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        });
+        // --- ÖNEMLİ: DEĞİŞTİRMENİZ GEREKEN TEK YER ---
+        const toplamResimSayisi = 9; // Kendi toplam resim sayınızla güncelleyin.
 
         startBtn.addEventListener('click', () => {
-            const rows = parseInt(document.getElementById('rows').value);
-            const cols = parseInt(document.getElementById('cols').value);
+            startBtn.disabled = true;
+            startBtn.textContent = "Yükleniyor...";
 
-            if (!uploadedImgURL) {
-                alert("Lütfen önce bir görsel yükleyin.");
+            if (toplamResimSayisi === 0) {
+                alert("Oynanacak resim bulunamadı!");
+                startBtn.disabled = false;
+                startBtn.textContent = "Yeni Oyun Başlat";
                 return;
             }
 
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
+
+            const randomSayi = Math.floor(Math.random() * toplamResimSayisi) + 1;
+            const imagePath = `Resimler/${randomSayi}.png`;
+
             const img = new Image();
-            img.onload = () => runPuzzleGame(img, rows, cols);
-            img.src = uploadedImgURL;
+            img.onload = () => {
+                runPuzzleGame(img, rows, cols);
+                startBtn.disabled = false;
+                startBtn.textContent = "Yeni Oyun Başlat";
+            };
+            img.onerror = () => {
+                alert(`Hata: ${imagePath} yüklenemedi. Dosya adını veya yolu kontrol edin.`);
+                startBtn.disabled = false;
+                startBtn.textContent = "Yeni Oyun Başlat";
+            };
+            img.src = imagePath;
         });
 
         function runPuzzleGame(img, rows, cols) {
-            const pw = Math.floor(img.width / cols);
-            const ph = Math.floor(img.height / rows);
+            const maxWidth = 800; // Resmin maksimum genişliği
+            const scale = Math.min(1, maxWidth / img.width);
 
-            canvas.width = img.width;
-            canvas.height = img.height;
+            const pw = Math.floor((img.width * scale) / cols);
+            const ph = Math.floor((img.height * scale) / rows);
+
+            canvas.width = pw * cols;
+            canvas.height = ph * rows;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 1. Parçaları üret
@@ -96,7 +158,7 @@
                     canvasPiece.width = pw;
                     canvasPiece.height = ph;
                     const pctx = canvasPiece.getContext('2d');
-                    pctx.drawImage(img, x * pw, y * ph, pw, ph, 0, 0, pw, ph);
+                    pctx.drawImage(img, x * pw / scale, y * ph / scale, pw / scale, ph / scale, 0, 0, pw, ph);
                     pieces.push({ originalX: x, originalY: y, canvas: canvasPiece });
                 }
             }
@@ -105,9 +167,10 @@
             const shuffledPieces = [...pieces];
             shuffledPieces.sort(() => Math.random() - 0.5);
 
-            // 3. Eksik parça
+            // 3. Eksik parçayı seç
             const missingIndex = Math.floor(Math.random() * shuffledPieces.length);
             const missing = shuffledPieces[missingIndex];
+            const correctCanvas = missing.canvas;
 
             // 4. Tüm parçaları yerleştir ve çizgileri çiz
             for (let i = 0; i < shuffledPieces.length; i++) {
@@ -119,7 +182,8 @@
                     ctx.fillStyle = "#3498db";
                     ctx.fillRect(x, y, pw, ph);
                     ctx.fillStyle = "white";
-                    ctx.font = "bold 48px sans-serif";
+                    const fontSize = Math.min(pw, ph) * 0.7;
+                    ctx.font = `bold ${fontSize}px sans-serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText("?", x + pw / 2, y + ph / 2);
@@ -133,9 +197,9 @@
                 ctx.strokeRect(x, y, pw, ph);
             }
 
-            // 5. Seçenekler
-            const choices = [missing.canvas];
-            while (choices.length < 4) {
+            // 5. Seçenekleri oluştur
+            const choices = [correctCanvas];
+            while (choices.length < 4 && choices.length < pieces.length) {
                 const rand = Math.floor(Math.random() * pieces.length);
                 const c = pieces[rand].canvas;
                 if (!choices.includes(c)) {
@@ -150,15 +214,19 @@
                 const btn = document.createElement('button');
                 btn.appendChild(piece);
                 btn.onclick = () => {
-                    if (piece === missing.canvas) {
-                        alert("✅ Doğru!");
+                    if (piece === correctCanvas) {
+                        alert("✅ Doğru! Tebrikler!");
+                        startBtn.click(); // Otomatik yeni oyun başlat
                     } else {
-                        alert("❌ Yanlış!");
+                        alert("❌ Yanlış! Tekrar deneyin.");
                     }
                 };
                 choicesDiv.appendChild(btn);
             });
         }
+
+        // Sayfa ilk yüklendiğinde otomatik olarak bir oyun başlat
+        document.addEventListener('DOMContentLoaded', () => startBtn.click());
     </script>
 </body>
 
