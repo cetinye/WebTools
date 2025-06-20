@@ -16,6 +16,7 @@
             display: inline-block;
             margin: 10px;
             padding: 10px;
+            vertical-align: top;
         }
 
         .symbols {
@@ -28,18 +29,26 @@
             padding: 10px;
             display: inline-block;
             border: 2px solid transparent;
+            border-radius: 8px;
+            /* Köşeleri yuvarlaklaştıralım */
+            transition: all 0.2s;
+            /* Geçiş efekti ekleyelim */
         }
 
         .option:hover {
             border-color: blue;
+            transform: scale(1.1);
+            /* Üzerine gelince hafifçe büyüsün */
         }
 
         .correct {
             border-color: green;
+            background-color: #e6ffed;
         }
 
         .wrong {
             border-color: red;
+            background-color: #ffeeee;
         }
 
         #options {
@@ -63,7 +72,7 @@
 
     <div class="box">
         <h3>İSTENEN SÖZCÜK</h3>
-        <div id="targetWord"></div>
+        <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
     </div>
 
     <div id="options" class="box">
@@ -73,7 +82,7 @@
     <script>
         const questionPool = [
             ['KAPI', 'KEDİ', 'KAZA'],
-            ['GÜl', 'GÖL', 'GÜNEŞ'],
+            ['GÜL', 'GÖL', 'GÜNEŞ'],
             ['MUM', 'KUM', 'KAM'],
             ['MASA', 'SABA', 'ASMA'],
             ['TREN', 'RENK', 'NERİ'],
@@ -99,14 +108,16 @@
             ['LİMON', 'MONLİ', 'OLİMN']
         ];
 
-        const symbols = ['♥', '♫', '☁', '★', '■', '▲'];
+        // --- DEĞİŞTİRİLEN BÖLÜM ---
+        // Eskisi: const symbols = ['♥', '♫', '☁', '★', '■', '▲'];
+        const symbols = ['✨', '🍀', '💎', '🚀', '🌐', '🎨'];
 
         function shuffleArray(arr) {
             return arr.slice().sort(() => Math.random() - 0.5);
         }
 
         function createMapping(words) {
-            const letters = new Set(words.join('').split(''));
+            const letters = new Set(words.join('').toUpperCase().split(''));
             if (letters.size > symbols.length) return null;
             const shuffledSymbols = shuffleArray([...symbols]);
             const map = {};
@@ -117,7 +128,7 @@
         }
 
         function wordToSymbols(word, map) {
-            return word.split('').map(c => map[c]).join(' ');
+            return word.toUpperCase().split('').map(c => map[c]).join(' ');
         }
 
         function initGame() {
@@ -147,7 +158,10 @@
             document.getElementById('words').textContent = selectedWords.join(', ');
             document.getElementById('targetWord').textContent = target;
             document.getElementById('mappings').innerHTML = '';
-            document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
+
+            // Seçenekler başlığını korumak için innerHTML'i temizlerken dikkatli olalım
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';
 
             const mappingsDiv = document.getElementById('mappings');
             selectedWords.forEach(word => {
@@ -156,21 +170,34 @@
                 mappingsDiv.appendChild(p);
             });
 
+            // Doğru şıkkı ve diğer seçenekleri oluşturalım
             const correctOption = wordToSymbols(target, letterToSymbol);
-            const otherOptions = selectedWords.filter(w => w !== target).slice(0, 3);
-            const options = shuffleArray([correctOption, ...otherOptions.map(w => wordToSymbols(w, letterToSymbol))]);
 
-            const optionsDiv = document.getElementById('options');
+            // Tüm kelimelerin sembol karşılıklarını bir havuzda toplayalım
+            const allSymbolOptions = validSet.map(w => wordToSymbols(w, letterToSymbol));
+            const options = shuffleArray(allSymbolOptions);
+
             options.forEach(opt => {
                 const div = document.createElement('div');
                 div.className = 'option symbols';
                 div.textContent = opt;
                 div.addEventListener('click', () => {
+                    // Tıklama sonrası diğer seçeneklerin tıklanmasını engelle
+                    document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none');
+
                     if (opt === correctOption) {
                         div.classList.add('correct');
                     } else {
                         div.classList.add('wrong');
+                        // Doğru olanı da gösterelim
+                        document.querySelectorAll('.option').forEach(el => {
+                            if (el.textContent === correctOption) {
+                                el.classList.add('correct');
+                            }
+                        });
                     }
+                    // 2 saniye sonra yeni oyun başlat
+                    setTimeout(initGame, 2000);
                 });
                 optionsDiv.appendChild(div);
             });
