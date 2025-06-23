@@ -43,10 +43,9 @@
         }
 
         /* Domino Izgarası */
-        .domino-grid {
+        #domino-grid {
             display: flex;
             flex-direction: column;
-            /* GÜNCELLEME: Dikey boşluk artık gap ile değil, aşağıda satırların margin'i ile kontrol ediliyor */
             margin-bottom: 25px;
         }
 
@@ -55,16 +54,12 @@
             justify-content: center;
             align-items: center;
             gap: 15px;
-            /* Bu, dominolar arası yatay boşluk içindir */
             margin-bottom: 35px;
-            /* GÜNCELLEME: Satırlar arası dikey boşluk eklendi */
         }
 
-        /* GÜNCELLEME: Son satırın altındaki gereksiz boşluğu kaldırır */
-        .domino-grid .domino-row:last-child {
+        #domino-grid .domino-row:last-child {
             margin-bottom: 0;
         }
-
 
         /* Tek bir domino taşı stili */
         .domino {
@@ -77,7 +72,7 @@
             padding: 4px;
             box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
             box-sizing: border-box;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
         }
 
         /* Domino'nun iki yarısı */
@@ -93,7 +88,8 @@
         .domino .divider {
             width: 2px;
             height: 80%;
-            background-color: rgba(255, 255, 255, 0.7);
+            background-color: #333;
+            opacity: 0.5;
             border-radius: 2px;
         }
 
@@ -204,12 +200,6 @@
             box-sizing: border-box;
         }
 
-        .question-text {
-            font-size: 1.1em;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
         /* Cevap Seçenekleri Konteyneri */
         #options-container {
             display: flex;
@@ -295,6 +285,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
+            // === ELEMENTLER VE SABİTLER ===
             const gridContainer = document.getElementById('domino-grid');
             const optionsContainer = document.getElementById('options-container');
             const resultElement = document.getElementById('result');
@@ -306,78 +298,20 @@
                 { bg: '#d0021b', border: '#a50115' }
             ];
 
+            // === OYUN MEKANİKLERİ ===
+            // Her oyunda rastgele seçilecek olan oyun kuralları.
+            const gameRules = ['subtraction', 'addition', 'multiplication', 'division'];
+            // Her oyunda rastgele seçilecek olan bulmaca yönü.
+            const orientations = ['horizontal', 'vertical'];
+
+
+            // === YARDIMCI FONKSİYONLAR ===
             function shuffleArray(array) {
                 for (let i = array.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [array[i], array[j]] = [array[j], array[i]];
                 }
                 return array;
-            }
-
-            function generatePuzzleRow() {
-                let L1, R1, L2, R2, L3, R3;
-                do { L1 = Math.floor(Math.random() * 4) + 3; L2 = Math.floor(Math.random() * (L1 - 1)) + 1; L3 = L1 - L2; } while (L3 < 1);
-                do { R1 = Math.floor(Math.random() * 4) + 3; R2 = Math.floor(Math.random() * (R1 - 1)) + 1; R3 = R1 - R2; } while (R3 < 1);
-                return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
-            }
-
-            function startGame() {
-                gridContainer.innerHTML = '';
-                optionsContainer.innerHTML = '';
-                resultElement.innerHTML = '';
-
-                const shuffledColors = shuffleArray([...colorPalette]);
-                let correctAnswer = null;
-
-                for (let i = 0; i < 3; i++) {
-                    const rowData = generatePuzzleRow();
-                    const rowElement = document.createElement('div');
-                    rowElement.className = 'domino-row';
-                    const colorInfo = shuffledColors[i % shuffledColors.length];
-
-                    if (i === 2) {
-                        correctAnswer = { ...rowData[2] };
-                        rowData[2] = null;
-                    }
-
-                    rowData.forEach(dom => {
-                        let domEl;
-                        if (dom) {
-                            domEl = createDominoElement(dom.left, dom.right);
-                        } else {
-                            domEl = document.createElement('div');
-                            domEl.className = 'question-mark';
-                            domEl.textContent = '?';
-                        }
-                        domEl.style.backgroundColor = colorInfo.bg;
-                        domEl.style.borderColor = colorInfo.border;
-                        rowElement.appendChild(domEl);
-                    });
-                    gridContainer.appendChild(rowElement);
-                }
-
-                const answerOptions = [{ ...correctAnswer, isCorrect: true }];
-                while (answerOptions.length < 4) {
-                    const wrongL = Math.floor(Math.random() * 6) + 1;
-                    const wrongR = Math.floor(Math.random() * 6) + 1;
-                    const isDuplicate = answerOptions.some(opt => opt.left === wrongL && opt.right === wrongR);
-                    if (!isDuplicate) {
-                        answerOptions.push({ left: wrongL, right: wrongR, isCorrect: false });
-                    }
-                }
-
-                shuffleArray(answerOptions).forEach(option => {
-                    const optionDomino = createDominoElement(option.left, option.right);
-                    optionDomino.classList.add('option-domino');
-                    optionDomino.dataset.correct = option.isCorrect;
-
-                    const colorInfo = shuffledColors[2 % shuffledColors.length];
-                    optionDomino.style.backgroundColor = colorInfo.bg;
-                    optionDomino.style.borderColor = colorInfo.border;
-
-                    optionDomino.addEventListener('click', handleOptionClick);
-                    optionsContainer.appendChild(optionDomino);
-                });
             }
 
             function createDominoElement(left, right) {
@@ -397,6 +331,153 @@
                 return domino;
             }
 
+            // === KURAL VE BULMACA OLUŞTURMA ===
+
+            /**
+             * Belirtilen kurala göre 3 dominodan oluşan bir set (satır veya sütun) oluşturur.
+             * Bu fonksiyon, hem yatay hem de dikey bulmacalar için temel yapı taşıdır.
+             * @param {string} rule - 'subtraction', 'addition', vs.
+             * @returns {Array|null} Geçerli bir set oluşturulursa [domino1, domino2, domino3] dizisi, yoksa null döner.
+             */
+            function generateRuleSet(rule) {
+                let L1, R1, L2, R2, L3, R3;
+
+                switch (rule) {
+                    // KURAL 1: ÇIKARMA (D1 - D2 = D3)
+                    case 'subtraction':
+                        L1 = Math.floor(Math.random() * 4) + 3; L2 = Math.floor(Math.random() * (L1 - 1)) + 1; L3 = L1 - L2;
+                        R1 = Math.floor(Math.random() * 4) + 3; R2 = Math.floor(Math.random() * (R1 - 1)) + 1; R3 = R1 - R2;
+                        if (L3 < 1 || R3 < 1) return null;
+                        return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
+
+                    // KURAL 2: TOPLAMA (D1 + D2 = D3)
+                    case 'addition':
+                        L1 = Math.floor(Math.random() * 5) + 1; L2 = Math.floor(Math.random() * (6 - L1)) + 1; L3 = L1 + L2;
+                        R1 = Math.floor(Math.random() * 5) + 1; R2 = Math.floor(Math.random() * (6 - R1)) + 1; R3 = R1 + R2;
+                        if (L3 > 6 || R3 > 6) return null;
+                        return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
+
+                    // KURAL 3: ÇARPMA (D1 * D2 = D3)
+                    case 'multiplication':
+                        do { L1 = Math.floor(Math.random() * 6) + 1; L2 = Math.floor(Math.random() * 6) + 1; } while (L1 * L2 > 6); L3 = L1 * L2;
+                        do { R1 = Math.floor(Math.random() * 6) + 1; R2 = Math.floor(Math.random() * 6) + 1; } while (R1 * R2 > 6); R3 = R1 * R2;
+                        return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
+
+                    // KURAL 4: BÖLME (D1 / D2 = D3)
+                    case 'division':
+                        do { L2 = Math.floor(Math.random() * 6) + 1; L3 = Math.floor(Math.random() * 6) + 1; } while (L2 * L3 > 6); L1 = L2 * L3;
+                        do { R2 = Math.floor(Math.random() * 6) + 1; R3 = Math.floor(Math.random() * 6) + 1; } while (R2 * R3 > 6); R1 = R2 * R3;
+                        return [{ left: L1, right: R1 }, { left: L2, right: R2 }, { left: L3, right: R3 }];
+
+                    default: return null;
+                }
+            }
+
+
+            // === OYUN AKIŞI FONKSİYONLARI ===
+            function startGame() {
+                gridContainer.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                resultElement.innerHTML = '';
+                resultElement.className = '';
+
+                // === OYUN KURULUMU ===
+                const shuffledColors = shuffleArray([...colorPalette]);
+                const selectedRule = gameRules[Math.floor(Math.random() * gameRules.length)];
+                // YENİ: Oyunun yönünü (yatay veya dikey) rastgele seç.
+                const selectedOrientation = orientations[Math.floor(Math.random() * orientations.length)];
+
+                let allRowsData;
+                let correctAnswer;
+
+                // Seçilen yöne göre bulmacayı oluştur.
+                if (selectedOrientation === 'horizontal') {
+                    // YATAY BULMACA: Her satır kendi içinde kurala uyar.
+                    allRowsData = [];
+                    for (let i = 0; i < 3; i++) {
+                        let row;
+                        do { row = generateRuleSet(selectedRule); } while (!row);
+                        allRowsData.push(row);
+                    }
+                    correctAnswer = { ...allRowsData[2][2] }; // Cevap, 3. satırın 3. elemanıdır.
+                } else {
+                    // DİKEY BULMACA: Her sütun kendi içinde kurala uyar.
+                    const columns = [];
+                    for (let i = 0; i < 3; i++) {
+                        let col;
+                        do { col = generateRuleSet(selectedRule); } while (!col);
+                        columns.push(col);
+                    }
+                    correctAnswer = { ...columns[2][2] }; // Cevap, 3. sütunun 3. elemanıdır.
+
+                    // Sütun verilerini, ekranda çizilebilecek satır verilerine dönüştür (transpoze et).
+                    allRowsData = [
+                        [columns[0][0], columns[1][0], columns[2][0]],
+                        [columns[0][1], columns[1][1], columns[2][1]],
+                        [columns[0][2], columns[1][2], columns[2][2]],
+                    ];
+                }
+
+                // === EKRANA ÇİZİM ===
+                // Oluşturulan bulmacayı (allRowsData) ekrana çizer.
+                allRowsData.forEach((rowData, rowIndex) => {
+                    const rowElement = document.createElement('div');
+                    rowElement.className = 'domino-row';
+
+                    rowData.forEach((dom, colIndex) => {
+                        let domEl;
+                        // Cevaplanacak olan domino taşı yerine '?' koy.
+                        if (rowIndex === 2 && colIndex === 2) {
+                            domEl = document.createElement('div');
+                            domEl.className = 'question-mark';
+                            domEl.textContent = '?';
+                        } else {
+                            domEl = createDominoElement(dom.left, dom.right);
+                        }
+
+                        // YENİ: Yöne göre renklendir.
+                        // Yatay ise satır rengi, dikey ise sütun rengi kullanılır.
+                        let colorInfo;
+                        if (selectedOrientation === 'horizontal') {
+                            colorInfo = shuffledColors[rowIndex % shuffledColors.length];
+                        } else { // vertical
+                            colorInfo = shuffledColors[colIndex % shuffledColors.length];
+                        }
+
+                        domEl.style.backgroundColor = colorInfo.bg;
+                        domEl.style.borderColor = colorInfo.border;
+                        rowElement.appendChild(domEl);
+                    });
+                    gridContainer.appendChild(rowElement);
+                });
+
+
+                // === CEVAP SEÇENEKLERİNİ OLUŞTURMA ===
+                const answerOptions = [{ ...correctAnswer, isCorrect: true }];
+                while (answerOptions.length < 4) {
+                    const wrongL = Math.floor(Math.random() * 6) + 1;
+                    const wrongR = Math.floor(Math.random() * 6) + 1;
+                    const isDuplicate = answerOptions.some(opt => opt.left === wrongL && opt.right === wrongR);
+                    if (!isDuplicate) {
+                        answerOptions.push({ left: wrongL, right: wrongR, isCorrect: false });
+                    }
+                }
+
+                shuffleArray(answerOptions).forEach(option => {
+                    const optionDomino = createDominoElement(option.left, option.right);
+                    optionDomino.classList.add('option-domino');
+                    optionDomino.dataset.correct = option.isCorrect;
+
+                    // Cevap seçeneklerinin rengi, her zaman gizlenen 3. satır/sütunun rengiyle eşleşir.
+                    const colorInfo = shuffledColors[2 % shuffledColors.length];
+                    optionDomino.style.backgroundColor = colorInfo.bg;
+                    optionDomino.style.borderColor = colorInfo.border;
+
+                    optionDomino.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(optionDomino);
+                });
+            }
+
             function handleOptionClick(event) {
                 const clickedDomino = event.currentTarget;
                 const isCorrect = clickedDomino.dataset.correct === 'true';
@@ -412,12 +493,14 @@
 
                 document.querySelectorAll('.option-domino').forEach(dom => {
                     dom.classList.add('disabled');
+                    dom.removeEventListener('click', handleOptionClick);
                     if (dom.dataset.correct === 'true') {
                         dom.classList.add('correct-answer');
                     }
                 });
             }
 
+            // === OYUNU BAŞLATMA ===
             newGameButton.addEventListener('click', startGame);
             startGame();
         });
