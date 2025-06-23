@@ -30,9 +30,7 @@
             background-color: #fff;
             box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
             position: relative;
-            /* Göz ikonu için gerekli */
             overflow: hidden;
-            /* Göz ikonu konteyner dışına taşarsa kes */
         }
 
         .options {
@@ -83,27 +81,14 @@
             transform: translateY(-2px);
         }
 
-        /* Göz ikonu için konumlandırma: Three.js görüntüsünün alt sağında */
         #cameraIndicator {
             position: absolute;
             bottom: 20px;
-            /* Alttan 20px */
             right: 20px;
-            /* Sağdan 20px */
             width: 60px;
-            /* SVG boyutu */
             height: 60px;
-            /* SVG boyutu */
             pointer-events: none;
-            /* Etkileşimi engelleme */
             z-index: 10;
-            /* Canvas'ın üzerinde görünmesini sağla */
-        }
-
-        /* Seçenekler için soru başlığına ID veriyoruz */
-        #optionsQuestionH2 {
-            margin-top: 40px;
-            /* Üstteki div ile arayı açalım */
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -118,7 +103,6 @@
                 <circle cx="50" cy="50" r="15" fill="blue" />
                 <circle cx="50" cy="50" r="8" fill="black" />
                 <circle cx="58" cy="42" r="3" fill="white" />
-
                 <path d="M75 75 L25 25" stroke="#000000" stroke-width="5" stroke-linecap="round"
                     stroke-linejoin="round" />
                 <path d="M25 25 L35 30 M25 25 L30 35" stroke="#000000" stroke-width="5" stroke-linecap="round"
@@ -130,79 +114,46 @@
     <button onclick="startGame()">Yeni Oyun</button>
 
     <script>
-        // --- Sabitler ---
-        const CUBE_SIZE_THREE = 1; // Three.js küp boyutu
-        const CUBE_HALF_SIZE = CUBE_SIZE_THREE / 2;
-
-        // 2D Seçenekler İçin Sabitler
-        const FIXED_OPTION_BLOCK_PIXEL_SIZE = 25; // Her bir blokun piksel boyutu (kare olacak)
-
+        const CUBE_SIZE_THREE = 1;
         const COLORS = {
-            red: ['#ff4d4d', '#cc0000', '#990000'], // top, side_light, side_dark
+            red: ['#ff4d4d', '#cc0000', '#990000'],
             blue: ['#4d4dff', '#0000cc', '#000099'],
             yellow: ['#ffff66', '#cccc00', '#999900'],
             green: ['#66ff66', '#00cc00', '#009900'],
             purple: ['#e6a1e6', '#a100a1', '#6b006b']
         };
         const COLOR_KEYS = Object.keys(COLORS);
+        const FIXED_OPTION_BLOCK_PIXEL_SIZE = 25;
 
-        // --- Dinamik Grid Boyutları (Her oyun başında belirlenecek) ---
-        let currentGridDimension; // Gridin X ve Y (derinlik) boyutu
-        let currentMaxTowerHeight; // Z (yükseklik) için maksimum blok sayısı
 
-        // --- Dinamik Seçenek Tuval Boyutları ---
+        let currentGridDimension;
+        let currentMaxTowerHeight;
         let currentOptionCanvasWidth;
         let currentOptionCanvasHeight;
-
-        // --- Three.js Değişkenleri ---
         let scene, camera, renderer;
         let isThreeJSInitialized = false;
 
-        // --- Yardımcı Fonksiyonlar ---
-        function hexToRgb(hex) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return [r, g, b];
-        }
-
-        // --- Three.js Sahne Kurulumu ve Çizimi ---
         function initThreeJS() {
             if (isThreeJSInitialized) return;
-
             const container = document.getElementById('threeJsContainer');
-
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0);
-
             const aspect = container.clientWidth / container.clientHeight;
-            const initialMaxDim = Math.max(4, 4);
-            const frustumSize = initialMaxDim * CUBE_SIZE_THREE * 1.5;
-
-            camera = new THREE.OrthographicCamera(
-                frustumSize * aspect / -2,
-                frustumSize * aspect / 2,
-                frustumSize / 2,
-                frustumSize / -2,
-                0.1,
-                1000
-            );
-
-            camera.position.set(15, 15, 15);
+            const frustumSize = 8 * CUBE_SIZE_THREE * 1.5;
+            camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+            camera.position.set(20, 20, 20);
             camera.lookAt(0, 0, 0);
 
-            const ambientLight = new THREE.AmbientLight(0x606060);
+            const ambientLight = new THREE.AmbientLight(0x808080);
+            ambientLight.name = "ambient_light";
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight.name = "directional_light";
             directionalLight.position.set(20, 30, 20);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 1024;
-            directionalLight.shadow.mapSize.height = 1024;
-            directionalLight.shadow.camera.left = -10;
-            directionalLight.shadow.camera.right = 10;
-            directionalLight.shadow.camera.top = 10;
-            directionalLight.shadow.camera.bottom = -10;
+            directionalLight.castShadow = false;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -211,64 +162,61 @@
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
-
-            window.addEventListener('resize', onWindowResize, false);
             isThreeJSInitialized = true;
         }
 
-        // Kamera ve ışıkların konumunu ve frustumunu güncelleyen fonksiyon
-        function updateCameraAndLights() {
+        function updateCameraAndLights(structure) {
             if (!camera || !renderer) return;
 
-            const container = document.getElementById('threeJsContainer');
-            const aspect = container.clientWidth / container.clientHeight;
-
-            const currentMaxOverallDimension = Math.max(currentGridDimension, currentMaxTowerHeight);
-            const frustumSize = currentMaxOverallDimension * CUBE_SIZE_THREE * 1.5;
-
-            camera.left = frustumSize * aspect / -2;
-            camera.right = frustumSize * aspect / 2;
-            camera.top = frustumSize / 2;
-            camera.bottom = frustumSize / -2;
-            camera.updateProjectionMatrix();
-
-            const camDistance = Math.sqrt(currentGridDimension ** 2 + currentGridDimension ** 2 + currentMaxTowerHeight ** 2) * 1.5;
-            camera.position.set(camDistance, camDistance, camDistance);
-
-            const targetX = (currentGridDimension - 1) * CUBE_SIZE_THREE / 2;
-            const targetY = (currentMaxTowerHeight - 1) * CUBE_SIZE_THREE / 2;
-            const targetZ = (currentGridDimension - 1) * CUBE_SIZE_THREE / 2;
-            camera.lookAt(targetX, targetY, targetZ);
-
-            const directionalLight = scene.children.find(obj => obj instanceof THREE.DirectionalLight);
-            if (directionalLight) {
-                directionalLight.position.set(targetX + 10, targetY + 15, targetZ + 10);
-                directionalLight.shadow.camera.left = -frustumSize / 2;
-                directionalLight.shadow.camera.right = frustumSize / 2;
-                directionalLight.shadow.camera.top = frustumSize / 2;
-                directionalLight.shadow.camera.bottom = -frustumSize / 2;
-                directionalLight.shadow.camera.updateProjectionMatrix();
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            let hasBlocks = false;
+            for (let x = 0; x < currentGridDimension; x++) {
+                for (let y = 0; y < currentGridDimension; y++) {
+                    for (let z = 0; z < currentMaxTowerHeight; z++) {
+                        if (structure[x][y][z]) {
+                            hasBlocks = true;
+                            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+                            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+                            minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+                        }
+                    }
+                }
             }
 
+            const centerX = hasBlocks ? (minX + maxX) / 2 : 0;
+            const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0; // 3D z (height) is 3js Y
+            const centerZ = hasBlocks ? (minY + maxY) / 2 : 0; // 3D y (depth) is 3js Z
+
+            const structureSize = hasBlocks ? Math.max(maxX - minX, maxY - minY, maxZ - minZ) + 2 : currentGridDimension;
+            const camPos = structureSize * 2;
+            camera.position.set(centerX + camPos, centerY + camPos, centerZ + camPos);
+            camera.lookAt(centerX, centerY, centerZ);
+
+            const light = scene.getObjectByName("directional_light");
+            if (light) {
+                light.position.set(centerX + camPos * 0.5, centerY + camPos, centerZ + camPos * 0.5);
+            }
             renderer.render(scene, camera);
         }
 
-        function onWindowResize() {
-            updateCameraAndLights();
-        }
-
         function drawStructureThreeJS(structure) {
-            const objectsToRemove = scene.children.filter(obj => obj.isMesh);
+            const objectsToRemove = [];
+            scene.traverse(child => {
+                if (child.isMesh) {
+                    objectsToRemove.push(child);
+                }
+            });
+
             objectsToRemove.forEach(obj => {
-                scene.remove(obj);
                 if (obj.geometry) obj.geometry.dispose();
                 if (obj.material) {
                     if (Array.isArray(obj.material)) {
-                        obj.material.forEach(mat => mat.dispose());
+                        obj.material.forEach(m => m.dispose());
                     } else {
                         obj.material.dispose();
                     }
                 }
+                scene.remove(obj);
             });
 
             for (let x = 0; x < currentGridDimension; x++) {
@@ -277,24 +225,17 @@
                         const cubeColorName = structure[x][y][z];
                         if (cubeColorName) {
                             const [topHex, sideLightHex, sideDarkHex] = COLORS[cubeColorName].map(c => parseInt(c.slice(1), 16));
-
                             const materials = [
-                                new THREE.MeshLambertMaterial({ color: sideLightHex }), // +X (Sağ) yüz - parlak
-                                new THREE.MeshLambertMaterial({ color: sideDarkHex }),  // -X (Sol) yüz - koyu
-                                new THREE.MeshLambertMaterial({ color: topHex }),      // +Y (Üst) yüz - en parlak
-                                new THREE.MeshLambertMaterial({ color: sideDarkHex }),  // -Y (Alt) yüz - koyu
-                                new THREE.MeshLambertMaterial({ color: sideLightHex }), // +Z (Ön) yüz - parlak
-                                new THREE.MeshLambertMaterial({ color: sideDarkHex })   // -Z (Arka) yüz - koyu
+                                new THREE.MeshLambertMaterial({ color: sideLightHex }),
+                                new THREE.MeshLambertMaterial({ color: sideDarkHex }),
+                                new THREE.MeshLambertMaterial({ color: topHex }),
+                                new THREE.MeshLambertMaterial({ color: sideDarkHex }),
+                                new THREE.MeshLambertMaterial({ color: sideLightHex }),
+                                new THREE.MeshLambertMaterial({ color: sideDarkHex })
                             ];
-
                             const geometry = new THREE.BoxGeometry(CUBE_SIZE_THREE, CUBE_SIZE_THREE, CUBE_SIZE_THREE);
                             const cube = new THREE.Mesh(geometry, materials);
-
-                            cube.position.set(
-                                x * CUBE_SIZE_THREE,
-                                z * CUBE_SIZE_THREE + CUBE_HALF_SIZE, // Yükseklik (Three.js Y)
-                                y * CUBE_SIZE_THREE                 // Derinlik (Three.js Z)
-                            );
+                            cube.position.set(x, z, y);
                             cube.castShadow = true;
                             cube.receiveShadow = true;
                             scene.add(cube);
@@ -302,84 +243,109 @@
                     }
                 }
             }
-            renderer.render(scene, camera);
+            updateCameraAndLights(structure);
         }
 
-        // --- Yapı Üretimi ---
         function generateStructure() {
             let structure;
-            let isValid = false;
-            while (!isValid) {
-                structure = [];
-                for (let x = 0; x < currentGridDimension; x++) {
-                    structure[x] = [];
-                    for (let y = 0; y < currentGridDimension; y++) {
-                        const height = Math.floor(Math.random() * (currentMaxTowerHeight + 1));
-                        structure[x][y] = [];
-                        for (let z = 0; z < height; z++) {
-                            const color = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
-                            structure[x][y].push(color);
+            let isStructureAcceptable = false;
+            let generationAttempts = 0;
+
+            while (!isStructureAcceptable && generationAttempts < 1000) { // Deneme limitini artırdık
+                generationAttempts++;
+
+                let candidateStructure = Array.from({ length: currentGridDimension }, () => Array.from({ length: currentGridDimension }, () => Array.from({ length: currentMaxTowerHeight }, () => null)));
+                let allCubesInCandidate = [];
+                const growthCandidates = [];
+                const occupied = new Set();
+
+                const startX = Math.floor(Math.random() * currentGridDimension);
+                const startY = Math.floor(Math.random() * currentGridDimension);
+                candidateStructure[startX][startY][0] = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+                occupied.add(`${startX},${startY},0`);
+                allCubesInCandidate.push({ x: startX, y: startY, z: 0 });
+                addNeighbors(startX, startY, 0);
+
+                const totalBlocks = 5 + Math.floor(Math.random() * 5); // 5 ila 9 blok
+                let blocksPlaced = 1;
+
+                while (blocksPlaced < totalBlocks && growthCandidates.length > 0) {
+                    const candidateIndex = Math.floor(Math.random() * growthCandidates.length);
+                    const { x, y, z } = growthCandidates.splice(candidateIndex, 1)[0];
+                    if (occupied.has(`${x},${y},${z}`)) continue;
+                    if (z > 0 && !occupied.has(`${x},${y},${z - 1}`)) continue;
+
+                    candidateStructure[x][y][z] = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+                    occupied.add(`${x},${y},${z}`);
+                    allCubesInCandidate.push({ x, y, z });
+                    blocksPlaced++;
+                    addNeighbors(x, y, z);
+                }
+
+                function addNeighbors(x, y, z) {
+                    const neighbors = [{ x: x + 1, y, z }, { x: x - 1, y, z }, { x, y: y + 1, z }, { x, y: y - 1, z }, { x, y, z: z + 1 }];
+                    for (const n of neighbors) {
+                        if (n.x >= 0 && n.x < currentGridDimension && n.y >= 0 && n.y < currentGridDimension && n.z >= 0 && n.z < currentMaxTowerHeight && !occupied.has(`${n.x},${n.y},${n.z}`)) {
+                            growthCandidates.push(n);
                         }
                     }
                 }
-                const dummyCanvas = document.createElement('canvas');
-                dummyCanvas.width = currentOptionCanvasWidth;
-                dummyCanvas.height = currentOptionCanvasHeight;
-                const dummyCtx = dummyCanvas.getContext('2d', { willReadFrequently: true });
-                const testImageData = getRightSideViewImageData(structure, dummyCtx);
 
-                let hasColoredPixels = false;
-                const backgroundR = 240, backgroundG = 240, backgroundB = 240; // #f0f0f0
-                const threshold = 10;
-                for (let i = 0; i < testImageData.data.length; i += 4) {
-                    const r = testImageData.data[i];
-                    const g = testImageData.data[i + 1];
-                    const b = testImageData.data[i + 2];
+                if (allCubesInCandidate.length < 4) continue;
 
-                    if (Math.abs(r - backgroundR) > threshold ||
-                        Math.abs(g - backgroundG) > threshold ||
-                        Math.abs(b - backgroundB) > threshold) {
-                        hasColoredPixels = true;
-                        break;
+                const visibleCubes = new Set();
+                const screenDepthMap = new Map();
+                allCubesInCandidate.sort((a, b) => (b.x + b.y + b.z) - (a.x + a.y + a.z));
+
+                for (const cube of allCubesInCandidate) {
+                    const screenX = (cube.x - cube.y);
+                    const screenY = (cube.z * 2) - (cube.x + cube.y);
+                    const key = `${screenX},${screenY}`;
+                    if (!screenDepthMap.has(key)) {
+                        screenDepthMap.set(key, true);
+                        visibleCubes.add(`${cube.x},${cube.y},${cube.z}`);
                     }
                 }
-                isValid = hasColoredPixels;
+
+                if (allCubesInCandidate.length === visibleCubes.size) {
+                    isStructureAcceptable = true;
+                    structure = candidateStructure;
+                }
             }
+
+            if (!isStructureAcceptable) {
+                console.warn("Adil bir yapı bulunamadı! Son deneme kullanılıyor veya yeniden başlatılıyor...");
+                return generateStructure(); // Adil yapı bulunamazsa, fonksiyonu tekrar çağır
+            }
+
             return structure;
         }
 
-        // --- 2D Seçenekler İçin Görsel Üretimi (Tam Sağdan Bakış + Yatay Aynalama) ---
         function getRightSideViewImageData(structure, ctx) {
             ctx.clearRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
-            ctx.fillStyle = "#f0f0f0"; // Arkaplan rengi
+            ctx.fillStyle = "#f0f0f0";
             ctx.fillRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
-
             const finalViewGrid = Array.from({ length: currentGridDimension }, () => Array(currentMaxTowerHeight).fill(null));
-
-            for (let y = currentGridDimension - 1; y >= 0; y--) { // 3B Y ekseni (derinlik): önden arkaya
-                for (let z = currentMaxTowerHeight - 1; z >= 0; z--) { // 3B Z ekseni (yükseklik): yukarıdan aşağıya
-                    let visibleCubeColor = null;
-                    for (let x = currentGridDimension - 1; x >= 0; x--) { // 3B X ekseni (genişlik): sağdan sola
+            for (let x = currentGridDimension - 1; x >= 0; x--) {
+                for (let y = 0; y < currentGridDimension; y++) {
+                    for (let z = 0; z < currentMaxTowerHeight; z++) {
                         if (structure[x][y][z]) {
-                            visibleCubeColor = structure[x][y][z];
-                            break;
+                            const col_2d = currentGridDimension - 1 - y;
+                            const row_2d = currentMaxTowerHeight - 1 - z;
+                            if (finalViewGrid[col_2d][row_2d] === null) {
+                                finalViewGrid[col_2d][row_2d] = structure[x][y][z];
+                            }
                         }
-                    }
-                    if (visibleCubeColor !== null) {
-                        finalViewGrid[currentGridDimension - 1 - y][currentMaxTowerHeight - 1 - z] = visibleCubeColor;
                     }
                 }
             }
-
-            for (let col_2d = 0; col_2d < currentGridDimension; col_2d++) { // 2D sütun (aynılanmış derinlik)
-                for (let row_2d = 0; row_2d < currentMaxTowerHeight; row_2d++) { // 2D satır (aynılanmış yükseklik)
+            for (let col_2d = 0; col_2d < currentGridDimension; col_2d++) {
+                for (let row_2d = 0; row_2d < currentMaxTowerHeight; row_2d++) {
                     const colorName = finalViewGrid[col_2d][row_2d];
                     if (colorName !== null) {
                         const [, sideLightHex] = COLORS[colorName];
-
                         const drawX = col_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
                         const drawY = row_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-
                         const margin = 1;
                         ctx.fillStyle = sideLightHex;
                         ctx.fillRect(drawX + margin, drawY + margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin);
@@ -389,25 +355,21 @@
                     }
                 }
             }
-
             return ctx.getImageData(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
         }
 
-        // --- Seçenekleri Ekrana Çizme ---
         function drawView(imageData, container, isCorrect = false) {
             const optionCanvas = document.createElement("canvas");
             optionCanvas.width = imageData.width;
             optionCanvas.height = imageData.height;
             optionCanvas.className = 'option';
             const optCtx = optionCanvas.getContext('2d', { willReadFrequently: true });
-
             optCtx.putImageData(imageData, 0, 0);
-
             optionCanvas.onclick = () => {
                 document.querySelectorAll('.option').forEach(opt => {
                     opt.classList.remove('correct-answer', 'wrong-answer');
+                    opt.onclick = null;
                 });
-
                 if (isCorrect) {
                     optionCanvas.classList.add('correct-answer');
                     setTimeout(() => { alert("✅ Doğru cevap!"); }, 100);
@@ -420,171 +382,141 @@
                     setTimeout(() => { alert("❌ Yanlış cevap!"); }, 100);
                 }
             };
-
             if (isCorrect) {
                 optionCanvas.classList.add('is-correct');
             }
-
             container.appendChild(optionCanvas);
         }
 
-        // --- Yanlış Seçenek Üretimi (Blok Tabanlı) ---
         function generateWrongView(correctImageData) {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = correctImageData.width;
             tempCanvas.height = correctImageData.height;
             const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
             tempCtx.putImageData(correctImageData, 0, 0);
-
             const baseGrid = Array.from({ length: currentGridDimension }, () => Array(currentMaxTowerHeight).fill(null));
-            const backgroundRgb = hexToRgb("#f0f0f0");
             const colorTolerance = 20;
-
-            for (let col_2d = 0; col_2d < currentGridDimension; col_2d++) {
-                for (let row_2d = 0; row_2d < currentMaxTowerHeight; row_2d++) {
-                    const xStart = col_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-                    const yStart = row_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-
-                    const sampleX = Math.floor(xStart + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
-                    const sampleY = Math.floor(yStart + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
+            for (let c = 0; c < currentGridDimension; c++) {
+                for (let r = 0; r < currentMaxTowerHeight; r++) {
+                    const sampleX = Math.floor(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
+                    const sampleY = Math.floor(r * FIXED_OPTION_BLOCK_PIXEL_SIZE + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
                     const pixelData = tempCtx.getImageData(sampleX, sampleY, 1, 1).data;
-
-                    const r = pixelData[0];
-                    const g = pixelData[1];
-                    const b = pixelData[2];
-
-                    let foundColor = null;
+                    if (pixelData[3] < 255) continue;
                     for (const key of COLOR_KEYS) {
                         const [, sideLightHex] = COLORS[key];
-                        const [colorR, colorG, colorB] = hexToRgb(sideLightHex);
-
-                        if (Math.abs(r - colorR) < colorTolerance &&
-                            Math.abs(g - colorG) < colorTolerance &&
-                            Math.abs(b - colorB) < colorTolerance) {
-                            foundColor = key;
+                        const colorR = parseInt(sideLightHex.slice(1, 3), 16);
+                        const colorG = parseInt(sideLightHex.slice(3, 5), 16);
+                        const colorB = parseInt(sideLightHex.slice(5, 7), 16);
+                        if (Math.abs(pixelData[0] - colorR) < colorTolerance && Math.abs(pixelData[1] - colorG) < colorTolerance && Math.abs(pixelData[2] - colorB) < colorTolerance) {
+                            baseGrid[c][r] = key;
                             break;
                         }
                     }
-
-                    if (Math.abs(r - backgroundRgb[0]) < colorTolerance &&
-                        Math.abs(g - backgroundRgb[1]) < colorTolerance &&
-                        Math.abs(b - backgroundRgb[2]) < colorTolerance) {
-                        foundColor = null;
-                    }
-
-                    baseGrid[col_2d][row_2d] = foundColor;
                 }
             }
-
             const wrongGrid = JSON.parse(JSON.stringify(baseGrid));
             let changesMade = 0;
-            const minChanges = 1;
-            const maxAttempts = 50;
-
-            for (let attempt = 0; attempt < maxAttempts && changesMade < minChanges; attempt++) {
-                const col_idx = Math.floor(Math.random() * currentGridDimension);
-                const row_idx = Math.floor(Math.random() * currentMaxTowerHeight);
-
-                const originalValue = baseGrid[col_idx][row_idx];
-                let newValue = wrongGrid[col_idx][row_idx];
-
-                if (originalValue !== null) {
-                    if (Math.random() < 0.6) {
-                        let newColor = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
-                        while (newColor === originalValue && COLOR_KEYS.length > 1) {
-                            newColor = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
-                        }
-                        newValue = newColor;
-                    } else {
-                        newValue = null;
+            let attempts = 0;
+            while (changesMade < 1 && attempts < 50) {
+                attempts++;
+                const allBlocks = [];
+                const emptyCells = [];
+                for (let c = 0; c < currentGridDimension; c++) {
+                    for (let r = 0; r < currentMaxTowerHeight; r++) {
+                        if (wrongGrid[c][r]) allBlocks.push({ c, r, color: wrongGrid[c][r] });
+                        else emptyCells.push({ c, r });
                     }
-                } else {
-                    newValue = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
                 }
-
-                if (newValue !== originalValue) {
-                    wrongGrid[col_idx][row_idx] = newValue;
-                    changesMade++;
+                if (allBlocks.length === 0 && emptyCells.length === 0) break;
+                const mutationType = Math.random();
+                if (mutationType < 0.4 && allBlocks.length > 0) {
+                    const block = allBlocks[Math.floor(Math.random() * allBlocks.length)];
+                    const availableColors = COLOR_KEYS.filter(k => k !== block.color);
+                    if (availableColors.length > 0) {
+                        wrongGrid[block.c][block.r] = availableColors[Math.floor(Math.random() * availableColors.length)];
+                        changesMade++;
+                    }
+                }
+                else if (mutationType < 0.7 && allBlocks.length > 0) {
+                    const block = allBlocks[Math.floor(Math.random() * allBlocks.length)];
+                    for (let row_to_clear = block.r; row_to_clear >= 0; row_to_clear--) {
+                        if (wrongGrid[block.c][row_to_clear]) {
+                            wrongGrid[block.c][row_to_clear] = null;
+                            changesMade = 1;
+                        }
+                    }
+                }
+                else {
+                    const validAddSpots = emptyCells.filter(cell => cell.r === currentMaxTowerHeight - 1 || (wrongGrid[cell.c][cell.r + 1] !== null));
+                    if (validAddSpots.length > 0) {
+                        const spot = validAddSpots[Math.floor(Math.random() * validAddSpots.length)];
+                        wrongGrid[spot.c][spot.r] = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+                        changesMade++;
+                    }
                 }
             }
-
             const wrongOptionCanvas = document.createElement('canvas');
-            wrongOptionCanvas.width = currentOptionCanvasWidth;
-            wrongOptionCanvas.height = currentOptionCanvasHeight;
+            wrongOptionCanvas.width = correctImageData.width;
+            wrongOptionCanvas.height = correctImageData.height;
             const wrongOptCtx = wrongOptionCanvas.getContext('2d', { willReadFrequently: true });
-
             wrongOptCtx.fillStyle = "#f0f0f0";
-            wrongOptCtx.fillRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
-
-            for (let col_2d = 0; col_2d < currentGridDimension; col_2d++) {
-                for (let row_2d = 0; row_2d < currentMaxTowerHeight; row_2d++) {
-                    const colorName = wrongGrid[col_2d][row_2d];
+            wrongOptCtx.fillRect(0, 0, correctImageData.width, correctImageData.height);
+            for (let c = 0; c < currentGridDimension; c++) {
+                for (let r = 0; r < currentMaxTowerHeight; r++) {
+                    const colorName = wrongGrid[c][r];
                     if (colorName !== null) {
                         const [, sideLightHex] = COLORS[colorName];
-                        const drawX = col_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-                        const drawY = row_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-                        const margin = 1;
                         wrongOptCtx.fillStyle = sideLightHex;
-                        wrongOptCtx.fillRect(drawX + margin, drawY + margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin);
+                        wrongOptCtx.fillRect(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, r * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2);
                         wrongOptCtx.strokeStyle = "#333";
-                        wrongOptCtx.lineWidth = 1;
-                        wrongOptCtx.strokeRect(drawX + margin, drawY + margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin);
+                        wrongOptCtx.strokeRect(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, r * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2);
                     }
                 }
             }
-
-            return wrongOptCtx.getImageData(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
+            return wrongOptCtx.getImageData(0, 0, correctImageData.width, correctImageData.height);
         }
 
-        // --- Oyunu Başlatma Fonksiyonu ---
         function startGame() {
-            // Dinamik grid boyutlarını belirle (2x2'den 4x4'e)
-            currentGridDimension = Math.floor(Math.random() * 3) + 2; // 2, 3 veya 4
-            currentMaxTowerHeight = Math.floor(Math.random() * 3) + 2; // 2, 3 veya 4
-
-            // Dinamik seçenek tuval boyutlarını belirle
+            currentGridDimension = 4;
+            currentMaxTowerHeight = 4;
             currentOptionCanvasWidth = currentGridDimension * FIXED_OPTION_BLOCK_PIXEL_SIZE;
             currentOptionCanvasHeight = currentMaxTowerHeight * FIXED_OPTION_BLOCK_PIXEL_SIZE;
 
-            initThreeJS(); // Three.js'i bir kere başlat
-            updateCameraAndLights(); // Kamera ve ışıkları yeni boyutlara göre ayarla
+            initThreeJS();
 
-            const structure = generateStructure(); // Yeni bir yapı oluştur
-            drawStructureThreeJS(structure); // Three.js'te yapıyı çiz
+            const structure = generateStructure();
+            if (!structure) {
+                alert("Adil bir yapı üretilemedi, lütfen sayfayı yenileyin. Bu nadiren olur.");
+                return;
+            }
+
+            drawStructureThreeJS(structure);
 
             const dummyCanvas = document.createElement('canvas');
             dummyCanvas.width = currentOptionCanvasWidth;
             dummyCanvas.height = currentOptionCanvasHeight;
             const dummyCtx = dummyCanvas.getContext('2d', { willReadFrequently: true });
 
-            const correctViewImageData = getRightSideViewImageData(structure, dummyCtx); // Doğru yandan görünüm seçeneğini oluştur
+            const correctViewImageData = getRightSideViewImageData(structure, dummyCtx);
             const wrongViewsImageData = [];
-
             let attempts = 0;
-            // 3 farklı yanlış seçenek oluşturmaya çalış
-            while (wrongViewsImageData.length < 3 && attempts < 100) {
+            while (wrongViewsImageData.length < 3 && attempts < 200) {
                 const wrong = generateWrongView(correctViewImageData);
-                const isDuplicate = Array.from(wrong.data).join(',') === Array.from(correctViewImageData.data).join(',') ||
-                    wrongViewsImageData.some(imgData => Array.from(imgData.data).join(',') === Array.from(wrong.data).join(','));
-                if (!isDuplicate) {
-                    wrongViewsImageData.push(wrong);
+                if (wrong) {
+                    const isDuplicate = Array.from(wrong.data).join(',') === Array.from(correctViewImageData.data).join(',') || wrongViewsImageData.some(imgData => Array.from(imgData.data).join(',') === Array.from(wrong.data).join(','));
+                    if (!isDuplicate) {
+                        wrongViewsImageData.push(wrong);
+                    }
                 }
                 attempts++;
             }
 
-            // Tüm seçenekleri (doğru ve yanlış) bir araya getir ve karıştır
-            const allOptions = [
-                { view: correctViewImageData, correct: true },
-                ...wrongViewsImageData.map(v => ({ view: v, correct: false }))
-            ].sort(() => Math.random() - 0.5);
-
-            // Seçenekleri HTML'e ekle
+            const allOptions = [{ view: correctViewImageData, correct: true }, ...wrongViewsImageData.map(v => ({ view: v, correct: false }))].sort(() => Math.random() - 0.5);
             const optionsContainer = document.getElementById("optionsContainer");
-            optionsContainer.innerHTML = ''; // Önceki seçenekleri temizle
+            optionsContainer.innerHTML = '';
             allOptions.forEach(opt => drawView(opt.view, optionsContainer, opt.correct));
         }
 
-        // Sayfa yüklendiğinde oyunu başlat
         startGame();
     </script>
 </body>
