@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TopDown Stacked Guess</title>
+    <title>TopDown Stacked Guess - Son Hali</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -32,132 +32,83 @@
             margin-bottom: 20px;
         }
 
-        .view-area {
-            width: 100%;
-            height: 300px;
-            /* Three.js render alanı */
-            background-color: #ffffff;
-            /* Beyaz arka plan */
-            border-radius: 8px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            /* Taşmaları gizle */
-            position: relative;
-        }
-
-        /* Three.js canvas'ı bu view-area içine yerleşecek */
-        .view-area canvas {
-            display: block;
-            /* Canvas'ın altında boşluk kalmaması için */
+        .question-header {
+            text-align: center;
+            margin-bottom: 10px;
         }
 
         .eye-icon {
-            position: absolute;
-            top: 5px;
-            /* Daha yukarıya alındı */
-            left: 50%;
-            transform: translateX(-50%);
             font-size: 50px;
             color: #333;
-            z-index: 10;
+            line-height: 1;
         }
 
         .arrows {
-            position: absolute;
-            top: 55px;
-            /* Daha yukarıya alındı (göze göre ayarlandı) */
-            left: 50%;
-            transform: translateX(-50%);
             font-size: 30px;
             color: #333;
-            z-index: 10;
+            line-height: 1;
+        }
+
+        .view-area {
+            width: 100%;
+            height: 300px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view-area canvas {
+            display: block;
         }
 
         .options-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 20px;
             width: 100%;
         }
 
         .option {
-            background-color: #f9f9f9;
-            border: 2px solid #ddd;
+            border: 3px solid #ddd;
             border-radius: 8px;
-            padding: 15px;
             cursor: pointer;
-            display: flex;
-            justify-content: center;
-            /* İçerideki option-content'i ortala */
-            align-items: center;
-            /* İçerideki option-content'i ortala */
-            height: 150px;
+            height: 160px;
             transition: all 0.2s ease-in-out;
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
-            /* Taşmaları gizle */
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .option:hover {
-            border-color: #a0d8ff;
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
+        .option img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+
+        .option:hover img {
+            transform: scale(1.05);
         }
 
         .option.correct {
-            border-color: #4CAF50;
-            background-color: #e6ffe6;
+            border-color: #28a745;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
         }
 
         .option.wrong {
-            border-color: #f44336;
-            background-color: #ffe6e6;
+            border-color: #dc3545;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
         }
 
-        /* 2D seçeneklerdeki serbest duran bloklar için */
-        .option-content {
-            /* Seçenek içeriklerini gruplamak ve ortalamak için */
-            position: relative;
-            /* İçindeki bloklar için konumlandırma bağlamı */
-            /* Boyutları ve ortalama transformu JS tarafından ayarlanacak */
+        .option.disabled {
+            pointer-events: none;
         }
-
-        .option-block-2d {
-            /* Seçeneklerdeki 2D bloklar */
-            position: absolute;
-            width: 30px;
-            /* Sabit boyut */
-            height: 30px;
-            /* Sabit boyut */
-            border: 2px solid rgba(0, 0, 0, 0.3);
-            /* Kalınlık hissi için border */
-            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-            /* Hafif gölge */
-            box-sizing: border-box;
-            /* Border'ı boyutun içine dahil et */
-            /* top, left, z-index JS tarafından ayarlanacak */
-        }
-
-        /* Renkler için stiller (2D bloklar) */
-        .option-block-2d.blue {
-            background-color: #4682b4;
-        }
-
-        .option-block-2d.green {
-            background-color: #6b8e23;
-        }
-
-        .option-block-2d.yellow {
-            background-color: #ffd700;
-        }
-
-        .option-block-2d.red {
-            background-color: #dc143c;
-        }
-
 
         .next-button {
             margin-top: 30px;
@@ -179,591 +130,308 @@
             margin-top: 20px;
             font-size: 1.2em;
             font-weight: bold;
-            color: #333;
+            height: 1.5em;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
-
     <div class="game-container">
-        <p>Yukarıdaki blok yapısına yukarıdan bakıldığında nasıl görünürdü?</p>
-        <div class="view-area" id="viewArea">
+        <p>Aşağıdaki yapının üstten görünümü hangisidir?</p>
+        <div class="question-header">
             <div class="eye-icon">👁️</div>
             <div class="arrows">↓↓↓</div>
         </div>
-
-        <div class="options-container" id="optionsContainer">
-        </div>
-
-        <button class="next-button" id="nextButton">Sonraki Soru</button>
+        <div class="view-area" id="viewArea"></div>
+        <div class="options-container" id="optionsContainer"></div>
+        <button class="next-button" id="nextButton" style="display: none;">Sonraki Soru</button>
         <div class="message" id="message"></div>
     </div>
 
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.165.0/build/three.module.js"
+        }
+    }
+    </script>
+
     <script type="module">
-        // Three.js kütüphanesini npm'den içe aktarın
-        import * as THREE from './node_modules/three/build/three.module.js';
+        import * as THREE from 'three';
 
-        // Three.js ile ilgili global değişkenler
-        let scene, camera, renderer;
-        let blockMeshes = []; // Three.js mesh'lerini tutar
-        let ambientLight, directionalLight; // Işık referanslarını global yapıyoruz ki yoğunlukları değiştirilebilsin.
-        let groundPlane; // Zemin objesi
+        let scene, mainCamera, topDownCamera, renderer, renderTarget;
+        let captureLight, directionalLight;
 
-        // DOM elementleri
         const viewArea = document.getElementById('viewArea');
         const optionsContainer = document.getElementById('optionsContainer');
         const nextButton = document.getElementById('nextButton');
         const messageDiv = document.getElementById('message');
 
-        // Oyun ve blok boyutları
-        const colors = ['red', 'blue', 'green', 'yellow'];
-        const BLOCK_WIDTH_3D = 60; // Prizmanın X ve Z boyutları
-        const BLOCK_DEPTH_3D = 60;
-        const BLOCK_HEIGHT_3D = 25; // Daha yassı prizma için yükseklik çok düşük
-        const BLOCK_GAP_3D_MIN = 5; // Minimum boşluk
-        const BLOCK_GAP_3D_RANDOM = 15; // Rastgele boşluk için max ek değer
+        const colors = ['#dc143c', '#4682b4', '#6b8e23', '#ffd700'];
+        const BLOCK_SIZE = { w: 50, h: 25, d: 50 };
+        const BLOCK_GAP = 10;
+        const BLOCK_OFFSET_RANDOM = 8;
+        const CAPTURE_SIZE = 256;
 
-        const OPTION_BLOCK_SIZE = 30; // 2D seçeneklerdeki bir bloğun boyutu
-        // 2D'de üst üste binme hissi için y ve z ekseni ofsetleri
-        const OPTION_Z_OFFSET_PER_UNIT = 8; // Z yüksekliğine göre Y ekseninde kayma (piksel) - Daha belirgin olsun
-        const OPTION_Y_OFFSET_PER_UNIT = 5; // Y derinliğine göre Y ekseninde kayma (piksel)
-
-
-        let currentBlocks = []; // {x, y, z, color} objeleri
-        let correctAnswerIndex = -1;
-
-        // Three.js sahnesini başlatır
-        function initThreeJS() {
-            // Scene
+        function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xffffff); // Görseldeki gibi beyaz arka plan
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(45, viewArea.clientWidth / viewArea.clientHeight, 1, 1000);
-
-            // Lights
-            ambientLight = new THREE.AmbientLight(0x404040, 25); // Genel ışık
+            scene.background = new THREE.Color(0xffffff);
+            mainCamera = new THREE.PerspectiveCamera(45, viewArea.clientWidth / viewArea.clientHeight, 1, 2000);
+            topDownCamera = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 2000);
+            scene.add(topDownCamera);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
             scene.add(ambientLight);
-
-            directionalLight = new THREE.DirectionalLight(0xffffff, 1.8); // Ana yönlü ışık
-            directionalLight.position.set(200, 300, 200); // Işığın konumu
+            directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            directionalLight.position.set(150, 200, 100);
             directionalLight.castShadow = true;
-
-            // Gölge ayarları (yumuşak ve belirgin gölgeler için)
-            directionalLight.shadow.mapSize.width = 1024;
-            directionalLight.shadow.mapSize.height = 1024;
-            directionalLight.shadow.camera.near = 1;
-            directionalLight.shadow.camera.far = 1000;
-            directionalLight.shadow.camera.left = -250; // Frustum boyutları
-            directionalLight.shadow.camera.right = 250;
-            directionalLight.shadow.camera.top = 250;
-            directionalLight.shadow.camera.bottom = -250;
-            directionalLight.shadow.bias = -0.0005; // Gölgeleme sorunlarını gidermek için hafif bias (daha da küçülttük)
+            directionalLight.shadow.mapSize.set(2048, 2048);
+            directionalLight.shadow.bias = -0.001;
             scene.add(directionalLight);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            captureLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 3.0);
+            captureLight.visible = false;
+            scene.add(captureLight);
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(viewArea.clientWidth, viewArea.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Yumuşak gölgeler için
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             viewArea.appendChild(renderer.domElement);
-
-            // Zemin (Ground Plane) - Görünmez ve sadece gölge alan
-            const planeGeometry = new THREE.PlaneGeometry(500, 500);
-            // Standart materyal kullanın ve tamamen şeffaf yapın
-            const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-            groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-            groundPlane.rotation.x = -Math.PI / 2; // Yere paralel hale getir
-            groundPlane.position.y = -BLOCK_HEIGHT_3D / 2; // Blokların tabanının altında olsun
-            groundPlane.receiveShadow = true; // Gölge alsın
+            renderTarget = new THREE.WebGLRenderTarget(CAPTURE_SIZE, CAPTURE_SIZE);
+            const groundPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(1000, 1000),
+                new THREE.ShadowMaterial({ opacity: 0.15 })
+            );
+            groundPlane.rotation.x = -Math.PI / 2;
+            groundPlane.position.y = -BLOCK_SIZE.h / 2 - 1;
+            groundPlane.receiveShadow = true;
             scene.add(groundPlane);
-
-
-            // Başlangıç kamera pozisyonu (render3DBlocks'da güncellenecek)
-            camera.position.set(200, 250, 200);
-            camera.lookAt(0, 0, 0);
-
-            animate(); // Animasyon döngüsünü başlat
+            animate();
+            startGame();
         }
 
-        // Animasyon döngüsü
         function animate() {
             requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+            renderer.render(scene, mainCamera);
         }
 
-        // Three.js'deki renkler için materyal oluşturucu
-        const materialMap = {
-            red: new THREE.MeshStandardMaterial({ color: 0xdc143c }),
-            blue: new THREE.MeshStandardMaterial({ color: 0x4682b4 }),
-            green: new THREE.MeshStandardMaterial({ color: 0x6b8e23 }),
-            yellow: new THREE.MeshStandardMaterial({ color: 0xffd700 })
-        };
-
-        // Belirli bir koordinatın dolu olup olmadığını kontrol eden yardımcı fonksiyon
-        function isPositionOccupied(x, y, z, occupiedSet) {
-            return occupiedSet.has(`${x},${y},${z}`);
-        }
-
-        // generateRandomBlocks: Blokları serbest yerleşimde ve birbirine temas edecek şekilde oluşturur
-        function generateRandomBlocks() {
+        function generateBlockData() {
             const blocks = [];
-            const occupiedPositions = new Set(); // Tüm dolu pozisyonlar {x,y,z}
-            const activeBlocks = []; // Şu anda yapıda olan blokların listesi (komşu eklemek için)
-
-            const numBlocks = Math.floor(Math.random() * 2) + 5; // 5 ila 6 blok (görseldeki gibi)
-            const maxSpread = 2; // X ve Y eksenlerinde -2 ile +2 arasında yayılım (daha serbest yayılım için)
-            const maxZLevel = 1; // Z ekseninde max 0 ile 1 arasında grid birimleri (daha "yassı" olması için)
-
-            // İlk bloğu merkeze yerleştir (0,0,0)
-            const firstBlock = { x: 0, y: 0, z: 0, color: colors[Math.floor(Math.random() * colors.length)] };
-            blocks.push(firstBlock);
-            occupiedPositions.add(`${firstBlock.x},${firstBlock.y},${firstBlock.z}`);
-            activeBlocks.push(firstBlock);
-
-            const adjacentDirections = [
-                { dx: 1, dy: 0, dz: 0 }, { dx: -1, dy: 0, dz: 0 }, // X ekseni (yan yana)
-                { dx: 0, dy: 1, dz: 0 }, { dx: 0, dy: -1, dz: 0 }, // Y ekseni (yan yana)
-                { dx: 0, dy: 0, dz: 1 } // Z ekseni (üstüne)
-            ];
-
-            for (let i = 1; i < numBlocks; i++) {
-                let blockAdded = false;
-                let attempts = 0;
-                while (!blockAdded && attempts < 200) {
-                    const randomExistingBlockIndex = Math.floor(Math.random() * activeBlocks.length);
-                    const existingBlock = activeBlocks[randomExistingBlockIndex];
-
-                    const randomDirection = adjacentDirections[Math.floor(Math.random() * adjacentDirections.length)];
-
-                    let newX = existingBlock.x + randomDirection.dx;
-                    let newY = existingBlock.y + randomDirection.dy;
-                    let newZ = existingBlock.z + randomDirection.dz;
-
-                    // Sınır kontrolü (yapının çok yayılmasını engelle ve geçerli Z seviyesinde kalmasını sağla)
-                    if (Math.abs(newX) > maxSpread || Math.abs(newY) > maxSpread || newZ < 0 || newZ > maxZLevel) {
-                        attempts++;
-                        continue;
-                    }
-
-                    const newPositionKey = `${newX},${newY},${newZ}`;
-
-                    if (!occupiedPositions.has(newPositionKey)) {
-                        // Yeni blok pozisyonunun altına destek var mı kontrol et (eğer Z > 0 ise ve üzerine eklenmiyorsa)
-                        if (newZ === 0 || randomDirection.dz === 1 || isPositionOccupied(newX, newY, newZ - 1, occupiedPositions)) {
-                            const newBlock = {
-                                x: newX,
-                                y: newY,
-                                z: newZ,
-                                color: colors[Math.floor(Math.random() * colors.length)]
-                            };
-                            blocks.push(newBlock);
-                            occupiedPositions.add(newPositionKey);
-                            activeBlocks.push(newBlock);
-                            blockAdded = true;
-                        }
-                    }
-                    attempts++;
-                }
-                if (!blockAdded) {
-                    console.warn("Could not add block, reducing block count.");
-                    break;
-                }
+            const occupied = new Set();
+            const numBlocks = Math.floor(Math.random() * 3) + 5;
+            const maxSpread = 2, maxZ = 1;
+            blocks.push({
+                x: 0, y: 0, z: 0, color: colors[0],
+                offsetX: (Math.random() - 0.5) * BLOCK_OFFSET_RANDOM,
+                offsetY: (Math.random() - 0.5) * BLOCK_OFFSET_RANDOM
+            });
+            occupied.add("0,0,0");
+            const directions = [{ x: 1, y: 0, z: 0 }, { x: -1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: -1, z: 0 }, { x: 0, y: 0, z: 1 }];
+            let creationAttempts = 0;
+            while (blocks.length < numBlocks && creationAttempts < 500) {
+                const existing = blocks[Math.floor(Math.random() * blocks.length)];
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const p = { x: existing.x + dir.x, y: existing.y + dir.y, z: existing.z + dir.z };
+                if (Math.abs(p.x) > maxSpread || Math.abs(p.y) > maxSpread || p.z > maxZ || p.z < 0) continue;
+                if (occupied.has(`${p.x},${p.y},${p.z}`)) continue;
+                if (p.z > 0 && !occupied.has(`${p.x},${p.y},${p.z - 1}`)) continue;
+                blocks.push({
+                    ...p,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    offsetX: (Math.random() - 0.5) * BLOCK_OFFSET_RANDOM,
+                    offsetY: (Math.random() - 0.5) * BLOCK_OFFSET_RANDOM
+                });
+                occupied.add(`${p.x},${p.y},${p.z}`);
+                creationAttempts++;
             }
+            return blocks;
+        }
 
-            // Oluşturulan blokları yapının kendi merkezine göre normalize et (x,y,z'yi 0'dan başla)
-            let minX = Infinity, minY = Infinity, minZ = Infinity;
-            let maxX = -Infinity, maxY = -Infinity, maxZ_val = -Infinity;
-            blocks.forEach(b => {
-                minX = Math.min(minX, b.x);
-                minY = Math.min(minY, b.y);
-                minZ = Math.min(minZ, b.z);
-                maxX = Math.max(maxX, b.x);
-                maxY = Math.max(maxY, b.y);
-                maxZ_val = Math.max(maxZ_val, b.z);
+        // GÜNCELLENDİ: "Kaydırma" stratejisi kaldırıldı. Artık sadece silme ve renk değiştirme var.
+        function createWrongBlockData(originalBlocks) {
+            let blocks = JSON.parse(JSON.stringify(originalBlocks));
+
+            const topViewMap = new Map();
+            [...blocks].sort((a, b) => a.z - b.z).forEach(block => {
+                topViewMap.set(`${block.x},${block.y}`, block);
+            });
+            const visibleBlocks = Array.from(topViewMap.values());
+
+            if (visibleBlocks.length === 0) return blocks;
+
+            const removableVisibleBlocks = visibleBlocks.filter(visibleBlock => {
+                return !blocks.some(anyBlock =>
+                    anyBlock.x === visibleBlock.x &&
+                    anyBlock.y === visibleBlock.y &&
+                    anyBlock.z === visibleBlock.z + 1
+                );
             });
 
-            const shiftX = - (minX + maxX) / 2;
-            const shiftY = - (minY + maxY) / 2;
-            const shiftZ = - minZ; // En alttaki katmanı 0 seviyesine getir
-
-            return blocks.map(b => ({
-                x: b.x + shiftX,
-                y: b.y + shiftY,
-                z: b.z + shiftZ,
-                color: b.color
-            }));
-        }
-
-
-        // render3DBlocks: Three.js kullanarak 3D blokları render eder ve sahneyi ortalar
-        function render3DBlocks(blocks) {
-            // Önceki blokları sahneden kaldır
-            blockMeshes.forEach(mesh => scene.remove(mesh));
-            blockMeshes = [];
-
-            if (blocks.length === 0) {
-                camera.position.set(200, 250, 200); // Varsayılan kamera konumu
-                camera.lookAt(0, 0, 0); // Merkeze bak
-                return;
+            // 50% ihtimalle silmeyi dene (eğer mümkünse)
+            if (Math.random() < 0.5 && removableVisibleBlocks.length > 2) {
+                const blockToDelete = removableVisibleBlocks[Math.floor(Math.random() * removableVisibleBlocks.length)];
+                const indexToRemove = blocks.findIndex(b => b === blockToDelete);
+                if (indexToRemove > -1) {
+                    blocks.splice(indexToRemove, 1);
+                    return blocks;
+                }
             }
 
-            // Three.js koordinatlarında blokların min/max X, Y, Z değerlerini hesaplamak için
-            let minSceneX = Infinity, minSceneY = Infinity, minSceneZ = Infinity;
-            let maxSceneX = -Infinity, maxSceneY = -Infinity, maxSceneZ = -Infinity;
+            // Silme olmadıysa veya o yol seçilmediyse, rengini değiştir.
+            const blockToChange = visibleBlocks[Math.floor(Math.random() * visibleBlocks.length)];
+            const indexToChange = blocks.findIndex(b => b === blockToChange);
+            if (indexToChange > -1) {
+                const originalColor = blocks[indexToChange].color;
+                let newColor;
+                do { newColor = colors[Math.floor(Math.random() * colors.length)]; }
+                while (newColor === originalColor && colors.length > 1);
+                blocks[indexToChange].color = newColor;
+            }
 
-            // Prizma geometrisi: BoxGeometry(genişlik, yükseklik, derinlik)
-            const geometry = new THREE.BoxGeometry(BLOCK_WIDTH_3D, BLOCK_HEIGHT_3D, BLOCK_DEPTH_3D);
+            return blocks;
+        }
 
-            blocks.forEach(block => {
-                // Her bir bloğun rastgele ofsetini hesapla (grid dışı, serbest görünüm için)
-                const randomOffsetX = (Math.random() - 0.5) * BLOCK_GAP_3D_RANDOM;
-                const randomOffsetY = (Math.random() - 0.5) * BLOCK_GAP_3D_RANDOM;
-
-                const threeX = block.x * (BLOCK_WIDTH_3D + BLOCK_GAP_3D_MIN) + randomOffsetX;
-                const threeY = block.z * (BLOCK_HEIGHT_3D + BLOCK_GAP_3D_MIN) + BLOCK_HEIGHT_3D / 2;
-                const threeZ = block.y * (BLOCK_DEPTH_3D + BLOCK_GAP_3D_MIN) + randomOffsetY;
-
-                // Three.js sahne koordinatlarındaki min/max'ını bul
-                minSceneX = Math.min(minSceneX, threeX - BLOCK_WIDTH_3D / 2);
-                maxSceneX = Math.max(maxSceneX, threeX + BLOCK_WIDTH_3D / 2);
-                minSceneY = Math.min(minSceneY, threeY - BLOCK_HEIGHT_3D / 2);
-                maxSceneY = Math.max(maxSceneY, threeY + BLOCK_HEIGHT_3D / 2);
-                minSceneZ = Math.min(minSceneZ, threeZ - BLOCK_DEPTH_3D / 2);
-                maxSceneZ = Math.max(maxSceneZ, threeZ + BLOCK_DEPTH_3D / 2);
-
-
-                const material = materialMap[block.color];
+        function buildMeshGroup(blockData) {
+            const group = new THREE.Group();
+            blockData.forEach(block => {
+                const material = new THREE.MeshLambertMaterial({ color: block.color });
+                const geometry = new THREE.BoxGeometry(BLOCK_SIZE.w, BLOCK_SIZE.h, BLOCK_SIZE.d);
                 const mesh = new THREE.Mesh(geometry, material);
-
-                mesh.position.set(threeX, threeY, threeZ);
-
+                mesh.position.set(
+                    block.x * (BLOCK_SIZE.w + BLOCK_GAP) + (block.offsetX || 0),
+                    block.z * (BLOCK_SIZE.h + BLOCK_GAP),
+                    block.y * (BLOCK_SIZE.d + BLOCK_GAP) + (block.offsetY || 0)
+                );
                 mesh.castShadow = true;
                 mesh.receiveShadow = true;
-
-                scene.add(mesh);
-                blockMeshes.push(mesh);
+                group.add(mesh);
             });
-
-            // Yapının gerçek bounding box'ını hesapla
-            const structureCenter = new THREE.Vector3(
-                (minSceneX + maxSceneX) / 2,
-                (minSceneY + maxSceneY) / 2,
-                (minSceneZ + maxSceneZ) / 2
-            );
-            const structureSize = new THREE.Vector3(
-                maxSceneX - minSceneX,
-                maxSceneY - minSceneY,
-                maxSceneZ - minSceneZ
-            );
-
-            // Kamerayı yapının merkezine doğru ayarla
-            camera.lookAt(structureCenter);
-
-            // Kamera pozisyonunu yapının ortasına göre ve görseldeki açıya yakın olacak şekilde ayarla
-            const maxDimension = Math.max(structureSize.x, structureSize.y, structureSize.z);
-            const cameraDistance = maxDimension * 1.5; // Görseldeki gibi yakın ve belirgin olması için çarpanı ayarladık
-
-            // Kamera konumunu, yapının merkezine göre izometrik bir açıyla belirle
-            // Görseldeki açıyı taklit etmek için bu çarpanları dikkatlice ayarladık.
-            camera.position.set(
-                structureCenter.x + cameraDistance * 0.7, // X ofset (daha yakın)
-                structureCenter.y + cameraDistance * 0.9, // Y ofset (daha yukarı)
-                structureCenter.z + cameraDistance * 0.7  // Z ofset (daha yakın)
-            );
-
-            // Işık konumunu da yapının etrafında tutmak için ayarla
-            directionalLight.position.copy(camera.position);
-
-            // Gölge kamerasının frustumunu da yapının boyutuna göre ayarla
-            // Gölge frustumunun kapsama alanını biraz genişletmek, gölgelerin kesilmesini önler.
-            const shadowCameraPadding = 50; // Gölge alanına ek boşluk
-            directionalLight.shadow.camera.left = structureCenter.x - (structureSize.x / 2 + shadowCameraPadding);
-            directionalLight.shadow.camera.right = structureCenter.x + (structureSize.x / 2 + shadowCameraPadding);
-            directionalLight.shadow.camera.top = structureCenter.y + (structureSize.y / 2 + shadowCameraPadding);
-            directionalLight.shadow.camera.bottom = structureCenter.y - (structureSize.y / 2 + shadowCameraPadding);
-            directionalLight.shadow.camera.near = 0.1;
-            directionalLight.shadow.camera.far = cameraDistance * 2;
-            directionalLight.shadow.camera.updateProjectionMatrix();
-
+            return group;
         }
 
-
-        // getVisible2DBlocks: Yukarıdan bakıldığında görünen her bir bloğu (z-index ve ofset için) döndürür
-        function getVisible2DBlocks(blocks) {
-            const visibleBlocks = [];
-
-            // Blokları z (yükseklik) ve sonra y (derinlik) eksenine göre sırala
-            // Bu, 2D çizimde doğru üst üste binme (z-index) sırasını sağlar
-            // Daha yüksek Z değerine sahip bloklar daha üstte olmalı
-            // Aynı Z'de, daha düşük Y değerine sahip bloklar (ekranda daha önde) daha üstte olmalı
-            const sortedBlocks = blocks.slice().sort((a, b) => {
-                if (a.z !== b.z) return a.z - b.z; // Önce Z (en alttan en üste)
-                if (a.y !== b.y) return a.y - b.y; // Sonra Y (en arkadan en öne)
-                return a.x - b.x; // Sonra X (soldan sağa)
-            });
-
-            // Normalize etmek için min/max x, y koordinatlarını bul
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-            let maxZ = -Infinity; // For z-index calculation in 2D
-
-            sortedBlocks.forEach(block => {
-                minX = Math.min(minX, block.x);
-                minY = Math.min(minY, block.y);
-                maxX = Math.max(maxX, block.x);
-                maxY = Math.max(maxY, block.y);
-                maxZ = Math.max(maxZ, block.z); // En yüksek Z seviyesini kaydet
-            });
-
-            // Normalize edilmiş pozisyonlar ve z-index için orijinal z'yi koru
-            sortedBlocks.forEach(block => {
-                visibleBlocks.push({
-                    x: block.x - minX, // Normalize x
-                    y: block.y - minY, // Normalize y
-                    z: block.z,         // Z-index ve top ofset için orijinal Z
-                    color: block.color
-                });
-            });
-
-            return visibleBlocks;
+        function captureView(meshGroup) {
+            directionalLight.visible = false;
+            captureLight.visible = true;
+            meshGroup.visible = true;
+            const box = new THREE.Box3().setFromObject(meshGroup);
+            const center = new THREE.Vector3();
+            const size = new THREE.Vector3();
+            box.getCenter(center);
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.z);
+            const padding = 1.4;
+            topDownCamera.left = -maxDim / 2 * padding;
+            topDownCamera.right = maxDim / 2 * padding;
+            topDownCamera.top = maxDim / 2 * padding;
+            topDownCamera.bottom = -maxDim / 2 * padding;
+            topDownCamera.position.set(center.x, center.y + size.y + 10, center.z);
+            topDownCamera.lookAt(center);
+            topDownCamera.updateProjectionMatrix();
+            renderer.setRenderTarget(renderTarget);
+            renderer.clear();
+            renderer.render(scene, topDownCamera);
+            const pixelBuffer = new Uint8Array(CAPTURE_SIZE * CAPTURE_SIZE * 4);
+            renderer.readRenderTargetPixels(renderTarget, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE, pixelBuffer);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = CAPTURE_SIZE;
+            tempCanvas.height = CAPTURE_SIZE;
+            const context = tempCanvas.getContext('2d');
+            const imageData = new ImageData(new Uint8ClampedArray(pixelBuffer), CAPTURE_SIZE, CAPTURE_SIZE);
+            context.putImageData(imageData, 0, 0);
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = CAPTURE_SIZE;
+            finalCanvas.height = CAPTURE_SIZE;
+            const finalContext = finalCanvas.getContext('2d');
+            finalContext.translate(0, CAPTURE_SIZE);
+            finalContext.scale(1, -1);
+            finalContext.drawImage(tempCanvas, 0, 0);
+            const dataURL = finalCanvas.toDataURL();
+            renderer.setRenderTarget(null);
+            meshGroup.visible = false;
+            captureLight.visible = false;
+            directionalLight.visible = true;
+            return { url: dataURL, bounds: box };
         }
 
-        // render2DOption: 2D seçenekleri serbest dikdörtgenler olarak çizer (bu sefer doğru bir şekilde ortalanacak ve sığacak)
-        function render2DOption(container, viewData) {
-            container.innerHTML = '';
-
-            const optionContent = document.createElement('div');
-            optionContent.classList.add('option-content');
-            container.appendChild(optionContent);
-
-            if (viewData.length === 0) {
-                optionContent.style.width = '0px';
-                optionContent.style.height = '0px';
+        async function startGame() {
+            messageDiv.textContent = 'Oyun Oluşturuluyor...';
+            optionsContainer.innerHTML = '';
+            nextButton.style.display = 'none';
+            scene.children.filter(child => child.isGroup).forEach(group => scene.remove(group));
+            const correctData = generateBlockData();
+            const correctGroup = buildMeshGroup(correctData);
+            scene.add(correctGroup);
+            const correctResult = captureView(correctGroup);
+            const correctImageURL = correctResult.url;
+            const allOptions = [{ url: correctImageURL, group: correctGroup }];
+            let attempts = 0;
+            while (allOptions.length < 4 && attempts < 50) {
+                const wrongData = createWrongBlockData(correctData);
+                const wrongGroup = buildMeshGroup(wrongData);
+                scene.add(wrongGroup);
+                const wrongResult = captureView(wrongGroup);
+                const isVisuallyDuplicate = allOptions.some(opt => opt.url === wrongResult.url);
+                if (!isVisuallyDuplicate) {
+                    allOptions.push({ url: wrongResult.url, group: wrongGroup });
+                } else {
+                    scene.remove(wrongGroup);
+                    wrongGroup.traverse(obj => {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    });
+                }
+                attempts++;
+            }
+            if (allOptions.length < 4) {
+                console.error("Yeterli sayıda FARKLI GÖRSELDE seçenek üretilemedi, oyun yeniden başlatılıyor.");
+                setTimeout(startGame, 0);
                 return;
             }
-
-            // Calculate the actual rendered min/max positions of the 2D blocks
-            let minRenderedX = Infinity, minRenderedY = Infinity;
-            let maxRenderedX = -Infinity, maxRenderedY = -Infinity;
-            let maxOriginalYForZIndex = 0; // To calculate z-index correctly
-
-            // First pass to determine the overall rendered bounds and max original Y
-            viewData.forEach(block => {
-                // Calculate the positions as they will be rendered
-                const leftPos = block.x * OPTION_BLOCK_SIZE;
-                const topPos = block.y * OPTION_BLOCK_SIZE - (block.z * OPTION_Z_OFFSET_PER_UNIT) + (block.y * OPTION_Y_OFFSET_PER_UNIT);
-
-                minRenderedX = Math.min(minRenderedX, leftPos);
-                maxRenderedX = Math.max(maxRenderedX, leftPos + OPTION_BLOCK_SIZE); // Add block width
-                minRenderedY = Math.min(minRenderedY, topPos);
-                maxRenderedY = Math.max(maxRenderedY, topPos + OPTION_BLOCK_SIZE); // Add block height
-
-                maxOriginalYForZIndex = Math.max(maxOriginalYForZIndex, block.y);
-            });
-
-            // Calculate content dimensions based on actual rendered extent
-            const contentWidth = maxRenderedX - minRenderedX;
-            const contentHeight = maxRenderedY - minRenderedY;
-
-            optionContent.style.width = `${contentWidth}px`;
-            optionContent.style.height = `${contentHeight}px`;
-
-            // Sort viewData for correct z-index rendering
-            const sortedViewData = viewData.slice().sort((a, b) => {
-                if (a.z !== b.z) return a.z - b.z;
-                if (a.y !== b.y) return a.y - b.y;
-                return a.x - b.x;
-            });
-
-            sortedViewData.forEach(block => {
-                const blockDiv = document.createElement('div');
-                blockDiv.classList.add('option-block-2d', block.color);
-
-                // Adjust positions relative to optionContent's new (0,0) based on minRenderedX/Y
-                const leftPos = (block.x * OPTION_BLOCK_SIZE) - minRenderedX;
-                const topPos = (block.y * OPTION_BLOCK_SIZE - (block.z * OPTION_Z_OFFSET_PER_UNIT) + (block.y * OPTION_Y_OFFSET_PER_UNIT)) - minRenderedY;
-
-                blockDiv.style.left = `${leftPos}px`;
-                blockDiv.style.top = `${topPos}px`;
-
-                // z-index: Daha yüksek Z ve daha düşük Y, daha yüksek z-index almalı
-                blockDiv.style.zIndex = block.z * 100 + (maxOriginalYForZIndex - block.y);
-
-                optionContent.appendChild(blockDiv);
-            });
-
-            // Center optionContent within the .option div
-            optionContent.style.transform = `translate(-50%, -50%)`;
-            optionContent.style.left = '50%';
-            optionContent.style.top = '50%';
-        }
-
-        function createWrongView(correctView) {
-            const wrongView = JSON.parse(JSON.stringify(correctView));
-
-            if (wrongView.length === 0) return [];
-
-            const alterationType = Math.random();
-
-            if (alterationType < 0.35) {
-                const cellToAlter = wrongView[Math.floor(Math.random() * wrongView.length)];
-                let newColor = colors[Math.floor(Math.random() * colors.length)];
-                while (newColor === cellToAlter.color && colors.length > 1) {
-                    newColor = colors[Math.floor(Math.random() * colors.length)];
-                }
-                cellToAlter.color = newColor;
-            } else if (alterationType < 0.7) {
-                const blockToMoveIndex = Math.floor(Math.random() * wrongView.length);
-                const blockToMove = wrongView[blockToMoveIndex];
-
-                let originalX = blockToMove.x;
-                let originalY = blockToMove.y;
-                let originalZ = blockToMove.z;
-
-                let newX, newY, newZ;
-                let attempts = 0;
-                let movedSuccessfully = false;
-
-                let minX = Infinity, minY = Infinity, minZ = Infinity;
-                let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-                wrongView.forEach(b => {
-                    minX = Math.min(minX, b.x);
-                    minY = Math.min(minY, b.y);
-                    minZ = Math.min(minZ, b.z);
-                    maxX = Math.max(maxX, b.x);
-                    maxY = Math.max(maxY, b.y);
-                    maxZ = Math.max(maxZ, b.z);
-                });
-
-                while (attempts < 20 && !movedSuccessfully) {
-                    newX = originalX + Math.floor(Math.random() * 3) - 1;
-                    newY = originalY + Math.floor(Math.random() * 3) - 1;
-                    newZ = originalZ + Math.floor(Math.random() * 2) - 1;
-
-                    if (newX < minX - 1 || newX > maxX + 1 || newY < minY - 1 || newY > maxY + 1 || newZ < 0 || newZ > maxZ + 1) {
-                        attempts++;
-                        continue;
-                    }
-
-                    const existingBlockAtNewPos = wrongView.find(b => b.x === newX && b.y === newY && b.z === newZ);
-
-                    if (!existingBlockAtNewPos) {
-                        wrongView[blockToMoveIndex].x = newX;
-                        wrongView[blockToMoveIndex].y = newY;
-                        wrongView[blockToMoveIndex].z = newZ;
-                        movedSuccessfully = true;
-                    } else if (existingBlockAtNewPos !== blockToMove) {
-                        const tempBlock = JSON.parse(JSON.stringify(wrongView[blockToMoveIndex]));
-                        const targetBlockIndex = wrongView.indexOf(existingBlockAtNewPos);
-
-                        wrongView[blockToMoveIndex] = existingBlockAtNewPos;
-                        wrongView[targetBlockIndex] = tempBlock;
-                        movedSuccessfully = true;
-                    }
-                    attempts++;
-                }
-
-            } else {
-                const blockToEraseIndex = Math.floor(Math.random() * wrongView.length);
-                wrongView.splice(blockToEraseIndex, 1);
-            }
-
-            if (wrongView.length === 0) return [];
-
-            let tempMinX = Infinity, tempMinY = Infinity, tempMinZ = Infinity;
-            wrongView.forEach(b => {
-                tempMinX = Math.min(tempMinX, b.x);
-                tempMinY = Math.min(tempMinY, b.y);
-                tempMinZ = Math.min(tempMinZ, b.z);
-            });
-
-            return wrongView.map(b => ({
-                x: b.x - tempMinX,
-                y: b.y - tempMinY,
-                z: b.z - tempMinZ,
-                color: b.color
-            }));
-        }
-
-
-        function startGame() {
-            messageDiv.textContent = '';
-            optionsContainer.innerHTML = '';
-            currentBlocks = generateRandomBlocks();
-            render3DBlocks(currentBlocks);
-
-            const correctTopView = getVisible2DBlocks(currentBlocks);
-
-            const allOptions = [];
-            allOptions.push(correctTopView);
-
-            while (allOptions.length < 4) {
-                const wrongView = createWrongView(correctTopView);
-
-                const isUnique = !allOptions.some(option => {
-                    const sortedOption = JSON.stringify(option.slice().sort((a, b) => a.x - b.x || a.y - b.y || a.z - b.z));
-                    const sortedWrongView = JSON.stringify(wrongView.slice().sort((a, b) => a.x - b.x || a.y - b.y || a.z - b.z));
-                    return sortedOption === sortedWrongView;
-                });
-
-                if (isUnique) {
-                    allOptions.push(wrongView);
-                }
-            }
-
+            allOptions.forEach(opt => opt.group.visible = false);
+            correctGroup.visible = true;
+            const center = new THREE.Vector3();
+            const size = new THREE.Vector3();
+            correctResult.bounds.getCenter(center);
+            correctResult.bounds.getSize(size);
+            const viewVector = new THREE.Vector3(0.8, 0.7, 0.8).normalize();
+            const camDistance = Math.max(size.x, size.y, size.z) * 1.7;
+            mainCamera.position.copy(center).add(viewVector.multiplyScalar(camDistance));
+            mainCamera.lookAt(center);
             for (let i = allOptions.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
             }
-
-            allOptions.forEach((optionData, index) => {
+            allOptions.forEach(opt => {
                 const optionDiv = document.createElement('div');
-                optionDiv.classList.add('option');
-                optionDiv.dataset.index = index;
-                render2DOption(optionDiv, optionData);
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `<img src="${opt.url}" alt="Seçenek">`;
+                optionDiv.addEventListener('click', () => handleOptionClick(opt.url, correctImageURL));
                 optionsContainer.appendChild(optionDiv);
-
-                const sortedOptionData = JSON.stringify(optionData.slice().sort((a, b) => a.x - b.x || a.y - b.y || a.z - b.z));
-                const sortedCorrectTopView = JSON.stringify(correctTopView.slice().sort((a, b) => a.x - b.x || a.y - b.y || a.z - b.z));
-
-                if (sortedOptionData === sortedCorrectTopView) {
-                    correctAnswerIndex = index;
-                }
-
-                optionDiv.addEventListener('click', handleOptionClick);
             });
+            messageDiv.textContent = '';
         }
 
-        function handleOptionClick(event) {
-            const clickedOption = event.currentTarget;
-            const selectedIndex = parseInt(clickedOption.dataset.index);
-
-            Array.from(optionsContainer.children).forEach(option => {
-                option.style.pointerEvents = 'none';
+        function handleOptionClick(selectedImageURL, correctImageURL) {
+            Array.from(optionsContainer.children).forEach(optDiv => {
+                optDiv.classList.add('disabled');
+                const imgURL = optDiv.querySelector('img').src;
+                if (imgURL === correctImageURL) {
+                    optDiv.classList.add('correct');
+                }
             });
-
-            if (selectedIndex === correctAnswerIndex) {
-                clickedOption.classList.add('correct');
-                messageDiv.textContent = 'Doğru cevap!';
-                messageDiv.style.color = '#4CAF50';
+            const clickedOptionDiv = Array.from(optionsContainer.children).find(optDiv => optDiv.querySelector('img').src === selectedImageURL);
+            if (selectedImageURL === correctImageURL) {
+                messageDiv.textContent = 'Doğru!';
+                messageDiv.style.color = '#28a745';
             } else {
-                clickedOption.classList.add('wrong');
-                messageDiv.textContent = 'Yanlış cevap. Doğru olan işaretlendi.';
-                messageDiv.style.color = '#f44336';
-                const correctOptionDiv = optionsContainer.querySelector(`[data-index="${correctAnswerIndex}"]`);
-                if (correctOptionDiv) {
-                    correctOptionDiv.classList.add('correct');
-                }
+                if (clickedOptionDiv) clickedOptionDiv.classList.add('wrong');
+                messageDiv.textContent = 'Yanlış!';
+                messageDiv.style.color = '#dc3545';
             }
+            nextButton.style.display = 'inline-block';
         }
 
-        window.onload = () => {
-            initThreeJS();
-            startGame();
-        };
-
+        init();
         nextButton.addEventListener('click', startGame);
 
     </script>
