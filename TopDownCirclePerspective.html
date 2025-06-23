@@ -67,10 +67,14 @@
 
         .correct {
             outline: 4px solid green;
+            border-radius: 50%;
+            /* Daire şeklinde olduğu için daha güzel görünür */
         }
 
         .wrong {
             outline: 4px solid red;
+            border-radius: 50%;
+            /* Daire şeklinde olduğu için daha güzel görünür */
         }
 
         button {
@@ -106,10 +110,25 @@
         const MIN_LAYERS = 2;
         const MAX_LAYERS = 4;
 
+        // Renk paleti aynı kalıyor, seçim mantığı değişiyor.
         const COLORS = [
-            "#f94144", "#f3722c", "#f8961e", "#f9c74f",
-            "#90be6d", "#43aa8b", "#577590", "#277da1",
-            "#6a1b9a", "#00bcd4", "#ef6c00", "#512da8", "#009688", "#ff6f91"
+            // Canlı ve temel renkler
+            "#E6194B", // Kırmızı
+            "#3CB44B", // Yeşil
+            "#FFE119", // Sarı
+            "#4363D8", // Mavi
+            "#F58231", // Turuncu
+            "#911EB4", // Mor
+            "#46F0F0", // Turkuaz (Cyan)
+            "#F032E6", // Pembe (Magenta)
+
+            // Farklı tonlar ve diğer renkler
+            "#BCF60C", // Limon Yeşili
+            "#008080", // Petrol Yeşili (Teal)
+            "#9A6324", // Kahverengi
+            "#800000", // Bordo (Maroon)
+            "#000075", // Lacivert (Navy)
+            "#808080", // Gri
         ];
 
         const svgMain = document.getElementById("main");
@@ -125,53 +144,68 @@
             rxInnerFactor: 0.85
         };
 
-        function getRandomColor(exclude = []) {
-            const filtered = COLORS.filter(c => !exclude.includes(c));
-            return filtered[Math.floor(Math.random() * filtered.length)];
+        /**
+         * Fisher-Yates (aka Knuth) Shuffle algoritması ile diziyi yerinde karıştırır.
+         * @param {Array} array Karıştırılacak dizi.
+         * @returns {Array} Karıştırılmış dizi.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
         }
 
-        function generateRandomStack(count) {
+        /**
+         * Belirtilen sayıda katman için renk tekrarı olmayan bir yığın oluşturur.
+         * @param {number} count Oluşturulacak katman sayısı.
+         * @param {string[]} colorPool Kullanılacak renklerin listesi.
+         * @returns {object[]} Oluşturulan yığın.
+         */
+        function generateRandomStack(count, colorPool) {
             const stack = [];
-            let usedColors = [];
+            let colorIndex = 0;
             for (let i = 0; i < count; i++) {
-                const outer = getRandomColor(usedColors);
-                usedColors.push(outer);
-                const inner = getRandomColor(usedColors);
-                usedColors.push(inner);
+                // Renk havuzunda yeterli renk kalmadıysa döngüyü kır
+                if (colorIndex + 1 >= colorPool.length) break;
+
+                const outer = colorPool[colorIndex++];
+                const inner = colorPool[colorIndex++];
                 stack.push({ outer, inner });
             }
 
+            // Katmanların kendi içindeki sırasını rastgele karıştırma seçeneği
             if (ENABLE_RANDOM_ORDER) {
                 for (let i = stack.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [stack[i], stack[j]] = [stack[j], stack[i]];
                 }
             }
-
             return stack;
         }
 
+
         function drawMainStack(stack) {
             svgMain.innerHTML = '';
-            let { x, y, rxOuter, ryOuter, height, rxInnerFactor } = base;
+            let { x, y, rxOuter, ryOuter, height, rxInnerFactor } = { ...base };
 
             const firstTopY = y - (height * 0.9 * (stack.length - 1));
             questionOverlay.style.top = (firstTopY - 50) + "px";
 
             for (let i = 0; i < stack.length; i++) {
-                const outer = stack[i].outer;
-                const inner = stack[i].inner;
+                const { outer, inner } = stack[i];
                 const rxInner = rxOuter * rxInnerFactor;
                 const ryInner = ryOuter * rxInnerFactor;
 
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", `
-          M${x - rxOuter},${y}
-          A${rxOuter},${ryOuter} 0 0 1 ${x + rxOuter},${y}
-          L${x + rxOuter},${y + height}
-          A${rxOuter},${ryOuter} 0 0 1 ${x - rxOuter},${y + height}
-          Z
-        `);
+                    M${x - rxOuter},${y}
+                    A${rxOuter},${ryOuter} 0 0 1 ${x + rxOuter},${y}
+                    L${x + rxOuter},${y + height}
+                    A${rxOuter},${ryOuter} 0 0 1 ${x - rxOuter},${y + height}
+                    Z
+                `);
                 path.setAttribute("fill", outer);
                 svgMain.appendChild(path);
 
@@ -222,6 +256,9 @@
             }
 
             svg.onclick = () => {
+                // Tıklama sonrası diğer seçeneklere tıklamayı engelle
+                document.querySelectorAll('.option').forEach(opt => opt.style.pointerEvents = 'none');
+
                 if (isCorrect) {
                     svg.classList.add("correct");
                 } else {
@@ -237,27 +274,34 @@
         function startGame() {
             optionsDiv.innerHTML = '';
 
-            const layerCount = Math.floor(Math.random() * 3) + 2; // 2 ile 4 arasında rastgele
+            const layerCount = Math.floor(Math.random() * (MAX_LAYERS - MIN_LAYERS + 1)) + MIN_LAYERS;
             const stacks = new Set();
+            const options = [];
 
-            const correctStack = generateRandomStack(layerCount);
+            // Doğru yığını oluştur
+            let colorPool = shuffleArray([...COLORS]);
+            const correctStack = generateRandomStack(layerCount, colorPool);
             stacks.add(JSON.stringify(correctStack));
             drawMainStack(correctStack);
+            options.push({ stack: correctStack, isCorrect: true });
 
-            const options = [{ stack: correctStack, isCorrect: true }];
+            // Yanlış yığınları oluştur
             while (options.length < 4) {
-                const newStack = generateRandomStack(layerCount);
-                if (!stacks.has(JSON.stringify(newStack))) {
-                    stacks.add(JSON.stringify(newStack));
+                // Her yeni seçenek için renkleri tekrar karıştırarak farklı kombinasyonlar elde et
+                let newColorPool = shuffleArray([...COLORS]);
+                const newStack = generateRandomStack(layerCount, newColorPool);
+                const newStackString = JSON.stringify(newStack);
+
+                // Daha önce oluşturulmamış bir yığın ise ekle
+                if (!stacks.has(newStackString)) {
+                    stacks.add(newStackString);
                     options.push({ stack: newStack, isCorrect: false });
                 }
             }
 
-            const shuffled = options.sort(() => Math.random() - 0.5);
-            const correctIndex = shuffled.findIndex(opt => opt.isCorrect);
-            document.getElementById("correctIndex").textContent = correctIndex;
-
-            shuffled.forEach(opt => drawOption(opt.stack, opt.isCorrect));
+            // Seçenekleri karıştır ve ekrana çiz
+            const shuffledOptions = options.sort(() => Math.random() - 0.5);
+            shuffledOptions.forEach(opt => drawOption(opt.stack, opt.isCorrect));
         }
 
         startGame();
