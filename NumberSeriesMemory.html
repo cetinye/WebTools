@@ -90,11 +90,17 @@
     const question = document.getElementById('question');
     const optionsDiv = document.getElementById('options');
 
+    // --- YENİ DEĞİŞKEN ---
+    // Burayı değiştirerek sorulacak rakam sayısını belirleyebilirsiniz.
+    // 0 yaparsanız, rastgele sayıda rakam sorulur (MIN_DIGITS ile MAX_DIGITS arasında).
+    // 0'dan büyük bir sayı girerseniz, o sayıda rakam sorulur.
+    const istenilenRakamSayisi = 5; // Değiştirmek için bu satırı düzenleyin (Örn: 5)
+
     const MIN_DIGITS = 2;
     const MAX_DIGITS = 9;
+    const SHOW_DURATION = 3000;
 
     let isClickable = true;
-    const SHOW_DURATION = 3000;
 
     const generateGrid = (length) => {
       return Array.from({
@@ -106,14 +112,12 @@
       return arr.map(num => `<div class="cell">${num}</div>`).join('');
     };
 
-    // --- Hatanın düzeltildiği güncel fonksiyon ---
     const generateOptions = (correct, count = 4) => {
       const optionsSet = new Set();
-      optionsSet.add(correct.join('')); // Doğru cevabı Set'e ekle
+      optionsSet.add(correct.join(''));
 
       const length = correct.length;
 
-      // 1. Sınırlı sayıda karıştırma denemesi yap
       let shuffleAttempts = 0;
       while (optionsSet.size < count && shuffleAttempts < 20) {
         let option = correct.slice();
@@ -125,20 +129,26 @@
         shuffleAttempts++;
       }
 
-      // 2. Hala yeterli seçenek yoksa, tamamen rastgele seçenekler üret
       while (optionsSet.size < count) {
         const randomOption = Array.from({ length }, () => Math.floor(Math.random() * 10));
         optionsSet.add(randomOption.join(''));
       }
 
-      // 3. Set'i tekrar diziye çevir ve son kez karıştır
       const finalOptions = Array.from(optionsSet).map(s => s.split('').map(Number));
-
       return finalOptions.sort(() => Math.random() - 0.5);
     };
 
     const startGame = () => {
-      const length = Math.floor(Math.random() * (MAX_DIGITS - MIN_DIGITS + 1)) + MIN_DIGITS;
+      let length;
+      // İstediğiniz değişikliği yapan kısım burası
+      if (istenilenRakamSayisi === 0) {
+        // Rastgele mod
+        length = Math.floor(Math.random() * (MAX_DIGITS - MIN_DIGITS + 1)) + MIN_DIGITS;
+      } else {
+        // Sabit rakam sayısı modu
+        length = istenilenRakamSayisi;
+      }
+
       const correctAnswer = generateGrid(length);
 
       isClickable = true;
