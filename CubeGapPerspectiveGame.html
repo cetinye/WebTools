@@ -31,6 +31,8 @@
       gap: 2px;
       cursor: pointer;
       border: 2px solid transparent;
+      padding: 5px;
+      border-radius: 5px;
     }
 
     .option:hover {
@@ -41,6 +43,7 @@
       width: 20px;
       height: 20px;
       background-color: #ccc;
+      border-radius: 2px;
     }
 
     .filled {
@@ -50,12 +53,15 @@
     #result {
       margin-top: 20px;
       font-size: 20px;
+      font-weight: bold;
+      min-height: 24px;
     }
   </style>
 </head>
 
 <body>
   <h1>İzometrik Yapı Tahmini</h1>
+  <p>Yapının <strong>üstten</strong> görünüşü hangisidir?</p>
   <canvas id="canvas" width="600" height="400"></canvas>
   <div class="options" id="options"></div>
   <p id="result"></p>
@@ -68,10 +74,18 @@
     const gridSize = 4;
     const layers = 3;
 
+    /**
+     * Draws a single isometric cube.
+     * @param {number} x - The x-coordinate in the grid.
+     * @param {number} y - The y-coordinate in the grid.
+     * @param {number} z - The z-coordinate (height) in the grid.
+     * @param {string} [color='#00bcd4'] - The base color of the cube.
+     */
     function drawIsoCube(x, y, z, color = '#00bcd4') {
       const isoX = (x - y) * cubeSize + offsetX;
       const isoY = (x + y) * cubeSize / 2 - z * cubeSize + offsetY;
 
+      // Top face
       ctx.beginPath();
       ctx.moveTo(isoX, isoY);
       ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
@@ -81,6 +95,7 @@
       ctx.fillStyle = color;
       ctx.fill();
 
+      // Left face
       ctx.beginPath();
       ctx.moveTo(isoX - cubeSize, isoY + cubeSize / 2);
       ctx.lineTo(isoX, isoY + cubeSize);
@@ -90,6 +105,7 @@
       ctx.fillStyle = darkenColor(color, 0.2);
       ctx.fill();
 
+      // Right face
       ctx.beginPath();
       ctx.moveTo(isoX, isoY + cubeSize);
       ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
@@ -100,6 +116,12 @@
       ctx.fill();
     }
 
+    /**
+     * Darkens a hex color by a given percentage.
+     * @param {string} hex - The hex color string.
+     * @param {number} percent - The percentage to darken (0 to 1).
+     * @returns {string} The darkened color as an rgb string.
+     */
     function darkenColor(hex, percent) {
       const num = parseInt(hex.replace("#", ""), 16);
       const amt = Math.round(2.55 * percent * 100);
@@ -109,9 +131,17 @@
       return `rgb(${Math.max(R, 0)},${Math.max(G, 0)},${Math.max(B, 0)})`;
     }
 
+    /**
+     * Generates a random, connected 3D structure of cubes.
+     * @returns {number[][][]} A 3D array representing the structure.
+     */
     function generateConnectedStructure() {
-      const structure = Array.from({ length: layers }, () =>
-        Array.from({ length: gridSize }, () => Array(gridSize).fill(0))
+      const structure = Array.from({
+        length: layers
+      }, () =>
+        Array.from({
+          length: gridSize
+        }, () => Array(gridSize).fill(0))
       );
 
       const queue = [];
@@ -125,9 +155,12 @@
       while (placed < 6 && queue.length > 0) {
         const [x, y, z] = queue.shift();
         const directions = [
-          [1, 0, 0], [-1, 0, 0],
-          [0, 1, 0], [0, -1, 0],
-          [0, 0, 1], [0, 0, -1]
+          [1, 0, 0],
+          [-1, 0, 0],
+          [0, 1, 0],
+          [0, -1, 0],
+          [0, 0, 1],
+          [0, 0, -1]
         ];
         for (const [dx, dy, dz] of directions.sort(() => Math.random() - 0.5)) {
           const nx = x + dx;
@@ -147,6 +180,11 @@
       return structure;
     }
 
+    /**
+     * Calculates the top-down view of the structure.
+     * @param {number[][][]} structure - The 3D structure.
+     * @returns {number[][]} A 2D array representing the top view.
+     */
     function getTopView(structure) {
       const top = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
       for (let z = layers - 1; z >= 0; z--) {
@@ -159,6 +197,10 @@
       return top;
     }
 
+    /**
+     * Draws the entire 3D structure on the canvas.
+     * @param {number[][][]} structure - The 3D structure to draw.
+     */
     function drawStructure(structure) {
       for (let z = 0; z < layers; z++) {
         for (let y = 0; y < gridSize; y++) {
@@ -169,13 +211,77 @@
       }
     }
 
+    /**
+     * Draws the top-down view indicator (eye and arrows).
+     */
+    function drawTopViewIndicator() {
+      // --- Smaller Icons ---
+      const eyeY = 40; // Y position for the eye on the canvas, moved up slightly
+      const arrowsY = eyeY + 20; // Y position to start drawing the arrows
+      const arrowLength = 25; // Made arrows shorter
+
+      // --- Draw Eye ---
+      ctx.save(); // Save current drawing state
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2; // Thinner line for a smaller icon
+
+      // Eyeball shape (smaller)
+      ctx.beginPath();
+      ctx.ellipse(offsetX, eyeY, 22, 11, 0, 0, 2 * Math.PI); // Smaller ellipse
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.stroke();
+
+      // Pupil (smaller)
+      ctx.beginPath();
+      ctx.arc(offsetX, eyeY, 7, 0, 2 * Math.PI); // Smaller pupil
+      ctx.fillStyle = '#333';
+      ctx.fill();
+      ctx.restore(); // Restore to previous state
+
+      // --- Helper function to draw a single smaller arrow ---
+      function drawArrow(x, y) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + arrowLength);
+        // Arrowhead (smaller)
+        ctx.moveTo(x, y + arrowLength);
+        ctx.lineTo(x - 5, y + arrowLength - 8);
+        ctx.moveTo(x, y + arrowLength);
+        ctx.lineTo(x + 5, y + arrowLength - 8);
+        ctx.stroke();
+      }
+
+      // --- Draw 3 Arrows (even closer together) ---
+      ctx.save();
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2; // Thinner lines for arrows
+      drawArrow(offsetX - 15, arrowsY); // Even closer left arrow
+      drawArrow(offsetX, arrowsY);      // Center arrow
+      drawArrow(offsetX + 15, arrowsY); // Even closer right arrow
+      ctx.restore();
+    }
+
+
+    /**
+     * Clones a 2D array.
+     * @param {any[][]} matrix - The matrix to clone.
+     * @returns {any[][]} The cloned matrix.
+     */
     function cloneMatrix(matrix) {
       return matrix.map(row => row.slice());
     }
 
+    /**
+     * Generates a slightly incorrect version of the top view for options.
+     * @param {number[][]} correct - The correct top view.
+     * @returns {number[][]} A slightly modified, incorrect top view.
+     */
     function generateFakeOption(correct) {
       const fake = cloneMatrix(correct);
-      for (let i = 0; i < 2; i++) {
+      // Flip 1 or 2 cells to make it incorrect
+      const changes = Math.random() < 0.7 ? 1 : 2;
+      for (let i = 0; i < changes; i++) {
         const y = Math.floor(Math.random() * gridSize);
         const x = Math.floor(Math.random() * gridSize);
         fake[y][x] = 1 - fake[y][x];
@@ -183,14 +289,26 @@
       return fake;
     }
 
+    /**
+     * Creates and displays the multiple-choice options in the DOM.
+     * @param {number[][]} correct - The correct top view answer.
+     */
     function drawOptions(correct) {
-      const options = [{ data: correct, correct: true }];
+      const options = [{
+        data: correct,
+        correct: true
+      }];
       while (options.length < 4) {
         const fake = generateFakeOption(correct);
+        // Ensure the fake option is not a duplicate of an existing one
         if (!options.some(opt => JSON.stringify(opt.data) === JSON.stringify(fake))) {
-          options.push({ data: fake, correct: false });
+          options.push({
+            data: fake,
+            correct: false
+          });
         }
       }
+      // Shuffle options
       options.sort(() => Math.random() - 0.5);
 
       const container = document.getElementById('options');
@@ -208,13 +326,28 @@
         });
         div.onclick = () => {
           document.getElementById('result').textContent = option.correct ? '✅ Doğru cevap!' : '❌ Yanlış cevap.';
+          // Disable further clicks after an answer is chosen
+          container.style.pointerEvents = 'none';
+          // Highlight correct and wrong answers
+          document.querySelectorAll('.option').forEach((optDiv, index) => {
+            if (options[index].correct) {
+              optDiv.style.borderColor = '#4caf50';
+              optDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+            } else if (optDiv === div && !option.correct) {
+              optDiv.style.borderColor = '#f44336';
+              optDiv.style.backgroundColor = 'rgba(244, 67, 54, 0.2)';
+            }
+          });
+
         };
         container.appendChild(div);
       });
     }
 
+    // --- Main Game Logic ---
     const structure = generateConnectedStructure();
     drawStructure(structure);
+    drawTopViewIndicator(); // <-- EKLENEN KISIM: Göz ve okları çizdirir.
     const topView = getTopView(structure);
     drawOptions(topView);
   </script>
