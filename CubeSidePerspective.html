@@ -83,12 +83,11 @@
 
         #cameraIndicator {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
+            width: 80px;
             height: 60px;
             pointer-events: none;
             z-index: 10;
+            transition: left 0.5s ease-out, top 0.5s ease-out;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -97,17 +96,7 @@
 <body>
     <div id="threeJsContainer">
         <div id="cameraIndicator" title="Sağ Önden Görünüm">
-            <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <title>Sağ Önden Görünüm</title>
-                <path d="M10 50 C30 20 70 20 90 50 C70 80 30 80 10 50 Z" fill="white" stroke="black" stroke-width="2" />
-                <circle cx="50" cy="50" r="15" fill="blue" />
-                <circle cx="50" cy="50" r="8" fill="black" />
-                <circle cx="58" cy="42" r="3" fill="white" />
-                <path d="M75 75 L25 25" stroke="#000000" stroke-width="5" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                <path d="M25 25 L35 30 M25 25 L30 35" stroke="#000000" stroke-width="5" stroke-linecap="round"
-                    stroke-linejoin="round" fill="#90EE90" />
-            </svg>
+            <img src="gorsel-ikon.png" alt="Sağdan Görünüm İkonu" style="width: 100%; height: 100%;">
         </div>
     </div>
     <div class="options" id="optionsContainer"></div>
@@ -132,6 +121,23 @@
         let currentOptionCanvasHeight;
         let scene, camera, renderer;
         let isThreeJSInitialized = false;
+
+        function project3DPointTo2D(point3D) {
+            const container = document.getElementById('threeJsContainer');
+            if (!container || !camera) return { x: 0, y: 0 };
+
+            const vector = point3D.clone();
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            vector.project(camera);
+
+            const x = (vector.x * 0.5 + 0.5) * width;
+            const y = (vector.y * -0.5 + 0.5) * height;
+
+            return { x, y };
+        }
+
 
         function initThreeJS() {
             if (isThreeJSInitialized) return;
@@ -184,8 +190,8 @@
             }
 
             const centerX = hasBlocks ? (minX + maxX) / 2 : 0;
-            const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0; // 3D z (height) is 3js Y
-            const centerZ = hasBlocks ? (minY + maxY) / 2 : 0; // 3D y (depth) is 3js Z
+            const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0;
+            const centerZ = hasBlocks ? (minY + maxY) / 2 : 0;
 
             const structureSize = hasBlocks ? Math.max(maxX - minX, maxY - minY, maxZ - minZ) + 2 : currentGridDimension;
             const camPos = structureSize * 2;
@@ -197,6 +203,41 @@
                 light.position.set(centerX + camPos * 0.5, centerY + camPos, centerZ + camPos * 0.5);
             }
             renderer.render(scene, camera);
+
+            const indicator = document.getElementById('cameraIndicator');
+            if (hasBlocks) {
+                const corners3D = [
+                    new THREE.Vector3(minX, minZ, minY),
+                    new THREE.Vector3(maxX, minZ, minY),
+                    new THREE.Vector3(minX, maxZ, minY),
+                    new THREE.Vector3(maxX, maxZ, minY),
+                    new THREE.Vector3(minX, minZ, maxY),
+                    new THREE.Vector3(maxX, minZ, maxY),
+                    new THREE.Vector3(minX, maxZ, maxY),
+                    new THREE.Vector3(maxX, maxZ, maxY)
+                ];
+
+                const screenCorners = corners3D.map(point => project3DPointTo2D(point));
+
+                let screenMaxX = -Infinity;
+                let screenMaxY = -Infinity;
+                screenCorners.forEach(pos => {
+                    if (pos.x > screenMaxX) screenMaxX = pos.x;
+                    if (pos.y > screenMaxY) screenMaxY = pos.y;
+                });
+
+                // --- DEĞİŞTİRİLEN BÖLÜM: Ofset değerleri daha da artırıldı ---
+                const offsetX = 30;  // İkonu modelden sağa doğru iyice it
+                const offsetY = 20;  // İkonu modelden aşağıya doğru iyice it
+                // --- DEĞİŞEN BÖLÜM SONU ---
+
+                indicator.style.left = (screenMaxX + offsetX) + 'px';
+                indicator.style.top = (screenMaxY + offsetY) + 'px';
+                indicator.style.display = 'block';
+
+            } else {
+                indicator.style.display = 'none';
+            }
         }
 
         function drawStructureThreeJS(structure) {
@@ -251,7 +292,7 @@
             let isStructureAcceptable = false;
             let generationAttempts = 0;
 
-            while (!isStructureAcceptable && generationAttempts < 1000) { // Deneme limitini artırdık
+            while (!isStructureAcceptable && generationAttempts < 1000) {
                 generationAttempts++;
 
                 let candidateStructure = Array.from({ length: currentGridDimension }, () => Array.from({ length: currentGridDimension }, () => Array.from({ length: currentMaxTowerHeight }, () => null)));
@@ -266,7 +307,7 @@
                 allCubesInCandidate.push({ x: startX, y: startY, z: 0 });
                 addNeighbors(startX, startY, 0);
 
-                const totalBlocks = 5 + Math.floor(Math.random() * 5); // 5 ila 9 blok
+                const totalBlocks = 5 + Math.floor(Math.random() * 5);
                 let blocksPlaced = 1;
 
                 while (blocksPlaced < totalBlocks && growthCandidates.length > 0) {
@@ -315,7 +356,7 @@
 
             if (!isStructureAcceptable) {
                 console.warn("Adil bir yapı bulunamadı! Son deneme kullanılıyor veya yeniden başlatılıyor...");
-                return generateStructure(); // Adil yapı bulunamazsa, fonksiyonu tekrar çağır
+                return generateStructure();
             }
 
             return structure;
