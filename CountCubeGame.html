@@ -1,27 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cube Counting Game</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Küp Sayma Oyunu</title>
     <style>
         body {
-            margin: 0;
-            padding: 20px;
             font-family: Arial, sans-serif;
             background: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: black;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
         }
 
         .game-container {
-            text-align: center;
-            max-width: 800px;
-            width: 100%;
+            max-width: 1000px;
+            margin: auto;
         }
 
         .cube-display {
@@ -34,11 +29,15 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            perspective: 1200px;
         }
 
         .cube-structure {
-            position: relative;
+            position: absolute;
+            left: 50%;
+            top: 50%;
             transform-style: preserve-3d;
+            transform: translate(-50%, -50%) rotateX(-50deg) rotateY(160deg);
         }
 
         .cube {
@@ -52,212 +51,141 @@
             position: absolute;
             width: 50px;
             height: 50px;
-            border: 3px solid #000;
+            border: 1px solid rgba(0, 0, 0, 0.4);
             box-sizing: border-box;
+            backface-visibility: hidden;
         }
 
         .front {
-            background: #FFD700;
+            background: #ef5350;
             transform: translateZ(25px);
         }
 
         .back {
-            background: #FFA500;
+            background: #e53935;
             transform: rotateY(180deg) translateZ(25px);
         }
 
         .right {
-            background: #FF8C00;
+            background: #f44336;
             transform: rotateY(90deg) translateZ(25px);
         }
 
         .left {
-            background: #DAA520;
+            background: #c62828;
             transform: rotateY(-90deg) translateZ(25px);
         }
 
         .top {
-            background: #FFFF99;
+            background: #ff7043;
             transform: rotateX(90deg) translateZ(25px);
         }
 
         .bottom {
-            background: #B8860B;
+            background: #bf360c;
             transform: rotateX(-90deg) translateZ(25px);
         }
 
         .answer-section {
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
             flex-wrap: wrap;
-            margin: 20px 0;
+            justify-content: center;
+            gap: 15px;
         }
 
         .answer-btn {
-            background: white;
-            border: 2px solid #333;
-            color: black;
             padding: 15px 25px;
-            font-size: 1.5em;
-            cursor: pointer;
+            font-size: 1.2em;
             font-weight: bold;
-        }
-
-        .answer-btn:hover {
-            background: #f0f0f0;
+            border: 2px solid #333;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
         }
 
         .answer-btn.correct {
             background: #4CAF50;
-            border-color: #45a049;
-            animation: pulse 0.5s ease-in-out;
+            color: white;
         }
 
         .answer-btn.incorrect {
             background: #f44336;
-            border-color: #da190b;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-5px);
-            }
-
-            75% {
-                transform: translateX(5px);
-            }
-        }
-
-        .score {
-            font-size: 1.3em;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-
-        .next-btn {
-            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
-            border: none;
             color: white;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.2em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-
-        .next-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
         .feedback {
-            font-size: 1.1em;
-            margin: 15px 0;
+            margin-top: 15px;
             font-weight: bold;
             min-height: 30px;
+            font-size: 1.2em;
+        }
+
+        .score {
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
     <div class="game-container">
-        <h1>🎲 Cube Counting Challenge</h1>
-        <div class="instruction">How many cubes can you count in this structure?</div>
-
-        <div class="cube-display" id="cubeDisplay">
-            <!-- Cubes will be generated here -->
-        </div>
-
-        <div class="answer-section" id="answerSection">
-            <!-- Answer buttons will be generated here -->
-        </div>
-
+        <h1>🌪️ Küp Sayma Oyunu</h1>
+        <p>Yapıdaki toplam küp sayısını bulabilir misin?</p>
+        <div class="cube-display" id="cubeDisplay"></div>
+        <div class="answer-section" id="answerSection"></div>
         <div class="feedback" id="feedback"></div>
-        <div class="score">Score: <span id="score">0</span> / <span id="total">0</span></div>
-
-        <button class="next-btn" onclick="generateNewPuzzle()">New Puzzle</button>
+        <div class="score">Skor: <span id="score">0</span> / <span id="total">0</span></div>
+        <button class="next-btn" onclick="generateNewPuzzle()">Yeni Soru</button>
     </div>
-
     <script>
         let currentAnswer = 0;
         let score = 0;
         let totalQuestions = 0;
         let answered = false;
 
-        // Define possible cube positions in a 3D grid
-        function generateCubeStructure() {
-            const maxCubes = 20;
-            const minCubes = 10;
-            const totalCubes = Math.floor(Math.random() * (maxCubes - minCubes + 1)) + minCubes;
+        function generateRandomStructure() {
+            const gridW = 10, gridD = 3;
+            const maxTotalCubes = Math.floor(Math.random() * 21) + 10;
+            const maxHeight = 4;
+            const heights = Array.from({ length: gridW }, () => Array(gridD).fill(0));
 
-            const directions = [
-                { x: 1, z: 0 },
-                { x: -1, z: 0 },
-                { x: 0, z: 1 },
-                { x: 0, z: -1 }
-            ];
+            // ilk derinlik (z=0): yükseklik 1-2
+            for (let x = 0; x < gridW; x++) {
+                heights[x][0] = 1 + Math.floor(Math.random() * 2);
+            }
 
-            const used = new Set();
-            const columns = new Map(); // key: "x,z", value: height
+            // diğer derinlikler (z=1,2): yükseklik >= önceki, <= önceki+1
+            for (let z = 1; z < gridD; z++) {
+                for (let x = 0; x < gridW; x++) {
+                    const prev = heights[x][z - 1];
+                    const minH = prev;
+                    const maxH = Math.min(prev + 1, maxHeight);
+                    heights[x][z] = Math.floor(Math.random() * (maxH - minH + 1)) + minH;
+                }
+            }
+
             const positions = [];
-
-            // Start with first cube at ground
-            positions.push({ x: 0, y: 0, z: 0 });
-            used.add("0,0,0");
-            columns.set("0,0", 1); // height 1 (only ground layer)
-
-            while (positions.length < totalCubes) {
-                const baseKeys = Array.from(columns.keys());
-                const baseKey = baseKeys[Math.floor(Math.random() * baseKeys.length)];
-                const [bx, bz] = baseKey.split(',').map(Number);
-
-                // Try adding a neighbor ground cube
-                const dir = directions[Math.floor(Math.random() * directions.length)];
-                const nx = bx + dir.x;
-                const nz = bz + dir.z;
-                const colKey = `${nx},${nz}`;
-                const groundKey = `${nx},0,${nz}`;
-
-                if (!columns.has(colKey)) {
-                    // Compute height based on depth (x + z)
-                    const depthFactor = nx + nz;
-                    const height = Math.min(3, 1 + Math.floor(Math.abs(depthFactor) % 3)); // varies 1–3
-
-                    // Build full column up to height
-                    for (let y = 0; y < height; y++) {
-                        const cubeKey = `${nx},${y},${nz}`;
-                        if (!used.has(cubeKey)) {
-                            used.add(cubeKey);
-                            positions.push({ x: nx, y: y, z: nz });
-                        }
+            let total = 0;
+            outer: for (let z = 0; z < gridD; z++) {
+                for (let x = 0; x < gridW; x++) {
+                    const h = heights[x][z];
+                    for (let y = 0; y < h; y++) {
+                        positions.push({ x, y, z });
+                        total++;
+                        if (total >= maxTotalCubes) break outer;
                     }
-
-                    columns.set(colKey, height);
                 }
             }
 
@@ -267,46 +195,29 @@
         function renderCubes(positions) {
             const container = document.getElementById('cubeDisplay');
             container.innerHTML = '';
-
             const structure = document.createElement('div');
             structure.className = 'cube-structure';
-            structure.style.transform = 'rotateX(-20deg) rotateY(45deg)';
 
-            // === STEP 1: Calculate bounding box ===
             const xs = positions.map(p => p.x);
             const ys = positions.map(p => p.y);
             const zs = positions.map(p => p.z);
+            const offsetX = (Math.min(...xs) + Math.max(...xs)) / 2;
+            const offsetY = (Math.min(...ys) + Math.max(...ys)) / 2;
+            const offsetZ = (Math.min(...zs) + Math.max(...zs)) / 2;
 
-            const minX = Math.min(...xs);
-            const maxX = Math.max(...xs);
-            const minY = Math.min(...ys);
-            const maxY = Math.max(...ys);
-            const minZ = Math.min(...zs);
-            const maxZ = Math.max(...zs);
-
-            const offsetX = (minX + maxX) / 2;
-            const offsetY = (minY + maxY) / 2;
-            const offsetZ = (minZ + maxZ) / 2;
-
-            // === STEP 2: Create and position cubes ===
             positions.forEach(pos => {
                 const cube = document.createElement('div');
                 cube.className = 'cube';
-
-                const cubeSize = 56; // 50px + 6px borders
-
-                const x = (pos.x - offsetX) * cubeSize;
-                const y = -(pos.y - offsetY) * cubeSize;
-                const z = (pos.z - offsetZ) * cubeSize;
-
+                const size = 52;
+                const x = (pos.x - offsetX) * size;
+                const y = -(pos.y - offsetY) * size;
+                const z = (pos.z - offsetZ) * size;
                 cube.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
 
-                // Create cube faces
-                const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
-                faces.forEach(face => {
-                    const faceElement = document.createElement('div');
-                    faceElement.className = `cube-face ${face}`;
-                    cube.appendChild(faceElement);
+                ['front', 'back', 'left', 'right', 'top', 'bottom'].forEach(face => {
+                    const el = document.createElement('div');
+                    el.className = `cube-face ${face}`;
+                    cube.appendChild(el);
                 });
 
                 structure.appendChild(cube);
@@ -316,76 +227,51 @@
             return positions.length;
         }
 
-
         function generateAnswerChoices(correctAnswer) {
-            const choices = [correctAnswer];
-
-            // Generate 3 incorrect answers
-            while (choices.length < 4) {
-                let wrongAnswer;
-                if (Math.random() < 0.5) {
-                    // Close to correct answer
-                    wrongAnswer = correctAnswer + Math.floor(Math.random() * 6) - 3;
-                } else {
-                    // Random answer in reasonable range
-                    wrongAnswer = Math.floor(Math.random() * 15) + 8;
-                }
-
-                if (wrongAnswer > 0 && !choices.includes(wrongAnswer)) {
-                    choices.push(wrongAnswer);
-                }
+            const choices = new Set([correctAnswer]);
+            while (choices.size < 4) {
+                const offset = Math.floor(Math.random() * 7) - 3;
+                const wrong = correctAnswer + offset;
+                if (wrong > 0) choices.add(wrong);
             }
-
-            // Shuffle choices
-            return choices.sort(() => Math.random() - 0.5);
+            return Array.from(choices).sort(() => Math.random() - 0.5);
         }
 
         function renderAnswerButtons(choices, correctAnswer) {
-            const container = document.getElementById('answerSection');
-            container.innerHTML = '';
-
+            const section = document.getElementById('answerSection');
+            section.innerHTML = '';
             choices.forEach(choice => {
-                const button = document.createElement('button');
-                button.className = 'answer-btn';
-                button.textContent = choice;
-                button.onclick = () => checkAnswer(choice, correctAnswer, button);
-                container.appendChild(button);
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = choice;
+                btn.onclick = () => checkAnswer(choice, correctAnswer, btn);
+                section.appendChild(btn);
             });
-
-            document.getElementById('correctIndex').textContent = choices.indexOf(correctAnswer);
         }
 
-        function checkAnswer(selected, correct, buttonElement) {
+        function checkAnswer(selected, correct, btn) {
             if (answered) return;
-
             answered = true;
             totalQuestions++;
-
             const feedback = document.getElementById('feedback');
             const buttons = document.querySelectorAll('.answer-btn');
 
             if (selected === correct) {
                 score++;
-                buttonElement.classList.add('correct');
-                feedback.textContent = '🎉 Correct! Well done!';
-                feedback.style.color = '#4CAF50';
+                btn.classList.add('correct');
+                feedback.textContent = '🎉 Doğru!';
+                feedback.style.color = '#388e3c';
             } else {
-                buttonElement.classList.add('incorrect');
-                feedback.textContent = `❌ Incorrect. The correct answer was ${correct}.`;
-                feedback.style.color = '#f44336';
-
-                // Highlight correct answer
-                buttons.forEach(btn => {
-                    if (parseInt(btn.textContent) === correct) {
-                        btn.classList.add('correct');
+                btn.classList.add('incorrect');
+                feedback.textContent = `❌ Yanlış. Doğru cevap ${correct}`;
+                feedback.style.color = '#c62828';
+                buttons.forEach(b => {
+                    if (parseInt(b.textContent) === correct) {
+                        b.classList.add('correct');
                     }
                 });
             }
-
-            // Disable all buttons
-            buttons.forEach(btn => btn.style.pointerEvents = 'none');
-
-            // Update score display
+            buttons.forEach(b => b.disabled = true);
             document.getElementById('score').textContent = score;
             document.getElementById('total').textContent = totalQuestions;
         }
@@ -393,21 +279,14 @@
         function generateNewPuzzle() {
             answered = false;
             document.getElementById('feedback').textContent = '';
-
-            // Generate cube structure
-            const positions = generateCubeStructure();
-            currentAnswer = renderCubes(positions);
-
-            // Generate and render answer choices
+            const cubes = generateRandomStructure();
+            currentAnswer = renderCubes(cubes);
             const choices = generateAnswerChoices(currentAnswer);
             renderAnswerButtons(choices, currentAnswer);
         }
 
-        setTimeout(() => {
-            generateNewPuzzle();
-        }, 500);
+        window.onload = () => generateNewPuzzle();
     </script>
-    <div id="correctIndex" style="display: none;"></div>
 </body>
 
 </html>
