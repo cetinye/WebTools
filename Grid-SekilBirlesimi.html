@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş Rastgele Matris Oyunu - Şekil Birleştirme</title>
+    <style>
+        /* Genel Sayfa Stilleri */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rule-description {
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Grid Stilleri */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            border: 2px solid #e0e0e0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            border: 1px solid #eee;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #fafafa;
+            border-radius: 4px;
+        }
+
+        .grid-cell .question-mark {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Genel Şekil Stilleri */
+        .shape-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .shape {
+            box-sizing: border-box;
+            position: absolute;
+        }
+
+        /* Dış Şekil Stilleri (İçi Boş) */
+        .outer-shape {
+            width: 85%;
+            height: 85%;
+            border-width: 5px;
+            border-style: solid;
+            background-color: transparent;
+        }
+
+        /* İç Şekil Stilleri (Dolu) */
+        .inner-shape {
+            width: 40%;
+            height: 40%;
+        }
+
+        /* Şekil Tipleri (DIV) */
+        .circle {
+            border-radius: 50%;
+        }
+
+        .square {
+            border-radius: 4px;
+        }
+
+        .diamond {
+            transform: rotate(45deg);
+            width: 65%;
+            height: 65%;
+        }
+
+        .inner-shape.diamond {
+            width: 28%;
+            height: 28%;
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            background-color: transparent !important;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom-width: 65px;
+            border-bottom-style: solid;
+            border-top: none;
+        }
+
+        .inner-shape.triangle {
+            border-left-width: 18px;
+            border-right-width: 18px;
+            border-bottom-width: 30px;
+        }
+
+        /* Şekil Tipleri (SVG) */
+        .svg-shape {
+            border: none;
+        }
+
+        .outer-shape.svg-shape {
+            width: 85%;
+            height: 85%;
+        }
+
+        .inner-shape.svg-shape {
+            width: 40%;
+            height: 40%;
+        }
+
+
+        /* Diğer UI Elemanları */
+        .options-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-button {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 10px;
+            transition: all 0.2s;
+            width: 120px;
+            height: 120px;
+            box-sizing: border-box;
+        }
+
+        .option-button:hover:not(:disabled) {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback-message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .feedback-message.correct {
+            color: #28a745;
+        }
+
+        .feedback-message.incorrect {
+            color: #dc3545;
+        }
+
+        #reset-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #reset-button:hover {
+            background-color: #0056b3;
+        }
+
+        #reset-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <h1>Gelişmiş Rastgele Matris Oyunu - Şekil Birleştirme</h1>
+        <p class="rule-description">
+            İlk sütundaki büyük şekil ile ikinci sütundaki küçük şekil birleşerek üçüncü sütundaki yeni şekli oluşturur.
+            Bu mantığa göre soru işaretinin (?) olduğu yere hangi şekil gelmelidir?
+        </p>
+
+        <div id="matrix-grid" class="grid-container"></div>
+        <div class="question-section">
+            <h2 id="question-title">Soru: Son hücreye hangi şekil gelmelidir?</h2>
+            <div id="options-container" class="options-wrapper"></div>
+        </div>
+        <div id="feedback" class="feedback-message"></div>
+        <button id="reset-button">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('matrix-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const feedback = document.getElementById('feedback');
+            const resetButton = document.getElementById('reset-button');
+
+            let currentCorrectAnswer = null;
+
+            const SVG_NS = "http://www.w3.org/2000/svg";
+            const SVG_SHAPES = {
+                pentagon: "M50,5 L95.11,39.39 L79.39,95.45 L20.61,95.45 L4.89,39.39 Z",
+                hexagon: "M50,5 L93.3,27.5 L93.3,72.5 L50,95 L6.7,72.5 L6.7,27.5 Z"
+            };
+
+            function createShape(config) {
+                const container = document.createElement('div');
+                container.className = 'shape-container';
+
+                const createDivShape = (shapeType, color, isOuter) => {
+                    const el = document.createElement('div');
+                    el.className = `shape ${isOuter ? 'outer-shape' : 'inner-shape'} ${shapeType}`;
+                    if (shapeType === 'triangle') {
+                        el.style.borderBottomColor = color;
+                    } else {
+                        if (isOuter) el.style.borderColor = color;
+                        else el.style.backgroundColor = color;
+                    }
+                    if (!isOuter && !config.outerShape) {
+                        el.style.position = 'relative';
+                    }
+                    return el;
+                };
+
+                const createSvgShape = (shapeType, color, isOuter) => {
+                    const svg = document.createElementNS(SVG_NS, "svg");
+                    svg.setAttribute("class", `shape svg-shape ${isOuter ? 'outer-shape' : 'inner-shape'} ${shapeType}`);
+                    svg.setAttribute("viewBox", "0 0 100 100");
+                    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+                    const path = document.createElementNS(SVG_NS, "path");
+                    path.setAttribute("d", SVG_SHAPES[shapeType]);
+
+                    if (isOuter) {
+                        path.setAttribute("fill", "transparent");
+                        path.setAttribute("stroke", color);
+                        path.setAttribute("stroke-width", "3");
+                        path.setAttribute("stroke-linejoin", "round");
+                    } else {
+                        path.setAttribute("fill", color);
+                    }
+                    svg.appendChild(path);
+                    return svg;
+                };
+
+                // Dış şekli oluştur
+                if (config.outerShape) {
+                    const builder = SVG_SHAPES[config.outerShape] ? createSvgShape : createDivShape;
+                    container.appendChild(builder(config.outerShape, config.outerColor, true));
+                }
+
+                // İç şekli oluştur
+                if (config.innerShape) {
+                    const builder = SVG_SHAPES[config.innerShape] ? createSvgShape : createDivShape;
+                    container.appendChild(builder(config.innerShape, config.innerColor, false));
+                }
+
+                return container;
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function generatePuzzle() {
+                const allShapes = ['circle', 'square', 'triangle', 'diamond', 'pentagon', 'hexagon'];
+                const allColors = ['#FF5733', '#33C4FF', '#33FF57', '#F1C40F', '#9B59B6', '#E74C3C', '#2ECC71', '#3498DB'];
+
+                // Rastgele 3 farklı şekil ve 2 farklı renk seç
+                const puzzleShapes = shuffleArray([...allShapes]).slice(0, 3);
+                const [outerColor, innerColor] = shuffleArray([...allColors]).slice(0, 2);
+
+                const matrixConfig = [];
+                for (let i = 0; i < 9; i++) {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    const shape = puzzleShapes[row];
+                    let config = {};
+
+                    if (col === 0) {
+                        config = { outerShape: shape, outerColor };
+                    } else if (col === 1) {
+                        config = { innerShape: shape, innerColor };
+                    } else {
+                        if (row < 2) {
+                            config = { outerShape: shape, outerColor, innerShape: shape, innerColor };
+                        } else {
+                            config = null;
+                        }
+                    }
+                    matrixConfig.push(config);
+                }
+
+                const correctShape = puzzleShapes[2];
+                currentCorrectAnswer = {
+                    outerShape: correctShape, outerColor,
+                    innerShape: correctShape, innerColor,
+                    isCorrect: true
+                };
+
+                const wrongAnswers = [];
+                const wrongOptionsPool = new Set();
+
+                for (const outer of puzzleShapes) {
+                    for (const inner of puzzleShapes) {
+                        if (outer !== correctShape || inner !== correctShape) {
+                            wrongOptionsPool.add(JSON.stringify({ outerShape: outer, outerColor, innerShape: inner, innerColor }));
+                        }
+                    }
+                }
+
+                wrongAnswers.push(...shuffleArray(Array.from(wrongOptionsPool)).slice(0, 3).map(s => JSON.parse(s)));
+
+                initGameUI(matrixConfig, [...wrongAnswers, currentCorrectAnswer]);
+            }
+
+            function initGameUI(matrixConfig, options) {
+                grid.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                feedback.innerHTML = '';
+                feedback.className = 'feedback-message';
+
+                matrixConfig.forEach(config => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if (config) {
+                        cell.appendChild(createShape(config));
+                    } else {
+                        cell.innerHTML = '<span class="question-mark">?</span>';
+                    }
+                    grid.appendChild(cell);
+                });
+
+                shuffleArray(options);
+                options.forEach(optionConfig => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
+                    button.dataset.correct = optionConfig.isCorrect || false;
+                    button.appendChild(createShape(optionConfig));
+                    button.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function handleOptionClick(event) {
+                const chosenButton = event.currentTarget;
+                const isCorrect = chosenButton.dataset.correct === 'true';
+
+                document.querySelectorAll('.option-button').forEach(btn => {
+                    btn.disabled = true;
+                });
+
+                if (isCorrect) {
+                    feedback.textContent = 'Tebrikler, doğru cevap!';
+                    feedback.className = 'feedback-message correct';
+                    const lastCell = grid.children[8];
+                    lastCell.innerHTML = '';
+                    lastCell.appendChild(createShape(currentCorrectAnswer));
+                } else {
+                    feedback.textContent = 'Yanlış cevap. Tekrar denemek için "Yeni Oyun" butonuna basın.';
+                    feedback.className = 'feedback-message incorrect';
+                }
+            }
+
+            resetButton.addEventListener('click', generatePuzzle);
+            generatePuzzle();
+        });
+    </script>
+</body>
+
+</html>
