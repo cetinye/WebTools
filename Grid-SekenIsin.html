@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matris Oyunu - Tüm Gridde Seken Işın</title>
+    <style>
+        /* Genel Sayfa Stilleri */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rule-description {
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Grid Stilleri */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            border: 2px solid #e0e0e0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            border: 1px solid #ddd;
+            aspect-ratio: 1 / 1;
+            background-color: #fafafa;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .grid-cell canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .grid-cell .question-mark {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Diğer UI Elemanları */
+        .options-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-button {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.2s;
+            width: 120px;
+            height: 120px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-button canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .option-button:hover:not(:disabled) {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback-message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .feedback-message.correct {
+            color: #28a745;
+        }
+
+        .feedback-message.incorrect {
+            color: #dc3545;
+        }
+
+        #reset-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #reset-button:hover {
+            background-color: #0056b3;
+        }
+
+        #reset-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <h1>Matris Oyunu - Tüm Gridde Seken Işın</h1>
+        <p class="rule-description">
+            Grid üzerinde bir veya daha fazla ışın hareket eder ve kenarlara çarptıkça yön değiştirir. Her hücre, bu
+            büyük yolculuğun bir parçasını gösterir. Parçaları birleştirerek soru işaretinin olduğu yerdeki deseni
+            bulun.
+        </p>
+
+        <div id="matrix-grid" class="grid-container"></div>
+        <div class="question-section">
+            <h2 id="question-title">Soru: Son hücreye hangi şekil gelmelidir?</h2>
+            <div id="options-container" class="options-wrapper"></div>
+        </div>
+        <div id="feedback" class="feedback-message"></div>
+        <button id="reset-button">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('matrix-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const feedback = document.getElementById('feedback');
+            const resetButton = document.getElementById('reset-button');
+
+            let currentCorrectAnswer = null;
+
+            function drawFullPathOnCell(canvas, fullPathsData, cellIndex) {
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                if (!fullPathsData || !Array.isArray(fullPathsData.paths)) return;
+
+                const col = cellIndex % 3;
+                const row = Math.floor(cellIndex / 3);
+
+                ctx.save();
+                ctx.translate(-col * w, -row * h);
+
+                fullPathsData.paths.forEach(pathData => {
+                    const path = pathData.path;
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x * w, path[0].y * h);
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].x * w, path[i].y * h);
+                    }
+                    ctx.strokeStyle = pathData.color;
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.stroke();
+                });
+
+                ctx.restore();
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function getCellsTraversedByPath(paths) {
+                const visited = new Set();
+                if (!paths) return visited;
+                paths.forEach(pathData => {
+                    const path = pathData.path;
+                    for (let i = 0; i < path.length - 1; i++) {
+                        const p1 = path[i];
+                        const p2 = path[i + 1];
+                        for (let t = 0; t <= 1; t += 0.05) {
+                            const x = p1.x + (p2.x - p1.x) * t;
+                            const y = p1.y + (p2.y - p1.y) * t;
+                            const col = Math.floor(x);
+                            const row = Math.floor(y);
+                            if (col >= 0 && col < 3 && row >= 0 && row < 3) {
+                                visited.add(row * 3 + col);
+                            }
+                        }
+                    }
+                });
+                return visited;
+            }
+
+            function generateFullGridPath() {
+                const allPaths = [];
+                const visitedCells = new Set();
+                const availableCorners = shuffleArray([
+                    { x: 0, y: 0 }, { x: 3, y: 0 }, { x: 0, y: 3 }, { x: 3, y: 3 }
+                ]);
+                const availableColors = shuffleArray(['#0d6efd', '#dc3545', '#198754', '#ffc107']);
+
+                let rayCount = 0;
+                while (visitedCells.size < 9 && rayCount < 2 && availableCorners.length > 0) {
+                    const startPos = availableCorners.pop();
+
+                    let { x, y } = startPos;
+                    let dx = (Math.random() * 0.7 + 0.3) * (Math.random() < 0.5 ? 1 : -1);
+                    let dy = (Math.random() * 0.7 + 0.3) * (Math.random() < 0.5 ? 1 : -1);
+
+                    if (x === 0) dx = Math.abs(dx); if (x === 3) dx = -Math.abs(dx);
+                    if (y === 0) dy = Math.abs(dy); if (y === 3) dy = -Math.abs(dy);
+
+                    const mag = Math.sqrt(dx * dx + dy * dy);
+                    dx /= mag; dy /= mag;
+
+                    const path = [{ x, y }];
+                    const numBounces = 4 + Math.floor(Math.random() * 4);
+                    for (let j = 0; j < numBounces; j++) {
+                        const bounce = getNextBounceInSuperGrid(x, y, dx, dy);
+                        path.push({ x: bounce.endX, y: bounce.endY });
+                        x = bounce.endX; y = bounce.endY;
+                        dx = bounce.newDX; dy = bounce.newDY;
+                    }
+                    allPaths.push({ path: path, color: availableColors[rayCount] });
+                    getCellsTraversedByPath(allPaths).forEach(cell => visitedCells.add(cell));
+                    rayCount++;
+                }
+
+                return allPaths;
+            }
+
+            function getNextBounceInSuperGrid(x, y, dx, dy) {
+                const W = 3.0; const H = 3.0;
+                let t = Infinity;
+                if (dx > 0) t = Math.min(t, (W - x) / dx); if (dx < 0) t = Math.min(t, (0 - x) / dx);
+                if (dy > 0) t = Math.min(t, (H - y) / dy); if (dy < 0) t = Math.min(t, (0 - y) / dy);
+
+                const endX = x + dx * t; const endY = y + dy * t;
+                let newDX = dx; let newDY = dy;
+                if (Math.abs(endX) < 0.001 || Math.abs(endX - W) < 0.001) newDX = -dx;
+                if (Math.abs(endY) < 0.001 || Math.abs(endY - H) < 0.001) newDY = -dy;
+                return { endX, endY, newDX, newDY };
+            }
+
+            function generatePuzzle() {
+                let correctPathsData;
+                // DÜZELTME: Son hücrenin boş olmadığından emin olana kadar yeni yol üret.
+                let attempts = 0;
+                do {
+                    correctPathsData = { paths: generateFullGridPath() };
+                    attempts++;
+                } while (!getCellsTraversedByPath(correctPathsData.paths).has(8) && attempts < 50);
+
+                // Eğer 50 denemede başarılı olamazsa, son denemeyi kullan (çok nadir bir durum)
+                if (attempts >= 50 && !getCellsTraversedByPath(correctPathsData.paths).has(8)) {
+                    console.warn("Could not generate a path that hits the last cell after 50 attempts.");
+                }
+
+
+                currentCorrectAnswer = {
+                    ...correctPathsData,
+                    isCorrect: true
+                };
+
+                const wrongAnswers = [];
+                for (let i = 0; i < 3; i++) {
+                    wrongAnswers.push({ paths: generateFullGridPath() });
+                }
+
+                initGameUI(correctPathsData, wrongAnswers);
+            }
+
+            function initGameUI(correctPathsData, wrongAnswers) {
+                grid.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                feedback.innerHTML = '';
+                feedback.className = 'feedback-message';
+
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if (i < 8) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 150; canvas.height = 150;
+                        cell.appendChild(canvas);
+                        drawFullPathOnCell(canvas, correctPathsData, i);
+                    } else {
+                        cell.innerHTML = '<span class="question-mark">?</span>';
+                    }
+                    grid.appendChild(cell);
+                }
+
+                const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
+
+                options.forEach(optionConfig => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 150; canvas.height = 150;
+                    button.appendChild(canvas);
+
+                    button.dataset.correct = optionConfig.isCorrect || false;
+                    drawFullPathOnCell(canvas, optionConfig, 8);
+                    button.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function handleOptionClick(event) {
+                const chosenButton = event.currentTarget;
+                const isCorrect = chosenButton.dataset.correct === 'true';
+
+                document.querySelectorAll('.option-button').forEach(btn => {
+                    btn.disabled = true;
+                });
+
+                if (isCorrect) {
+                    feedback.textContent = 'Tebrikler, doğru cevap!';
+                    feedback.className = 'feedback-message correct';
+                    const lastCell = grid.children[8];
+                    lastCell.innerHTML = '';
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 150; canvas.height = 150;
+                    lastCell.appendChild(canvas);
+                    drawFullPathOnCell(canvas, currentCorrectAnswer, 8);
+                } else {
+                    feedback.textContent = 'Yanlış cevap. Tekrar denemek için "Yeni Oyun" butonuna basın.';
+                    feedback.className = 'feedback-message incorrect';
+                }
+            }
+
+            resetButton.addEventListener('click', generatePuzzle);
+            generatePuzzle();
+        });
+    </script>
+</body>
+
+</html>
