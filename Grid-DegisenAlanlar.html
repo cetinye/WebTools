@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matris Oyunu: Büyüyen Alanlar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+        }
+
+        .grid-cell {
+            background-color: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1 / 1;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            /* SVG'nin taşmasını engelle */
+        }
+
+        .option-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            border-radius: 0.75rem;
+            border: 2px solid #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            height: 7rem;
+            overflow: hidden;
+            /* SVG'nin taşmasını engelle */
+        }
+
+        .option-button:hover {
+            transform: translateY(-4px);
+            border-color: #94a3b8;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .option-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .correct {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4;
+        }
+
+        .incorrect {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2;
+        }
+
+        #result-message {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-lg mx-auto p-6 bg-white rounded-2xl shadow-xl">
+        <h1 class="text-3xl font-bold text-center mb-2 text-slate-800">Matris Oyunu: Büyüyen Alanlar</h1>
+        <p class="text-center text-slate-500 mb-6">İlerleme kuralını çözerek eksik deseni bulun!</p>
+
+        <!-- 3x3 Oyun Alanı -->
+        <div id="game-grid" class="grid grid-cols-3 gap-3 mb-6">
+        </div>
+
+        <!-- Soru ve Seçenekler -->
+        <div id="question-area" class="text-center">
+            <p id="question" class="text-lg font-semibold mb-4">Soru işareti (?) olan yere hangi desen gelmelidir?</p>
+            <div id="options-container" class="grid grid-cols-4 gap-3">
+            </div>
+        </div>
+
+        <!-- Sonuç Mesajı ve Sonraki Seviye Butonu -->
+        <div id="result-area" class="mt-6 text-center h-16 flex flex-col items-center justify-center">
+            <p id="result-message" class="text-xl font-bold opacity-0"></p>
+            <button id="next-level-button"
+                class="hidden mt-2 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Yeni
+                Bulmaca</button>
+        </div>
+
+    </div>
+
+    <script>
+        const gameGrid = document.getElementById('game-grid');
+        const optionsContainer = document.getElementById('options-container');
+        const resultMessage = document.getElementById('result-message');
+        const nextLevelButton = document.getElementById('next-level-button');
+
+        // GÜNCELLENDİ: Yeni "grid-four" stili eklendi.
+        const partitionStyles = ['top-bar', 'left-bar', 'bottom-bar', 'right-bar', 'center-split-h', 'center-split-v', 'four-horizontal-bars', 'four-vertical-bars', 'grid-four'];
+
+        // GÜNCELLENDİ: Daha fazla 3 renkli palet eklendi.
+        const colorPalettes3 = [
+            ['#ef476f', '#ffd166', '#06d6a0'], ['#540d6e', '#ee4266', '#f3a712'], ['#118ab2', '#073b4c', '#06d6a0'],
+            ['#f94144', '#f8961e', '#90be6d'], ['#2d00f7', '#f20089', '#a100f2'], ['#003049', '#d62828', '#f77f00'],
+            ['#2b2d42', '#8d99ae', '#ef233c'], ['#007f5f', '#55a630', '#aacc00']
+        ];
+
+        // GÜNCELLENDİ: Daha fazla 4 renkli palet eklendi.
+        const colorPalettes4 = [
+            ['#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'], ['#6a040f', '#e85d04', '#faa307', '#ffba08'],
+            ['#58355E', '#E03616', '#FFF689', '#729EA1'], ['#0A2463', '#3E92CC', '#D8315B', '#FFC857'],
+            ['#4C1E4F', '#C83E74', '#F77926', '#81F499'], ['#1E441E', '#A5D78A', '#4C8F4A', '#315C2B'],
+            ['#390099', '#9e0059', '#ff0054', '#ff5400'], ['#03045e', '#0077b6', '#00b4d8', '#90e0ef']
+        ];
+
+        let currentCorrectAnswerSVG;
+
+        function generateProgression() {
+            const start = Math.floor(Math.random() * 21) + 15;
+            const step = Math.floor(Math.random() * 11) + 15;
+            const sequence = [start, start + step, start + (step * 2)];
+            if (sequence[2] > 85) return [20, 45, 70];
+            return sequence;
+        }
+
+        function createPartitionSVG(style, colors, size, growingPartIndex) {
+            const svgHeader = `<svg viewBox="0 0 100 100" width="100%" height="100%">`;
+            let rects = '';
+            const numParts = colors.length;
+
+            switch (style) {
+                case 'top-bar': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) rects = `<rect x="0" y="0" width="100" height="${size}" fill="${c1}"/><rect x="0" y="${size}" width="50" height="${100 - size}" fill="${c2}"/><rect x="50" y="${size}" width="50" height="${100 - size}" fill="${c3}"/>`;
+                    else if (growingPartIndex === 1) rects = `<rect x="0" y="0" width="100" height="50" fill="${c1}"/><rect x="0" y="50" width="${size}" height="50" fill="${c2}"/><rect x="${size}" y="50" width="${100 - size}" height="50" fill="${c3}"/>`;
+                    else rects = `<rect x="0" y="0" width="100" height="50" fill="${c1}"/><rect x="0" y="50" width="${100 - size}" height="50" fill="${c2}"/><rect x="${100 - size}" y="50" width="${size}" height="50" fill="${c3}"/>`;
+                    break;
+                }
+                case 'left-bar': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) rects = `<rect x="0" y="0" width="${size}" height="100" fill="${c1}"/><rect x="${size}" y="0" width="${100 - size}" height="50" fill="${c2}"/><rect x="${size}" y="50" width="${100 - size}" height="50" fill="${c3}"/>`;
+                    else if (growingPartIndex === 1) rects = `<rect x="0" y="0" width="50" height="100" fill="${c1}"/><rect x="50" y="0" width="50" height="${size}" fill="${c2}"/><rect x="50" y="${size}" width="50" height="${100 - size}" fill="${c3}"/>`;
+                    else rects = `<rect x="0" y="0" width="50" height="100" fill="${c1}"/><rect x="50" y="0" width="50" height="${100 - size}" fill="${c2}"/><rect x="50" y="${100 - size}" width="50" height="${size}" fill="${c3}"/>`;
+                    break;
+                }
+                case 'bottom-bar': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) rects = `<rect x="0" y="${100 - size}" width="100" height="${size}" fill="${c1}"/><rect x="0" y="0" width="50" height="${100 - size}" fill="${c2}"/><rect x="50" y="0" width="50" height="${100 - size}" fill="${c3}"/>`;
+                    else if (growingPartIndex === 1) rects = `<rect x="0" y="50" width="100" height="50" fill="${c1}"/><rect x="0" y="0" width="${size}" height="50" fill="${c2}"/><rect x="${size}" y="0" width="${100 - size}" height="50" fill="${c3}"/>`;
+                    else rects = `<rect x="0" y="50" width="100" height="50" fill="${c1}"/><rect x="0" y="0" width="${100 - size}" height="50" fill="${c2}"/><rect x="${100 - size}" y="0" width="${size}" height="50" fill="${c3}"/>`;
+                    break;
+                }
+                case 'right-bar': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) rects = `<rect x="${100 - size}" y="0" width="${size}" height="100" fill="${c1}"/><rect x="0" y="0" width="${100 - size}" height="50" fill="${c2}"/><rect x="0" y="50" width="${100 - size}" height="50" fill="${c3}"/>`;
+                    else if (growingPartIndex === 1) rects = `<rect x="50" y="0" width="50" height="100" fill="${c1}"/><rect x="0" y="0" width="50" height="${size}" fill="${c2}"/><rect x="0" y="${size}" width="50" height="${100 - size}" fill="${c3}"/>`;
+                    else rects = `<rect x="50" y="0" width="50" height="100" fill="${c1}"/><rect x="0" y="0" width="50" height="${100 - size}" fill="${c2}"/><rect x="0" y="${100 - size}" width="50" height="${size}" fill="${c3}"/>`;
+                    break;
+                }
+                case 'center-split-h': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) {
+                        const otherHeight = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="100" height="${size}" fill="${c1}"/><rect x="0" y="${size}" width="100" height="${otherHeight}" fill="${c2}"/><rect x="0" y="${size + otherHeight}" width="100" height="${otherHeight}" fill="${c3}"/>`;
+                    } else if (growingPartIndex === 1) {
+                        const otherHeight = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="100" height="${otherHeight}" fill="${c1}"/><rect x="0" y="${otherHeight}" width="100" height="${size}" fill="${c2}"/><rect x="0" y="${otherHeight + size}" width="100" height="${otherHeight}" fill="${c3}"/>`;
+                    } else {
+                        const otherHeight = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="100" height="${otherHeight}" fill="${c1}"/><rect x="0" y="${otherHeight}" width="100" height="${otherHeight}" fill="${c2}"/><rect x="0" y="${100 - size}" width="100" height="${size}" fill="${c3}"/>`;
+                    }
+                    break;
+                }
+                case 'center-split-v': {
+                    const [c1, c2, c3] = colors;
+                    if (growingPartIndex === 0) {
+                        const otherWidth = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="${size}" height="100" fill="${c1}"/><rect x="${size}" y="0" width="${otherWidth}" height="100" fill="${c2}"/><rect x="${size + otherWidth}" y="0" width="${otherWidth}" height="100" fill="${c3}"/>`;
+                    } else if (growingPartIndex === 1) {
+                        const otherWidth = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="${otherWidth}" height="100" fill="${c1}"/><rect x="${otherWidth}" y="0" width="${size}" height="100" fill="${c2}"/><rect x="${otherWidth + size}" y="0" width="${otherWidth}" height="100" fill="${c3}"/>`;
+                    } else {
+                        const otherWidth = (100 - size) / 2;
+                        rects = `<rect x="0" y="0" width="${otherWidth}" height="100" fill="${c1}"/><rect x="${otherWidth}" y="0" width="${otherWidth}" height="100" fill="${c2}"/><rect x="${100 - size}" y="0" width="${size}" height="100" fill="${c3}"/>`;
+                    }
+                    break;
+                }
+                case 'four-horizontal-bars': {
+                    const otherHeight = (100 - size) / (numParts - 1);
+                    let currentY = 0;
+                    for (let i = 0; i < numParts; i++) {
+                        const partHeight = (i === growingPartIndex) ? size : otherHeight;
+                        rects += `<rect x="0" y="${currentY}" width="100" height="${partHeight}" fill="${colors[i]}" />`;
+                        currentY += partHeight;
+                    }
+                    break;
+                }
+                case 'four-vertical-bars': {
+                    const otherWidth = (100 - size) / (numParts - 1);
+                    let currentX = 0;
+                    for (let i = 0; i < numParts; i++) {
+                        const partWidth = (i === growingPartIndex) ? size : otherWidth;
+                        rects += `<rect x="${currentX}" y="0" width="${partWidth}" height="100" fill="${colors[i]}" />`;
+                        currentX += partWidth;
+                    }
+                    break;
+                }
+                case 'grid-four': {
+                    const [c1, c2, c3, c4] = colors;
+                    if (growingPartIndex === 0) { // Top-left grows
+                        rects = `<rect x="0" y="0" width="${size}" height="${size}" fill="${c1}"/><rect x="${size}" y="0" width="${100 - size}" height="${size}" fill="${c2}"/><rect x="0" y="${size}" width="${size}" height="${100 - size}" fill="${c3}"/><rect x="${size}" y="${size}" width="${100 - size}" height="${100 - size}" fill="${c4}"/>`;
+                    } else if (growingPartIndex === 1) { // Top-right grows
+                        rects = `<rect x="0" y="0" width="${100 - size}" height="${size}" fill="${c1}"/><rect x="${100 - size}" y="0" width="${size}" height="${size}" fill="${c2}"/><rect x="0" y="${size}" width="${100 - size}" height="${100 - size}" fill="${c3}"/><rect x="${100 - size}" y="${size}" width="${size}" height="${100 - size}" fill="${c4}"/>`;
+                    } else if (growingPartIndex === 2) { // Bottom-left grows
+                        rects = `<rect x="0" y="0" width="${size}" height="${100 - size}" fill="${c1}"/><rect x="${size}" y="0" width="${100 - size}" height="${100 - size}" fill="${c2}"/><rect x="0" y="${100 - size}" width="${size}" height="${size}" fill="${c3}"/><rect x="${size}" y="${100 - size}" width="${100 - size}" height="${size}" fill="${c4}"/>`;
+                    } else { // Bottom-right grows
+                        rects = `<rect x="0" y="0" width="${100 - size}" height="${100 - size}" fill="${c1}"/><rect x="${100 - size}" y="0" width="${size}" height="${100 - size}" fill="${c2}"/><rect x="0" y="${100 - size}" width="${100 - size}" height="${size}" fill="${c3}"/><rect x="${100 - size}" y="${100 - size}" width="${size}" height="${size}" fill="${c4}"/>`;
+                    }
+                    break;
+                }
+            }
+            return `${svgHeader}${rects}</svg>`;
+        }
+
+        function shuffleArray(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function setupGame() {
+            gameGrid.innerHTML = '';
+            optionsContainer.innerHTML = '';
+            resultMessage.textContent = '';
+            resultMessage.classList.remove('text-green-600', 'text-red-600');
+            resultMessage.style.opacity = '0';
+            nextLevelButton.classList.add('hidden');
+
+            const puzzleStyle = shuffleArray(partitionStyles)[0];
+            const isFourPart = puzzleStyle.includes('four') || puzzleStyle.includes('grid');
+            const numParts = isFourPart ? 4 : 3;
+            const palettes = isFourPart ? colorPalettes4 : colorPalettes3;
+
+            const growingPartIndex = Math.floor(Math.random() * numParts);
+            const selectedPalettes = shuffleArray(palettes).slice(0, 3);
+            const progressionSizes = generateProgression();
+
+            let correctStyle, correctPalette, correctSize, correctGrowingPartIndex;
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+
+                const style = puzzleStyle;
+                const palette = selectedPalettes[row];
+                const size = progressionSizes[col];
+                const gpi = growingPartIndex;
+
+                if (i === 8) {
+                    correctStyle = style;
+                    correctPalette = palette;
+                    correctSize = size;
+                    correctGrowingPartIndex = gpi;
+                    cell.innerHTML = `<span class="text-6xl font-bold text-slate-400">?</span>`;
+                    cell.id = 'target-cell';
+                } else {
+                    cell.innerHTML = createPartitionSVG(style, palette, size, gpi);
+                }
+                gameGrid.appendChild(cell);
+            }
+
+            currentCorrectAnswerSVG = createPartitionSVG(correctStyle, correctPalette, correctSize, correctGrowingPartIndex);
+
+            const wrongOptions = new Set();
+            wrongOptions.add(createPartitionSVG(correctStyle, correctPalette, progressionSizes[0], correctGrowingPartIndex));
+            wrongOptions.add(createPartitionSVG(correctStyle, selectedPalettes[0], correctSize, correctGrowingPartIndex));
+            const wrongStyle = partitionStyles.find(s => s !== correctStyle);
+            if (wrongStyle) {
+                const wrongIsFourPart = wrongStyle.includes('four') || wrongStyle.includes('grid');
+                const wrongGPI = Math.floor(Math.random() * (wrongIsFourPart ? 4 : 3));
+                wrongOptions.add(createPartitionSVG(wrongStyle, correctPalette, correctSize, wrongGPI));
+            }
+
+            while (wrongOptions.size < 3 || wrongOptions.has(currentCorrectAnswerSVG)) {
+                const randomStyle = shuffleArray(partitionStyles)[0];
+                const randomIsFourPart = randomStyle.includes('four') || randomStyle.includes('grid');
+                const randomPalettes = randomIsFourPart ? colorPalettes4 : colorPalettes3;
+                const randomPalette = shuffleArray(randomPalettes)[0];
+                const randomSize = shuffleArray(generateProgression())[0];
+                const randomGPI = Math.floor(Math.random() * (randomIsFourPart ? 4 : 3));
+                const newOption = createPartitionSVG(randomStyle, randomPalette, randomSize, randomGPI);
+                if (newOption !== currentCorrectAnswerSVG) {
+                    wrongOptions.add(newOption);
+                }
+            }
+
+            const finalOptions = shuffleArray([
+                currentCorrectAnswerSVG,
+                ...Array.from(wrongOptions).slice(0, 3)
+            ]);
+
+            finalOptions.forEach(svg => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.innerHTML = svg;
+                button.onclick = () => checkAnswer(button, svg);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedButton, selectedSVG) {
+            const allButtons = optionsContainer.querySelectorAll('button');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedSVG === currentCorrectAnswerSVG) {
+                resultMessage.textContent = 'Tebrikler, doğru!';
+                resultMessage.classList.add('text-green-600');
+                selectedButton.classList.add('correct');
+
+                document.getElementById('target-cell').innerHTML = currentCorrectAnswerSVG;
+                nextLevelButton.classList.remove('hidden');
+            } else {
+                resultMessage.textContent = 'Yanlış cevap!';
+                resultMessage.classList.add('text-red-600');
+                selectedButton.classList.add('incorrect');
+
+                allButtons.forEach(btn => {
+                    if (btn.innerHTML === currentCorrectAnswerSVG) {
+                        btn.classList.add('correct');
+                    }
+                });
+
+                setTimeout(setupGame, 2000);
+            }
+            resultMessage.style.opacity = '1';
+        }
+
+        nextLevelButton.addEventListener('click', setupGame);
+        window.onload = setupGame;
+    </script>
+</body>
+
+</html>

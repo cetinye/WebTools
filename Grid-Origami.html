@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş Matris Oyunu</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            color: #212121;
+        }
+
+        #game-container {
+            text-align: center;
+            padding: 25px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            max-width: 550px;
+            border: 1px solid #e0e0e0;
+        }
+
+        h1 {
+            color: #212121;
+        }
+
+        #rule-explanation {
+            background-color: #f5f5f5;
+            color: #616161;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.95em;
+            border: 1px solid #eeeeee;
+        }
+
+        #matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 12px;
+            width: 336px;
+            margin: 20px auto;
+        }
+
+        .matrix-cell {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            color: #212121;
+            background-color: #fafafa;
+        }
+
+        .matrix-cell svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #options-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #bdbdbd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .option:hover {
+            transform: translateY(-5px);
+            border-color: #616161;
+            box-shadow: 0 6px 15px rgba(97, 97, 97, 0.2);
+        }
+
+        #result {
+            margin-top: 25px;
+            font-size: 1.5em;
+            font-weight: bold;
+            height: 30px;
+        }
+
+        #result.correct {
+            color: #388e3c;
+        }
+
+        #result.incorrect {
+            color: #d32f2f;
+        }
+
+        #new-game-button {
+            margin-top: 20px;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #616161;
+            color: white;
+            transition: background-color 0.2s;
+        }
+
+        #new-game-button:hover {
+            background-color: #424242;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <h1>Gelişmiş Matris Bulmacası</h1>
+        <div id="rule-explanation">
+            <p>Her oyunun gizli bir katlama sırası vardır. İlk iki satırdaki örnekleri incele, kuralı çöz ve uygula!</p>
+        </div>
+        <div id="matrix-grid"></div>
+        <hr>
+        <h3>Seçenekler</h3>
+        <div id="options-container"></div>
+        <div id="result"></div>
+        <button id="new-game-button">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Parça şablonları. fill="{FILL}" bir yer tutucudur.
+            const part_templates = {
+                triangle_top: { out: `<polygon points="35,25 65,25 50,5" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,25 65,25 50,45" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                triangle_bottom: { out: `<polygon points="35,75 65,75 50,95" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,75 65,75 50,55" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                triangle_left: { out: `<polygon points="25,35 25,65 5,50" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="25,35 25,65 45,50" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                triangle_right: { out: `<polygon points="75,35 75,65 95,50" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="75,35 75,65 55,50" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                rect_top: { out: `<rect x="40" y="5" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<rect x="40" y="25" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                rect_bottom: { out: `<rect x="40" y="75" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<rect x="40" y="55" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                rect_left: { out: `<rect x="5" y="40" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<rect x="25" y="40" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>` },
+                rect_right: { out: `<rect x="75" y="40" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<rect x="55" y="40" width="20" height="20" stroke="black" stroke-width="2" fill="{FILL}"/>` }
+            };
+
+            const SHAPE_DEFINITIONS = [
+                {
+                    name: 'square',
+                    svg: `<rect x="25" y="25" width="50" height="50" stroke="black" stroke-width="2" fill="none"/>`,
+                    parts: {
+                        top: [part_templates.triangle_top, part_templates.rect_top],
+                        bottom: [part_templates.triangle_bottom, part_templates.rect_bottom],
+                        left: [part_templates.triangle_left, part_templates.rect_left],
+                        right: [part_templates.triangle_right, part_templates.rect_right]
+                    }
+                },
+                {
+                    name: 'rectangle_h',
+                    svg: `<rect x="15" y="35" width="70" height="30" stroke="black" stroke-width="2" fill="none"/>`,
+                    parts: {
+                        top: [{ out: `<polygon points="35,35 65,35 50,15" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,35 65,35 50,55" stroke="black" stroke-width="2" fill="{FILL}"/>` }],
+                        bottom: [{ out: `<polygon points="35,65 65,65 50,85" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,65 65,65 50,45" stroke="black" stroke-width="2" fill="{FILL}"/>` }]
+                    }
+                },
+                {
+                    name: 'rectangle_v',
+                    svg: `<rect x="35" y="15" width="30" height="70" stroke="black" stroke-width="2" fill="none"/>`,
+                    parts: {
+                        left: [{ out: `<polygon points="35,35 35,65 15,50" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,35 35,65 55,50" stroke="black" stroke-width="2" fill="{FILL}"/>` }],
+                        right: [{ out: `<polygon points="65,35 65,65 85,50" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="65,35 65,65 45,50" stroke="black" stroke-width="2" fill="{FILL}"/>` }]
+                    }
+                },
+                {
+                    name: 'wide_rectangle',
+                    svg: `<rect x="20" y="30" width="60" height="50" stroke="black" stroke-width="2" fill="none"/>`,
+                    parts: {
+                        top: [{ out: `<polygon points="35,30 65,30 50,10" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,30 65,30 50,50" stroke="black" stroke-width="2" fill="{FILL}"/>` }],
+                        bottom: [{ out: `<polygon points="35,80 65,80 50,100" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="35,80 65,80 50,60" stroke="black" stroke-width="2" fill="{FILL}"/>` }],
+                        left: [{ out: `<polygon points="20,45 20,65 0,55" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="20,45 20,65 40,55" stroke="black" stroke-width="2" fill="{FILL}"/>` }],
+                        right: [{ out: `<polygon points="80,45 80,65 100,55" stroke="black" stroke-width="2" fill="{FILL}"/>`, in: `<polygon points="80,45 80,65 60,55" stroke="black" stroke-width="2" fill="{FILL}"/>` }]
+                    }
+                }
+            ];
+            const ALL_FLAP_POSITIONS = ['top', 'bottom', 'left', 'right'];
+
+            function shuffleArray(array) {
+                let shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+
+            function generatePuzzle() {
+                const puzzle = { rows: [] };
+
+                let masterRule;
+                let compatibleShapes;
+                do {
+                    const shuffledPositions = shuffleArray([...ALL_FLAP_POSITIONS]);
+                    masterRule = shuffledPositions.slice(0, 2);
+                    compatibleShapes = SHAPE_DEFINITIONS.filter(shape =>
+                        masterRule.every(part => shape.parts[part] !== undefined)
+                    );
+                } while (compatibleShapes.length < 3);
+
+                const shuffledShapes = shuffleArray(compatibleShapes);
+
+                for (let i = 0; i < 3; i++) {
+                    const shapeDef = shuffledShapes[i % shuffledShapes.length];
+
+                    const part1_template_options = shapeDef.parts[masterRule[0]];
+                    const part2_template_options = shapeDef.parts[masterRule[1]];
+                    const part1_template = part1_template_options[Math.floor(Math.random() * part1_template_options.length)];
+                    const part2_template = part2_template_options[Math.floor(Math.random() * part2_template_options.length)];
+
+                    // YENİ MANTIK: Her parça için rastgele bir doluluk durumu belirle.
+                    const fill1 = Math.random() < 0.5 ? 'black' : 'none';
+                    const fill2 = Math.random() < 0.5 ? 'black' : 'none';
+
+                    // Parçaların son SVG hallerini, doluluk durumuna göre oluştur.
+                    const part1 = {
+                        out: part1_template.out.replace('{FILL}', fill1),
+                        in: part1_template.in.replace('{FILL}', fill1)
+                    };
+                    const part2 = {
+                        out: part2_template.out.replace('{FILL}', fill2),
+                        in: part2_template.in.replace('{FILL}', fill2)
+                    };
+
+                    const rowData = {
+                        states: {
+                            state1: shapeDef.svg + part1.out + part2.out,
+                            state2: shapeDef.svg + part1.in + part2.out,
+                            state3: shapeDef.svg + part1.in + part2.in,
+                        }
+                    };
+                    puzzle.rows.push(rowData);
+                }
+
+                puzzle.questionRowIndex = 2;
+                return puzzle;
+            }
+
+            const gridContainer = document.getElementById('matrix-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const resultDiv = document.getElementById('result');
+            const newGameButton = document.getElementById('new-game-button');
+            let currentPuzzle;
+
+            function setupGame() {
+                gridContainer.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                resultDiv.innerHTML = '';
+                resultDiv.className = '';
+
+                currentPuzzle = generatePuzzle();
+                const questionRow = currentPuzzle.rows[2];
+
+                for (let i = 0; i < 3; i++) {
+                    const rowData = currentPuzzle.rows[i];
+                    const isQuestionRow = (i === currentPuzzle.questionRowIndex);
+
+                    const state1 = `<svg viewBox="0 0 100 100">${rowData.states.state1}</svg>`;
+                    const state2 = `<svg viewBox="0 0 100 100">${rowData.states.state2}</svg>`;
+                    const state3 = isQuestionRow ? '?' : `<svg viewBox="0 0 100 100">${rowData.states.state3}</svg>`;
+
+                    gridContainer.innerHTML += `<div class="matrix-cell">${state1}</div>`;
+                    gridContainer.innerHTML += `<div class="matrix-cell">${state2}</div>`;
+                    gridContainer.innerHTML += `<div class="matrix-cell">${state3}</div>`;
+                }
+
+                const correctAnswer = `<svg viewBox="0 0 100 100">${questionRow.states.state3}</svg>`;
+                const distractors = new Set();
+                distractors.add(`<svg viewBox="0 0 100 100">${questionRow.states.state2}</svg>`);
+                distractors.add(`<svg viewBox="0 0 100 100">${questionRow.states.state1}</svg>`);
+
+                let options = [
+                    { html: correctAnswer, isCorrect: true },
+                    ...Array.from(distractors).map(svg => ({ html: svg, isCorrect: false }))
+                ];
+                shuffleArray(options);
+
+                options.forEach(opt => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.classList.add('option');
+                    optionDiv.innerHTML = opt.html;
+                    optionDiv.dataset.correct = opt.isCorrect;
+                    optionDiv.addEventListener('click', checkAnswer);
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
+
+            function checkAnswer(event) {
+                const selectedOption = event.currentTarget;
+                const isCorrect = selectedOption.dataset.correct === 'true';
+                const questionCell = gridContainer.children[8];
+
+                if (isCorrect) {
+                    resultDiv.textContent = 'Harika! Doğru Cevap!';
+                    resultDiv.className = 'correct';
+                    questionCell.innerHTML = `<svg viewBox="0 0 100 100">${currentPuzzle.rows[2].states.state3}</svg>`;
+                } else {
+                    resultDiv.textContent = 'Maalesef, yanlış.';
+                    resultDiv.className = 'incorrect';
+                }
+
+                document.querySelectorAll('.option').forEach(opt => {
+                    opt.removeEventListener('click', checkAnswer);
+                    opt.style.cursor = 'default';
+                });
+            }
+
+            newGameButton.addEventListener('click', setupGame);
+            setupGame();
+        });
+    </script>
+
+</body>
+
+</html>

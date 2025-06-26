@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matris Oyunu: Renk Kuralı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            /* Açık mavi-gri arka plan */
+            color: #1e293b;
+            /* Koyu yazı rengi */
+        }
+
+        .grid-cell {
+            background-color: white;
+            border: 2px solid #cbd5e1;
+            /* Grid hücre kenarlığı */
+            border-radius: 0.75rem;
+            /* Yuvarlak köşeler */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1 / 1;
+            transition: all 0.3s ease;
+        }
+
+        .option-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            border-radius: 0.75rem;
+            border: 2px solid #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            height: 7rem;
+            /* Buton yüksekliği ayarlandı */
+        }
+
+        .option-button:hover {
+            transform: translateY(-4px);
+            border-color: #94a3b8;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .option-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .correct {
+            border-color: #22c55e !important;
+            /* Yeşil */
+            background-color: #f0fdf4;
+        }
+
+        .incorrect {
+            border-color: #ef4444 !important;
+            /* Kırmızı */
+            background-color: #fef2f2;
+        }
+
+        #result-message {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-lg mx-auto p-6 bg-white rounded-2xl shadow-xl">
+        <h1 class="text-3xl font-bold text-center mb-2 text-slate-800">Matris Oyunu: Renk Kuralı</h1>
+        <p class="text-center text-slate-500 mb-6">Desenleri çöz ve eksik şekli bul!</p>
+
+        <!-- 3x3 Oyun Alanı -->
+        <div id="game-grid" class="grid grid-cols-3 gap-3 mb-6">
+            <!-- Hücreler JavaScript ile doldurulacak -->
+        </div>
+
+        <!-- Soru ve Seçenekler -->
+        <div id="question-area" class="text-center">
+            <p id="question" class="text-lg font-semibold mb-4">Soru işareti (?) olan yere hangi şekil gelmelidir?</p>
+            <div id="options-container" class="grid grid-cols-4 gap-3">
+                <!-- Seçenekler JavaScript ile doldurulacak -->
+            </div>
+        </div>
+
+        <!-- Sonuç Mesajı ve Sonraki Seviye Butonu -->
+        <div id="result-area" class="mt-6 text-center h-16 flex flex-col items-center justify-center">
+            <p id="result-message" class="text-xl font-bold opacity-0"></p>
+            <button id="next-level-button"
+                class="hidden mt-2 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Yeni
+                Bulmaca</button>
+        </div>
+
+    </div>
+
+    <script>
+        const gameGrid = document.getElementById('game-grid');
+        const optionsContainer = document.getElementById('options-container');
+        const resultMessage = document.getElementById('result-message');
+        const nextLevelButton = document.getElementById('next-level-button');
+
+        const allShapes = ['circle', 'square', 'triangle', 'star', 'pentagon', 'diamond', 'heart', 'hexagon', 'cross', 'minus', 'plus', 'shield'];
+        const allColors = ['#EF4444', '#3B82F6', '#22C55E', '#F97316', '#8B5CF6', '#F43F5E', '#06B6D4', '#EAB308', '#14B8A6', '#6366F1', '#D946EF', '#EC4899'];
+
+        let currentCorrectAnswerSVG;
+
+        /**
+         * Verilen özelliklere göre bir şekil SVG'si oluşturur.
+         */
+        function createShapeSVG(shape, { fillColor, strokeColor }) {
+            const svgHeader = `<svg viewBox="0 0 100 100" width="80%" height="80%">`;
+            let strokeAttrs = `stroke="${strokeColor}" stroke-width="8"`;
+            let path = '';
+
+            switch (shape) {
+                case 'circle': path = `<circle cx="50" cy="50" r="35" fill="${fillColor}" ${strokeAttrs} />`; break;
+                case 'square': path = `<rect x="20" y="20" width="60" height="60" rx="5" fill="${fillColor}" ${strokeAttrs} />`; break;
+                case 'triangle': path = `<polygon points="50,15 85,85 15,85" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'star': path = `<polygon points="50,10 61,40 98,40 68,62 79,95 50,75 21,95 32,62 2,40 39,40" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'pentagon': path = `<polygon points="50,10 95,45 75,95 25,95 5,45" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'diamond': path = `<polygon points="50,10 90,50 50,90 10,50" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'heart': path = `<path d="M50,30 C15,0 0,40 50,90 C100,40 85,0 50,30 Z" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'hexagon': path = `<polygon points="25,15 75,15 95,50 75,85 25,85 5,50" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'cross': path = `<polygon points="10,25 25,10 50,35 75,10 90,25 65,50 90,75 75,90 50,65 25,90 10,75 35,50" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'minus': path = `<rect x="10" y="40" width="80" height="20" rx="5" fill="${fillColor}" ${strokeAttrs} />`; break;
+                case 'plus': path = `<path d="M40 10 H60 V40 H90 V60 H60 V90 H40 V60 H10 V40 H40 Z" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+                case 'shield': path = `<path d="M50,10 C 20,10 10,40 10,60 C 10,85 30,95 50,95 C 70,95 90,85 90,60 C 90,40 80,10 50,10 Z" fill="${fillColor}" ${strokeAttrs} stroke-linejoin="round" stroke-linecap="round"/>`; break;
+            }
+            return `${svgHeader}${path}</svg>`;
+        }
+
+        function shuffleArray(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function setupGame() {
+            gameGrid.innerHTML = '';
+            optionsContainer.innerHTML = '';
+            resultMessage.textContent = '';
+            resultMessage.classList.remove('text-green-600', 'text-red-600');
+            resultMessage.style.opacity = '0';
+            nextLevelButton.classList.add('hidden');
+
+            const selectedShapes = shuffleArray(allShapes).slice(0, 3);
+            const selectedColors = shuffleArray(allColors).slice(0, 3);
+
+            // Kural: Her satırda şekil aynı, her sütunda dolgu rengi aynı.
+            // Dış çizgi rengi, dolgu rengi sırasının bir sonraki elemanıdır.
+            let correctShape, correctFillColor, correctStrokeColor;
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+
+                const shape = selectedShapes[row];
+                const fillColor = selectedColors[col];
+                const strokeColor = selectedColors[(col + 1) % 3];
+
+                if (i === 8) {
+                    correctShape = shape;
+                    correctFillColor = fillColor;
+                    correctStrokeColor = strokeColor;
+                    cell.innerHTML = `<span class="text-6xl font-bold text-slate-400">?</span>`;
+                    cell.id = 'target-cell';
+                } else {
+                    cell.innerHTML = createShapeSVG(shape, { fillColor, strokeColor });
+                }
+                gameGrid.appendChild(cell);
+            }
+
+            // Doğru cevap SVG'sini oluştur
+            currentCorrectAnswerSVG = createShapeSVG(correctShape, { fillColor: correctFillColor, strokeColor: correctStrokeColor });
+
+            // Yanlış seçenekleri oluştur
+            const wrongOptions = new Set();
+            while (wrongOptions.size < 3) {
+                const randomShape = shuffleArray(allShapes)[0];
+                const randomFill = shuffleArray(allColors)[0];
+                const randomStroke = shuffleArray(allColors)[0];
+
+                // Tamamen aynı veya doğru cevapla aynı olmasını engelle
+                if (randomShape === correctShape && randomFill === correctFillColor && randomStroke === correctStrokeColor) {
+                    continue;
+                }
+                wrongOptions.add(createShapeSVG(randomShape, { fillColor: randomFill, strokeColor: randomStroke }));
+            }
+
+            const options = shuffleArray([
+                currentCorrectAnswerSVG,
+                ...Array.from(wrongOptions)
+            ]);
+
+            options.forEach(svg => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.innerHTML = svg;
+                button.onclick = () => checkAnswer(button, svg);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedButton, selectedSVG) {
+            const allButtons = optionsContainer.querySelectorAll('button');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedSVG === currentCorrectAnswerSVG) {
+                resultMessage.textContent = 'Tebrikler, doğru!';
+                resultMessage.classList.add('text-green-600');
+                selectedButton.classList.add('correct');
+
+                document.getElementById('target-cell').innerHTML = currentCorrectAnswerSVG;
+                nextLevelButton.classList.remove('hidden');
+            } else {
+                resultMessage.textContent = 'Yanlış cevap!';
+                resultMessage.classList.add('text-red-600');
+                selectedButton.classList.add('incorrect');
+
+                // Doğru cevabı göster
+                allButtons.forEach(btn => {
+                    if (btn.innerHTML === currentCorrectAnswerSVG) {
+                        btn.classList.add('correct');
+                    }
+                });
+
+                setTimeout(setupGame, 2000);
+            }
+            resultMessage.style.opacity = '1';
+        }
+
+        nextLevelButton.addEventListener('click', setupGame);
+        window.onload = setupGame;
+    </script>
+</body>
+
+</html>
