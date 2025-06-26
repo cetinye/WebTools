@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matris Oyunu - Maskeleme Kuralı</title>
+    <style>
+        /* Genel Sayfa Stilleri */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rule-description {
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Grid Stilleri */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            border: 2px solid #e0e0e0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            border: 1px solid #ddd;
+            aspect-ratio: 1 / 1;
+            background-color: #fafafa;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid-cell .question-mark {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Şekil Stilleri */
+        .shape-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+
+        /* Diğer UI Elemanları */
+        .options-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-button {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 120px;
+            height: 120px;
+            box-sizing: border-box;
+            position: relative;
+            padding: 5px;
+        }
+
+        .option-button:hover:not(:disabled) {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback-message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .feedback-message.correct {
+            color: #28a745;
+        }
+
+        .feedback-message.incorrect {
+            color: #dc3545;
+        }
+
+        #reset-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #reset-button:hover {
+            background-color: #0056b3;
+        }
+
+        #reset-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <h1>Matris Oyunu - Maskeleme Kuralı</h1>
+        <p class="rule-description">
+            1. hücredeki boş şekil ile 2. hücredeki dolu şekil birleşir. 1. şekil, 2. şeklin rengiyle dolar ve 2. şekil
+            bu yeni şeklin içinden kesilip çıkarılır.
+        </p>
+
+        <div id="matrix-grid" class="grid-container"></div>
+        <div class="question-section">
+            <h2 id="question-title">Soru: Son hücreye hangi şekil gelmelidir?</h2>
+            <div id="options-container" class="options-wrapper"></div>
+        </div>
+        <div id="feedback" class="feedback-message"></div>
+        <button id="reset-button">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('matrix-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const feedback = document.getElementById('feedback');
+            const resetButton = document.getElementById('reset-button');
+
+            let currentCorrectAnswer = null;
+            const HOLLOW_COLOR = "#343a40";
+
+            const SVG_NS = "http://www.w3.org/2000/svg";
+
+            const SHAPE_DATA = {
+                circle: (s) => `<circle cx="50" cy="50" r="${s === 'large' ? 45 : 22}" />`,
+                square: (s) => `<rect x="${s === 'large' ? 10 : 30}" y="${s === 'large' ? 10 : 30}" width="${s === 'large' ? 80 : 40}" height="${s === 'large' ? 80 : 40}" rx="4" />`,
+                triangle: (s) => `<path d="${s === 'large' ? 'M50,5 L95,90 L5,90 Z' : 'M50,30 L72,68 L28,68 Z'}" />`
+            };
+
+            function createShape(config) {
+                const container = document.createElement('div');
+                container.className = 'shape-container';
+                const svg = document.createElementNS(SVG_NS, "svg");
+                svg.setAttribute("viewBox", "0 0 100 100");
+
+                if (config.combination) {
+                    const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
+
+                    const defs = document.createElementNS(SVG_NS, 'defs');
+                    const mask = document.createElementNS(SVG_NS, 'mask');
+                    mask.id = maskId;
+
+                    mask.innerHTML = `
+                        <rect width="100" height="100" fill="white" />
+                        ${SHAPE_DATA[config.innerShape.type]('small')}
+                    `;
+                    defs.appendChild(mask);
+                    svg.appendChild(defs);
+
+                    const outerShapeEl = document.createElementNS(SVG_NS, 'g');
+                    outerShapeEl.innerHTML = SHAPE_DATA[config.outerShape.type]('large');
+                    outerShapeEl.setAttribute("fill", config.outerShape.color);
+                    outerShapeEl.setAttribute("mask", `url(#${maskId})`);
+                    svg.appendChild(outerShapeEl);
+
+                } else {
+                    const shapeEl = document.createElementNS(SVG_NS, 'g');
+                    shapeEl.innerHTML = SHAPE_DATA[config.shape]('large');
+                    if (config.isFilled) {
+                        shapeEl.setAttribute("fill", config.color);
+                    } else {
+                        shapeEl.setAttribute("fill", "transparent");
+                        shapeEl.setAttribute("stroke", config.color);
+                        shapeEl.setAttribute("stroke-width", "5");
+                        shapeEl.setAttribute("stroke-linejoin", "round");
+                    }
+                    svg.appendChild(shapeEl);
+                }
+
+                container.appendChild(svg);
+                return container;
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function generatePuzzle() {
+                const allShapes = ['circle', 'square', 'triangle'];
+                const allColors = ['#20c997', '#fd7e14', '#0d6efd', '#d63384', '#ffc107', '#6f42c1', '#dc3545'];
+                shuffleArray(allColors);
+
+                const rowData = [];
+                for (let r = 0; r < 3; r++) {
+                    const shapesForRow = shuffleArray([...allShapes]).slice(0, 2);
+                    rowData.push({
+                        hollowShape: { type: shapesForRow[0], color: HOLLOW_COLOR },
+                        filledShape: { type: shapesForRow[1], color: allColors[r] }
+                    });
+                }
+
+                const matrixConfig = [];
+                for (let i = 0; i < 9; i++) {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    const data = rowData[row];
+                    let config = {};
+
+                    if (col === 0) {
+                        config = { shape: data.hollowShape.type, color: data.hollowShape.color, isFilled: false };
+                    } else if (col === 1) {
+                        config = { shape: data.filledShape.type, color: data.filledShape.color, isFilled: true };
+                    } else {
+                        if (row < 2) {
+                            config = {
+                                combination: true,
+                                outerShape: { type: data.hollowShape.type, color: data.filledShape.color },
+                                innerShape: { type: data.filledShape.type }
+                            };
+                        } else {
+                            config = null;
+                        }
+                    }
+                    matrixConfig.push(config);
+                }
+
+                const lastRow = rowData[2];
+                currentCorrectAnswer = {
+                    combination: true,
+                    outerShape: { type: lastRow.hollowShape.type, color: lastRow.filledShape.color },
+                    innerShape: { type: lastRow.filledShape.type },
+                    isCorrect: true
+                };
+
+                // DÜZELTME: Benzersiz ve 3 tane yanlış cevap üretme garantisi
+                const wrongAnswersSet = new Set();
+                const correctKey = JSON.stringify(currentCorrectAnswer);
+
+                // Strateji 1: Şekiller yer değiştirir
+                const wrong1 = { combination: true, outerShape: { type: lastRow.filledShape.type, color: lastRow.filledShape.color }, innerShape: { type: lastRow.hollowShape.type } };
+                wrongAnswersSet.add(JSON.stringify(wrong1));
+
+                // Strateji 2: Yanlış renk kullanılır
+                const wrongColor = allColors.find(c => c !== lastRow.filledShape.color) || '#333';
+                const wrong2 = { combination: true, outerShape: { type: lastRow.hollowShape.type, color: wrongColor }, innerShape: { type: lastRow.filledShape.type } };
+                wrongAnswersSet.add(JSON.stringify(wrong2));
+
+                // Strateji 3: Başka bir satırın şekilleri kullanılır
+                const otherRow = rowData[0];
+                const wrong3 = { combination: true, outerShape: { type: otherRow.hollowShape.type, color: otherRow.filledShape.color }, innerShape: { type: otherRow.filledShape.type } };
+                wrongAnswersSet.add(JSON.stringify(wrong3));
+
+                // Strateji 4: Yanlış iç şekil
+                const wrongInnerShape = allShapes.find(s => s !== lastRow.filledShape.type);
+                if (wrongInnerShape) {
+                    const wrong4 = { combination: true, outerShape: { type: lastRow.hollowShape.type, color: lastRow.filledShape.color }, innerShape: { type: wrongInnerShape } };
+                    wrongAnswersSet.add(JSON.stringify(wrong4));
+                }
+
+                // Doğru cevabı ve birbirinin aynısı olanları sil
+                wrongAnswersSet.delete(correctKey);
+
+                const finalWrongAnswers = shuffleArray(Array.from(wrongAnswersSet)).slice(0, 3).map(s => JSON.parse(s));
+
+                initGameUI(matrixConfig, finalWrongAnswers);
+            }
+
+            function initGameUI(matrixConfig, wrongAnswers) {
+                grid.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                feedback.innerHTML = '';
+                feedback.className = 'feedback-message';
+
+                matrixConfig.forEach((config) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if (config) {
+                        cell.appendChild(createShape(config));
+                    } else {
+                        cell.innerHTML = '<span class="question-mark">?</span>';
+                    }
+                    grid.appendChild(cell);
+                });
+
+                // DÜZELTME: 3 yanlış cevap + 1 doğru cevap olduğundan emin ol
+                if (wrongAnswers.length !== 3) {
+                    console.error("Could not generate 3 unique wrong answers. Please try again.");
+                    // Acil durum için basit yanlış cevaplar
+                    wrongAnswers.push({ combination: true, outerShape: { type: 'circle', color: 'red' }, innerShape: { type: 'square' } });
+                }
+                const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
+
+                options.forEach(optionConfig => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
+                    button.dataset.correct = optionConfig.isCorrect || false;
+                    button.appendChild(createShape(optionConfig));
+                    button.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function handleOptionClick(event) {
+                const chosenButton = event.currentTarget;
+                const isCorrect = chosenButton.dataset.correct === 'true';
+
+                document.querySelectorAll('.option-button').forEach(btn => {
+                    btn.disabled = true;
+                });
+
+                if (isCorrect) {
+                    feedback.textContent = 'Tebrikler, doğru cevap!';
+                    feedback.className = 'feedback-message correct';
+                    const lastCell = grid.children[8];
+                    lastCell.innerHTML = '';
+                    lastCell.appendChild(createShape(currentCorrectAnswer));
+                } else {
+                    feedback.textContent = 'Yanlış cevap. Tekrar denemek için "Yeni Oyun" butonuna basın.';
+                    feedback.className = 'feedback-message incorrect';
+                }
+            }
+
+            resetButton.addEventListener('click', generatePuzzle);
+            generatePuzzle();
+        });
+    </script>
+</body>
+
+</html>
