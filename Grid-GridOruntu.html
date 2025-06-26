@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matris Oyunu - Son Seviye Dolan Desen</title>
+    <style>
+        /* Genel Sayfa Stilleri */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rule-description {
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        /* Grid Stilleri */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            border: 2px solid #e0e0e0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            border: 1px solid #eee;
+            aspect-ratio: 1 / 1;
+            background-color: #fafafa;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            padding: 5px;
+            /* Alt grid'in kenarlara yapışmaması için */
+        }
+
+        .sub-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            grid-gap: 4px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sub-grid-cell {
+            background-color: #e9ecef;
+            /* Boş hücre rengi */
+            border-radius: 2px;
+        }
+
+        .sub-grid-cell.filled {
+            /* Renk JavaScript tarafından atanacak */
+        }
+
+        .grid-cell .question-mark {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            /* Soru işareti için padding'i sıfırla */
+        }
+
+        /* Diğer UI Elemanları */
+        .options-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-button {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.2s;
+            width: 120px;
+            height: 120px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .option-button .sub-grid {
+            grid-gap: 3px;
+        }
+
+
+        .option-button:hover:not(:disabled) {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback-message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .feedback-message.correct {
+            color: #28a745;
+        }
+
+        .feedback-message.incorrect {
+            color: #dc3545;
+        }
+
+        #reset-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #reset-button:hover {
+            background-color: #0056b3;
+        }
+
+        #reset-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <h1>Matris Oyunu - Son Seviye Dolan Desen</h1>
+        <p class="rule-description">
+            Grid yapısı içerisinde bir veya daha fazla renkli bloktan oluşan desen, belirli bir kurala göre hareket
+            eder. Tüm satırlar aynı kuralı uygular. Bu kuralı çözerek eksik deseni tamamlayın.
+        </p>
+
+        <div id="matrix-grid" class="grid-container"></div>
+        <div class="question-section">
+            <h2 id="question-title">Soru: Son hücreye hangi şekil gelmelidir?</h2>
+            <div id="options-container" class="options-wrapper"></div>
+        </div>
+        <div id="feedback" class="feedback-message"></div>
+        <button id="reset-button">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('matrix-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const feedback = document.getElementById('feedback');
+            const resetButton = document.getElementById('reset-button');
+
+            let currentCorrectAnswer = null;
+
+            function createCellContent(config) {
+                const subGrid = document.createElement('div');
+                subGrid.className = 'sub-grid';
+                if (!config || !Array.isArray(config.pattern)) return subGrid;
+
+                const cells = Array(9).fill(null);
+                config.pattern.forEach(p => {
+                    cells[p.index] = p.color;
+                });
+
+                cells.forEach(color => {
+                    const subCell = document.createElement('div');
+                    subCell.className = 'sub-grid-cell';
+                    if (color) {
+                        subCell.classList.add('filled');
+                        subCell.style.backgroundColor = color;
+                    }
+                    subGrid.appendChild(subCell);
+                });
+                return subGrid;
+            }
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function arePatternsEqual(p1, p2) {
+                if (!p1 || !p2 || p1.length !== p2.length) return false;
+                const key1 = p1.map(p => `${p.index}-${p.color}`).sort().join();
+                const key2 = p2.map(p => `${p.index}-${p.color}`).sort().join();
+                return key1 === key2;
+            }
+
+            function generatePuzzle() {
+                const allColors = shuffleArray(['#0d6efd', '#fd7e14', '#28a745', '#dc3545', '#6f42c1', '#ffc107', '#0dcaf0']);
+                const rowColors = [allColors.slice(0, 3), allColors.slice(1, 4), allColors.slice(2, 5)];
+
+                // === Dinamik Kural Üretimi ===
+                function generateRuleSequence() {
+                    let sequence = [];
+                    // Adım 1: Başlangıç deseni
+                    let currentPattern = [];
+                    const numInitialBlocks = Math.floor(Math.random() * 2) + 1; // 1 veya 2 blokla başla
+                    const availableIndices = shuffleArray([...Array(9).keys()]);
+                    for (let i = 0; i < numInitialBlocks; i++) {
+                        currentPattern.push({ index: availableIndices.pop(), color: null });
+                    }
+                    sequence.push(currentPattern);
+
+                    // Adım 2 & 3: Dönüşüm uygula
+                    const transformations = [
+                        (p) => { // Blok ekle
+                            const currentIndices = p.map(block => block.index);
+                            const newIndex = shuffleArray([...Array(9).keys()]).find(i => !currentIndices.includes(i));
+                            if (newIndex !== undefined) return [...p, { index: newIndex, color: null }];
+                            return p;
+                        },
+                        (p) => { // Blokları saat yönünde 1 birim kaydır
+                            return p.map(block => ({ ...block, index: (block.index + 1) % 9 }));
+                        },
+                        (p) => { // Blokları dikey olarak 1 sıra aşağı kaydır
+                            return p.map(block => ({ ...block, index: (block.index + 3) % 9 }));
+                        }
+                    ];
+
+                    const transform = transformations[Math.floor(Math.random() * transformations.length)];
+                    let nextPattern = transform(currentPattern);
+                    sequence.push(nextPattern);
+
+                    let finalPattern = transform(nextPattern);
+                    sequence.push(finalPattern);
+
+                    return sequence;
+                }
+
+                const ruleSequence = generateRuleSequence();
+                // ==============================
+
+                const matrixConfig = [];
+                const rowData = [];
+
+                for (let r = 0; r < 3; r++) {
+                    // Her satırın desenine kendi renk paletini uygula
+                    const coloredSequence = ruleSequence.map(pattern =>
+                        pattern.map((block, i) => ({ ...block, color: rowColors[r][i % rowColors[r].length] }))
+                    );
+                    rowData.push({
+                        sequence: coloredSequence
+                    });
+                }
+
+                for (let i = 0; i < 9; i++) {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+
+                    if (i === 8) {
+                        matrixConfig.push(null);
+                        continue;
+                    }
+
+                    matrixConfig.push({
+                        pattern: rowData[row].sequence[col]
+                    });
+                }
+
+                const lastRow = rowData[2];
+                currentCorrectAnswer = {
+                    pattern: lastRow.sequence[2],
+                    isCorrect: true
+                };
+
+                const wrongAnswers = new Set();
+
+                // Akıllı çeldiriciler
+                const wrongPattern1 = { pattern: lastRow.sequence[1] }; // Önceki adım
+                if (!arePatternsEqual(wrongPattern1.pattern, currentCorrectAnswer.pattern)) {
+                    wrongAnswers.add(JSON.stringify(wrongPattern1));
+                }
+
+                const wrongPattern2 = { pattern: lastRow.sequence[0] }; // İlk adım
+                if (!arePatternsEqual(wrongPattern2.pattern, currentCorrectAnswer.pattern)) {
+                    wrongAnswers.add(JSON.stringify(wrongPattern2));
+                }
+
+                const wrongPattern3 = { pattern: rowData[0].sequence[2] }; // Yanlış renkler
+                if (!arePatternsEqual(wrongPattern3.pattern, currentCorrectAnswer.pattern)) {
+                    wrongAnswers.add(JSON.stringify(wrongPattern3));
+                }
+
+                while (wrongAnswers.size < 3) {
+                    const randomSequence = generateRuleSequence();
+                    const randomPattern = randomSequence[Math.floor(Math.random() * 3)];
+                    const coloredRandomPattern = randomPattern.map((block, i) => ({ ...block, color: lastRow.colors[i % lastRow.colors.length] }));
+                    const randomOption = { pattern: coloredRandomPattern };
+                    if (!arePatternsEqual(randomOption.pattern, currentCorrectAnswer.pattern)) {
+                        wrongAnswers.add(JSON.stringify(randomOption));
+                    }
+                }
+
+                initGameUI(matrixConfig, Array.from(wrongAnswers).map(s => JSON.parse(s)));
+            }
+
+            function initGameUI(matrixConfig, wrongAnswers) {
+                grid.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                feedback.innerHTML = '';
+                feedback.className = 'feedback-message';
+
+                matrixConfig.forEach(config => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if (config) {
+                        cell.appendChild(createCellContent(config));
+                    } else {
+                        cell.innerHTML = '<span class="question-mark">?</span>';
+                    }
+                    grid.appendChild(cell);
+                });
+
+                const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
+
+                options.forEach(optionConfig => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
+                    button.dataset.correct = optionConfig.isCorrect || false;
+                    button.appendChild(createCellContent(optionConfig));
+                    button.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function handleOptionClick(event) {
+                const chosenButton = event.currentTarget;
+                const isCorrect = chosenButton.dataset.correct === 'true';
+
+                document.querySelectorAll('.option-button').forEach(btn => {
+                    btn.disabled = true;
+                });
+
+                if (isCorrect) {
+                    feedback.textContent = 'Tebrikler, doğru cevap!';
+                    feedback.className = 'feedback-message correct';
+                    const lastCell = grid.children[8];
+                    lastCell.innerHTML = '';
+                    lastCell.appendChild(createCellContent(currentCorrectAnswer));
+                } else {
+                    feedback.textContent = 'Yanlış cevap. Tekrar denemek için "Yeni Oyun" butonuna basın.';
+                    feedback.className = 'feedback-message incorrect';
+                }
+            }
+
+            resetButton.addEventListener('click', generatePuzzle);
+            generatePuzzle();
+        });
+    </script>
+</body>
+
+</html>
