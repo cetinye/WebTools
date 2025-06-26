@@ -186,7 +186,10 @@
             const SHAPE_DATA = {
                 circle: (s) => `<circle cx="50" cy="50" r="${s === 'large' ? 45 : 22}" />`,
                 square: (s) => `<rect x="${s === 'large' ? 10 : 30}" y="${s === 'large' ? 10 : 30}" width="${s === 'large' ? 80 : 40}" height="${s === 'large' ? 80 : 40}" rx="4" />`,
-                triangle: (s) => `<path d="${s === 'large' ? 'M50,5 L95,90 L5,90 Z' : 'M50,30 L72,68 L28,68 Z'}" />`
+                triangle: (s) => `<path d="${s === 'large' ? 'M50,5 L95,90 L5,90 Z' : 'M50,30 L72,68 L28,68 Z'}" />`,
+                diamond: (s) => `<path d="${s === 'large' ? 'M50,5 L95,50 L50,95 L5,50 Z' : 'M50,30 L70,50 L50,70 L30,50 Z'}" />`,
+                pentagon: (s) => `<path d="${s === 'large' ? 'M50,5 L95,40 L80,95 L20,95 L5,40 Z' : 'M50,27.5 L72.5,45 L65,72.5 L35,72.5 L27.5,45 Z'}" />`,
+                hexagon: (s) => `<path d="${s === 'large' ? 'M50,5 L93.3,27.5 L93.3,72.5 L50,95 L6.7,72.5 L6.7,27.5 Z' : 'M50,27.5 L71.65,38.75 L71.65,61.25 L50,72.5 L28.35,61.25 L28.35,38.75 Z'}" />`
             };
 
             function createShape(config) {
@@ -242,8 +245,9 @@
             }
 
             function generatePuzzle() {
-                const allShapes = ['circle', 'square', 'triangle'];
-                const allColors = ['#20c997', '#fd7e14', '#0d6efd', '#d63384', '#ffc107', '#6f42c1', '#dc3545'];
+                const allShapes = ['circle', 'square', 'triangle', 'diamond', 'pentagon', 'hexagon'];
+                // DÜZELTME: Daha canlı ve birbirinden kolayca ayırt edilebilen renkler
+                const allColors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#800000', '#ffe119', '#000075', '#f032e6'];
                 shuffleArray(allColors);
 
                 const rowData = [];
@@ -288,7 +292,6 @@
                     isCorrect: true
                 };
 
-                // DÜZELTME: Benzersiz ve 3 tane yanlış cevap üretme garantisi
                 const wrongAnswersSet = new Set();
                 const correctKey = JSON.stringify(currentCorrectAnswer);
 
@@ -297,7 +300,7 @@
                 wrongAnswersSet.add(JSON.stringify(wrong1));
 
                 // Strateji 2: Yanlış renk kullanılır
-                const wrongColor = allColors.find(c => c !== lastRow.filledShape.color) || '#333';
+                const wrongColor = allColors.find(c => c !== lastRow.filledShape.color && c !== HOLLOW_COLOR) || '#e9ecef';
                 const wrong2 = { combination: true, outerShape: { type: lastRow.hollowShape.type, color: wrongColor }, innerShape: { type: lastRow.filledShape.type } };
                 wrongAnswersSet.add(JSON.stringify(wrong2));
 
@@ -313,7 +316,6 @@
                     wrongAnswersSet.add(JSON.stringify(wrong4));
                 }
 
-                // Doğru cevabı ve birbirinin aynısı olanları sil
                 wrongAnswersSet.delete(correctKey);
 
                 const finalWrongAnswers = shuffleArray(Array.from(wrongAnswersSet)).slice(0, 3).map(s => JSON.parse(s));
@@ -338,11 +340,10 @@
                     grid.appendChild(cell);
                 });
 
-                // DÜZELTME: 3 yanlış cevap + 1 doğru cevap olduğundan emin ol
                 if (wrongAnswers.length !== 3) {
-                    console.error("Could not generate 3 unique wrong answers. Please try again.");
-                    // Acil durum için basit yanlış cevaplar
-                    wrongAnswers.push({ combination: true, outerShape: { type: 'circle', color: 'red' }, innerShape: { type: 'square' } });
+                    console.error("Could not generate 3 unique wrong answers. Retrying.");
+                    generatePuzzle();
+                    return;
                 }
                 const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
 
