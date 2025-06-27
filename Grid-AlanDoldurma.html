@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parçalı Boyama Oyunu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --grid-bg: #f8f9fa;
+            --grid-border: #e0e0e0;
+            --cell-border: #dddddd;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --accent-color: #4363d8;
+            /* Mavi tema */
+            --accent-hover: #3a56b9;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --uncolored-fill: #ffffff;
+            --outline-stroke: #333;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-wrapper {
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            border: 2px solid var(--grid-border);
+            padding: 10px;
+            background-color: var(--grid-bg);
+            border-radius: 12px;
+        }
+
+        .grid-cell {
+            border: 1px solid var(--cell-border);
+            aspect-ratio: 1 / 1;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        .shape-svg {
+            width: 90%;
+            height: 90%;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .option-cell {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+        }
+
+        .option-cell:hover:not(.correct):not(.incorrect) {
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(67, 99, 216, 0.2);
+        }
+
+        .option-cell.correct,
+        .option-cell.reveal-correct {
+            background-color: var(--correct-color);
+            border-color: var(--correct-color);
+        }
+
+        .option-cell.incorrect {
+            background-color: var(--incorrect-color);
+            border-color: var(--incorrect-color);
+        }
+
+        .option-cell.correct .shape-svg g path,
+        .option-cell.incorrect .shape-svg g path,
+        .option-cell.reveal-correct .shape-svg g path {
+            stroke: var(--outline-stroke);
+        }
+
+        .message {
+            margin-top: 25px;
+            font-size: 1.25em;
+            font-weight: 600;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .message.correct {
+            color: var(--correct-color);
+        }
+
+        .message.incorrect {
+            color: var(--incorrect-color);
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 10px;
+            transition: background-color 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .reset-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .reset-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-wrapper">
+        <h1>Parçalı Boyama Oyunu</h1>
+        <p class="description">Her satırda parçalar aynı sırayla boyanır. Kuralı çözün ve eksik şekli bulun!</p>
+
+        <div id="game-grid" class="game-grid"></div>
+        <div id="options-container" class="options-container"></div>
+        <div id="message" class="message"></div>
+        <button id="new-game-btn" class="reset-btn">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridContainer = document.getElementById('game-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const messageEl = document.getElementById('message');
+            const newGameBtn = document.getElementById('new-game-btn');
+
+            // YENİ: Şekil havuzu genişletildi
+            const SEGMENTED_SHAPES = {
+                square: {
+                    segments: {
+                        tl: 'M10 10 H50 V50 H10Z',
+                        tr: 'M50 10 H90 V50 H50Z',
+                        bl: 'M10 50 H50 V90 H10Z',
+                        br: 'M50 50 H90 V90 H50Z'
+                    }
+                },
+                circle: {
+                    segments: {
+                        tr: 'M50,50 L50,5 A45,45 0 0,1 95,50 Z',
+                        br: 'M50,50 L95,50 A45,45 0 0,1 50,95 Z',
+                        bl: 'M50,50 L50,95 A45,45 0 0,1 5,50 Z',
+                        tl: 'M50,50 L5,50 A45,45 0 0,1 50,5 Z'
+                    }
+                },
+                diamond: {
+                    segments: {
+                        tl: 'M50,50 L5,50 L50,5 Z',
+                        tr: 'M50,50 L50,5 L95,50 Z',
+                        br: 'M50,50 L95,50 L50,95 Z',
+                        bl: 'M50,50 L50,95 L5,50 Z'
+                    }
+                },
+                window: {
+                    segments: {
+                        tl: 'M10,10 H45 V45 H10Z',
+                        tr: 'M55,10 H90 V45 H55Z',
+                        bl: 'M10,55 H45 V90 H10Z',
+                        br: 'M55,55 H90 V90 H55Z'
+                    }
+                },
+                pinwheel: {
+                    segments: {
+                        tl: 'M10,10 H50 V30 H30 V50 H10Z',
+                        tr: 'M50,10 H90 V50 H70 V30 H50Z',
+                        bl: 'M10,50 H30 V70 H50 V90 H10Z',
+                        br: 'M90,50 H70 V70 H50 V90 H90Z'
+                    }
+                }
+            };
+            const UNIVERSAL_POSITIONS = ['tl', 'tr', 'bl', 'br'];
+            // YENİ: Renk paleti 20 farklı renge çıkarıldı
+            const ALL_COLORS = [
+                '#d11141', '#00b159', '#00aedb', '#f37735', '#ffc425', '#911eb4', '#46f0f0',
+                '#f032e6', '#3cb44b', '#e6194b', '#4363d8', '#9a6324', '#469990',
+                '#800000', '#000075', '#808000', '#c71585', '#1e90ff', '#ff6347', '#6a3d9a'
+            ];
+
+            let correctOption;
+            let isGameActive = true;
+
+            function createSegmentedShapeSVG(shapeKey, color, partsToColorKeys) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('viewBox', '0 0 100 100');
+                svg.classList.add('shape-svg');
+                const shapeData = SEGMENTED_SHAPES[shapeKey];
+                if (!shapeData) return svg;
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+                Object.entries(shapeData.segments).forEach(([key, pathD]) => {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', pathD);
+                    path.setAttribute('stroke', 'var(--outline-stroke)');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('stroke-linejoin', 'round');
+                    path.setAttribute('fill', partsToColorKeys.includes(key) ? color : 'var(--uncolored-fill)');
+                    group.appendChild(path);
+                });
+
+                svg.appendChild(group);
+                return svg;
+            }
+
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+            function arraysHaveSameElements(arr1, arr2) {
+                if (arr1.length !== arr2.length) return false;
+                const set1 = new Set(arr1);
+                const set2 = new Set(arr2);
+                if (set1.size !== set2.size) return false;
+                for (const item of set1) {
+                    if (!set2.has(item)) return false;
+                }
+                return true;
+            }
+
+            function setupGame() {
+                isGameActive = true;
+                gridContainer.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                messageEl.textContent = '';
+                messageEl.className = 'message';
+
+                const shapeKeys = Object.keys(SEGMENTED_SHAPES);
+                const shuffledShapeKeys = shuffleArray([...shapeKeys]);
+                const shuffledColors = shuffleArray([...ALL_COLORS]);
+
+                const shapesForPuzzle = [
+                    { key: shuffledShapeKeys[0], color: shuffledColors[0] },
+                    { key: shuffledShapeKeys[1], color: shuffledColors[1] },
+                    { key: shuffledShapeKeys[2], color: shuffledColors[2] }
+                ];
+
+                const coloringOrder = shuffleArray([...UNIVERSAL_POSITIONS]);
+                const correctPartsToColor = coloringOrder.slice(0, 3);
+
+                correctOption = { ...shapesForPuzzle[2], parts: correctPartsToColor };
+
+                for (let i = 0; i < 8; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    const puzzleItem = shapesForPuzzle[row];
+                    const partsToColorKeys = coloringOrder.slice(0, col + 1);
+                    cell.appendChild(createSegmentedShapeSVG(puzzleItem.key, puzzleItem.color, partsToColorKeys));
+                    gridContainer.appendChild(cell);
+                }
+                const lastCell = document.createElement('div');
+                lastCell.className = 'grid-cell';
+                lastCell.textContent = '?';
+                gridContainer.appendChild(lastCell);
+
+                const options = [correctOption];
+                const wrongShapeOption = { ...shapesForPuzzle[0], parts: coloringOrder.slice(0, 3) };
+                options.push(wrongShapeOption);
+
+                let wrongOrderParts;
+                do {
+                    wrongOrderParts = shuffleArray([...UNIVERSAL_POSITIONS]).slice(0, 3);
+                } while (arraysHaveSameElements(wrongOrderParts, correctOption.parts));
+                options.push({ ...correctOption, parts: wrongOrderParts });
+
+                options.push({ ...correctOption, parts: correctOption.parts.slice(0, 2) });
+
+                const shuffledOptions = shuffleArray(options);
+
+                shuffledOptions.forEach(opt => {
+                    const btn = document.createElement('div');
+                    btn.className = 'option-cell';
+                    btn.dataset.key = opt.key;
+                    btn.dataset.parts = JSON.stringify(opt.parts.sort());
+                    btn.appendChild(createSegmentedShapeSVG(opt.key, opt.color, opt.parts));
+                    optionsContainer.appendChild(btn);
+                });
+            }
+
+            function handleOptionClick(e) {
+                if (!isGameActive) return;
+                const clickedButton = e.target.closest('.option-cell');
+                if (!clickedButton) return;
+
+                isGameActive = false;
+                const selectedKey = clickedButton.dataset.key;
+                const selectedParts = JSON.parse(clickedButton.dataset.parts);
+                const correctPartsSorted = correctOption.parts.sort();
+
+
+                if (selectedKey === correctOption.key && arraysHaveSameElements(selectedParts, correctPartsSorted)) {
+                    messageEl.textContent = 'Doğru!';
+                    messageEl.classList.add('correct');
+                    clickedButton.classList.add('correct');
+                } else {
+                    messageEl.textContent = 'Yanlış!';
+                    messageEl.classList.add('incorrect');
+                    clickedButton.classList.add('incorrect');
+
+                    optionsContainer.querySelectorAll('.option-cell').forEach(opt => {
+                        if (opt.dataset.key === correctOption.key && arraysHaveSameElements(JSON.parse(opt.dataset.parts), correctPartsSorted)) {
+                            opt.classList.add('reveal-correct');
+                        }
+                    });
+                }
+
+                const lastCell = gridContainer.children[8];
+                lastCell.textContent = '';
+                lastCell.appendChild(createSegmentedShapeSVG(correctOption.key, correctOption.color, correctOption.parts));
+            }
+
+            newGameBtn.addEventListener('click', setupGame);
+            optionsContainer.addEventListener('click', handleOptionClick);
+            setupGame();
+        });
+    </script>
+</body>
+
+</html>
