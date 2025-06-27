@@ -11,43 +11,56 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start;
+            min-height: 100vh;
             margin: 0;
+            padding: 40px 0;
         }
 
-        h1 {
-            margin-bottom: 40px;
+        h1,
+        h2 {
+            margin: 0 0 30px 0;
         }
 
         nav {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
+            width: 100%;
+            max-width: 1000px;
         }
 
         a {
             text-decoration: none;
             background-color: #007bff;
-            color: white;
-            padding: 20px 20px;
+            color: #fff;
+            padding: 18px 20px;
             border-radius: 8px;
             text-align: center;
             font-weight: bold;
-            transition: background-color 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .red-button {
-            background-color: #ff0000;
-        }
-
-        .red-button:hover {
-            background-color: #b30000;
+            transition: background-color .25s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
         }
 
         a:hover {
             background-color: #0056b3;
+        }
+
+        /* Özel buton renkleri */
+        .red-button {
+            background: #ff0000;
+        }
+
+        .red-button:hover {
+            background: #b30000;
+        }
+
+        .green-button {
+            background: #28a745;
+        }
+
+        .green-button:hover {
+            background: #1c8034;
         }
     </style>
 </head>
@@ -55,9 +68,10 @@
 <body>
 
     <h1>Web Tools</h1>
-    <h2> Kırmızılar eklendi, maviler eklenecek.</h2>
+    <h2>Kırmızılar eklendi, maviler eklenecek.</h2>
 
     <nav>
+        <!-- Mevcut (grid olmayan) oyunlar -->
         <a href="GuessImagePiece.html">Guess Image Piece</a>
         <a href="GuessPuzzlePiece.html">Guess Puzzle Piece</a>
         <a href="GuessTilePiece.html">Guess Tile Piece</a>
@@ -85,19 +99,9 @@
         <a href="TangramPieceGuess.html">Tangram Piece Guess</a>
         <a href="DominoGuess.html">Domino Guess</a>
         <a href="TopDownCubeStack.html">Top Down Cube Stack</a>
-        <a href="Grid-BirResminSagiSoluVeTamami.html">Grid - Bir Resmin Sağı Solu ve Tamamı</a>
-        <a href="Grid-IcDisRenk.html">Grid - Iç/Dış Renk</a>
-        <a href="Grid-Renk.html">Grid - Renk</a>
-        <a href="Grid-DegisenAlanlar.html">Grid - Değişen Alanlar</a>
-        <a href="Grid-Origami.html">Grid - Origami</a>
-        <a href="Grid-IlerleyisVeBirlesme.html">Grid - Ilerleyiş & Birleşme</a>
-        <a href="Grid-SekilBirlesimi.html">Grid - Şekil Birleşimi</a>
-        <a href="Grid-SekilOruntu.html">Grid - Şekil Örüntü</a>
-        <a href="Grid-GridOruntu.html">Grid - Grid Örüntü</a>
-        <a href="Grid-SekenIsin.html">Grid - Seken Işın</a>
-        <a href="Grid-KesisimDisiRenklendirme.html">Grid - Kesişim Dışı Renklendirme</a>
-        <a href="Grid-AciDegisimi.html">Grid - Açı Değişimi</a>
-        <a href="Grid-IcParcaSayiDegisimi.html">Grid - İç Parça Sayı Değişimi</a>
+
+        <!-- Grid oyunlarını toplu gösteren tek buton -->
+        <a href="grid.html" target="_blank" class="green-button">Grid Games (14)</a>
     </nav>
 
 </body>

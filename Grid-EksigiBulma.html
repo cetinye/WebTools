@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sıralı Dizilim Oyunu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --grid-bg: #f8f9fa;
+            --grid-border: #e0e0e0;
+            --cell-border: #dddddd;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --accent-color: #6f42c1;
+            /* Mor tema */
+            --accent-hover: #5a379b;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-wrapper {
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            border: 2px solid var(--grid-border);
+            padding: 10px;
+            background-color: var(--grid-bg);
+            border-radius: 12px;
+        }
+
+        .grid-cell {
+            border: 1px solid var(--cell-border);
+            aspect-ratio: 1 / 1;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        .shape-svg {
+            width: 90%;
+            height: 90%;
+            overflow: visible;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-cell {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .option-cell:hover:not(.correct):not(.incorrect) {
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.2);
+        }
+
+        .option-cell.correct {
+            background-color: var(--correct-color);
+            border-color: var(--correct-color);
+        }
+
+        .option-cell.incorrect {
+            background-color: var(--incorrect-color);
+            border-color: var(--incorrect-color);
+        }
+
+        .option-cell.correct .shape-svg g path,
+        .option-cell.incorrect .shape-svg g path {
+            fill: white;
+        }
+
+        .message {
+            margin-top: 25px;
+            font-size: 1.25em;
+            font-weight: 600;
+            height: 30px;
+            transition: color 0.3s;
+        }
+
+        .message.correct {
+            color: var(--correct-color);
+        }
+
+        .message.incorrect {
+            color: var(--incorrect-color);
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 10px;
+            transition: background-color 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .reset-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .reset-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-wrapper">
+        <h1>Sıralı Dizilim Oyunu</h1>
+        <p class="description">Her satır aynı üç şekli farklı bir sırayla içerir. Soru işaretli yere hangi şekil
+            gelmeli?</p>
+
+        <div id="game-grid" class="game-grid"></div>
+        <div id="options-container" class="options-container"></div>
+        <div id="message" class="message"></div>
+        <button id="new-game-btn" class="reset-btn">Yeni Oyun</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridContainer = document.getElementById('game-grid');
+            const optionsContainer = document.getElementById('options-container');
+            const messageEl = document.getElementById('message');
+            const newGameBtn = document.getElementById('new-game-btn');
+
+            // YENİ: Sorun çıkaran karmaşık şekiller yerine, her zaman görünür olan 15 dolgun şekil seçildi.
+            const ALL_SHAPES = [
+                'M50,5 A45,45 0 1 1 49.9,5.01 Z', // 1. Daire
+                'M10 10 H 90 V 90 H 10 Z', // 2. Kare
+                'M50 10 L90 90 L10 90 Z', // 3. Üçgen
+                'M50,5 L61.8,38.2 L98.5,41.2 L73.2,64.8 L79.6,98.5 L50,81.2 L20.4,98.5 L26.8,64.8 L1.5,41.2 L38.2,38.2 Z', // 4. Yıldız
+                'M50 5 L95 50 L50 95 L5 50 Z', // 5. Baklava
+                'M50,5 L93.3,27.5 L93.3,72.5 L50,95 L6.7,72.5 L6.7,27.5 Z', // 6. Altıgen
+                'M50 10 L90 40 L75 90 L25 90 L10 40 Z', // 7. Beşgen
+                'M40 10 H60 V40 H90 V60 H60 V90 H40 V60 H10 V40 H40 Z', // 8. Artı
+                'M50 20 C 40 10, 20 10, 20 30 C 20 50, 50 80, 50 80 C 50 80, 80 50, 80 30 C 80 10, 60 10, 50 20 Z', // 9. Kalp
+                'M20,80 L50,20 L80,80 Z', // 10. Ters Üçgen
+                'M50,10 L35,45 H55 L40,90 L65,55 H45 Z', // 11. Şimşek
+                'M10,10 H90 V70 H40 L25,90 L30,70 H10 Z', // 12. Konuşma Balonu
+                'M20,70 C10,70 10,50 25,50 C35,40 55,40 65,50 C80,50 80,70 65,70 Z', // 13. Bulut
+                'M20,20 v60 h60 v-60 h-20 v20 h-20 v-20 Z', // 14. Kale
+                'M10,30 L50,70 L90,30 L50,60 Z' // 15. Uçurtma
+            ];
+            const ALL_COLORS = [
+                '#d11141', '#00b159', '#00aedb', '#f37735', '#ffc425', '#911eb4', '#46f0f0',
+                '#f032e6', '#3cb44b', '#e6194b', '#4363d8', '#f58231', '#9a6324', '#469990',
+                '#800000', '#000075', '#808000', '#c71585', '#1e90ff', '#ff6347'
+            ];
+
+            let correctShapeInfo;
+            let isGameActive = true;
+
+            function createShapeSVG(shapeInfo) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('viewBox', '0 0 100 100');
+                svg.classList.add('shape-svg');
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+                const mainPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                mainPath.setAttribute('d', shapeInfo.path);
+                mainPath.setAttribute('fill', shapeInfo.color);
+                mainPath.setAttribute('fill-rule', 'evenodd');
+                group.appendChild(mainPath);
+
+                svg.appendChild(group);
+                return svg;
+            }
+
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+            function setupGame() {
+                isGameActive = true;
+                gridContainer.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                messageEl.textContent = '';
+                messageEl.className = 'message';
+
+                const shuffledShapes = shuffleArray([...ALL_SHAPES]);
+                const shuffledColors = shuffleArray([...ALL_COLORS]);
+
+                const shapesForPuzzle = [
+                    { path: shuffledShapes[0], color: shuffledColors[0] },
+                    { path: shuffledShapes[1], color: shuffledColors[1] },
+                    { path: shuffledShapes[2], color: shuffledColors[2] }
+                ];
+
+                const allPermutations = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+                const shuffledPermutations = shuffleArray(allPermutations);
+                const rowOrders = [shuffledPermutations[0], shuffledPermutations[1], shuffledPermutations[2]];
+
+                const gridShapes = [];
+                rowOrders.forEach(order => {
+                    order.forEach(shapeIndex => gridShapes.push(shapesForPuzzle[shapeIndex]));
+                });
+
+                const lastRowFirstTwo = [gridShapes[6], gridShapes[7]];
+                correctShapeInfo = shapesForPuzzle.find(s => !lastRowFirstTwo.some(lr => lr.path === s.path));
+
+                for (let i = 0; i < 8; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.appendChild(createShapeSVG(gridShapes[i]));
+                    gridContainer.appendChild(cell);
+                }
+                const lastCell = document.createElement('div');
+                lastCell.className = 'grid-cell';
+                lastCell.textContent = '?';
+                gridContainer.appendChild(lastCell);
+
+                const options = [correctShapeInfo];
+                const usedShapePaths = shapesForPuzzle.map(s => s.path);
+                const usedColors = shapesForPuzzle.map(s => s.color);
+
+                let availableShapes = ALL_SHAPES.filter(p => !usedShapePaths.includes(p));
+                let availableColors = ALL_COLORS.filter(c => !usedColors.includes(c));
+
+                availableShapes = shuffleArray(availableShapes);
+                availableColors = shuffleArray(availableColors);
+
+                while (options.length < 4 && availableShapes.length > 0 && availableColors.length > 0) {
+                    const wrongShape = {
+                        path: availableShapes.pop(),
+                        color: availableColors.pop()
+                    };
+                    options.push(wrongShape);
+                }
+
+                const shuffledOptions = shuffleArray(options);
+                shuffledOptions.forEach(shapeInfo => {
+                    const btn = document.createElement('div');
+                    btn.className = 'option-cell';
+                    btn.dataset.shapePath = shapeInfo.path;
+                    btn.appendChild(createShapeSVG(shapeInfo));
+                    optionsContainer.appendChild(btn);
+                });
+            }
+
+            function handleOptionClick(e) {
+                if (!isGameActive) return;
+                const clickedButton = e.target.closest('.option-cell');
+                if (!clickedButton) return;
+
+                isGameActive = false;
+                const selectedPath = clickedButton.dataset.shapePath;
+
+                if (selectedPath === correctShapeInfo.path) {
+                    messageEl.textContent = 'Doğru!';
+                    messageEl.classList.add('correct');
+                    clickedButton.classList.add('correct');
+                } else {
+                    messageEl.textContent = 'Yanlış!';
+                    messageEl.classList.add('incorrect');
+                    clickedButton.classList.add('incorrect');
+
+                    optionsContainer.querySelectorAll('.option-cell').forEach(opt => {
+                        if (opt.dataset.shapePath === correctShapeInfo.path) {
+                            opt.classList.add('correct');
+                        }
+                    });
+                }
+
+                const lastCell = gridContainer.children[8];
+                lastCell.textContent = '';
+                lastCell.appendChild(createShapeSVG(correctShapeInfo));
+            }
+
+            newGameBtn.addEventListener('click', setupGame);
+            optionsContainer.addEventListener('click', handleOptionClick);
+            setupGame();
+        });
+    </script>
+</body>
+
+</html>
