@@ -3,157 +3,182 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lines To Shapes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: #f9f9f9;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
         }
 
-        .row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-
+        /* Ekstra stil, gerekirse */
         .box {
-            width: 150px;
-            height: 150px;
-            border: 2px solid #ccc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: white;
-        }
-
-        .arrow {
-            font-size: 30px;
-            margin: 0 10px;
-        }
-
-        .shape-option {
-            display: inline-block;
-            margin: 10px;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-
-        .shape-option:hover {
-            border-color: #888;
-        }
-
-        canvas {
-            display: block;
-            margin: auto;
-        }
-
-        #result {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .question-area {
-            transform: scale(1);
-            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
     </style>
 </head>
 
-<body>
+<body class="bg-slate-100 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
 
-    <h2>Çizgi sayısına göre doğru şekli seç!</h2>
+    <div class="w-full max-w-2xl text-center">
+        <h1 class="text-3xl md:text-4xl font-bold mb-4">Çizgileri Şekillerle Eşleştir!</h1>
+        <p class="text-slate-600 mb-6">Örnekteki ilişkiyi anla ve soruyu doğru cevapla.</p>
 
-    <!-- Örnek -->
-    <div class="row">
-        <div class="box" id="example-lines"></div>
-        <div class="arrow">➡️</div>
-        <div class="box" id="example-shape"></div>
+        <!-- Örnek ve Soru Alanı (Birleştirilmiş Çerçeve) -->
+        <div class="bg-white/80 p-6 rounded-xl shadow-lg mb-8">
+            <!-- Örnek Alanı -->
+            <div class="flex justify-center items-center space-x-4 md:space-x-8 mb-6">
+                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+                    id="example-lines"></div>
+                <div class="text-4xl md:text-5xl font-light text-slate-500">➡️</div>
+                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+                    id="example-shape"></div>
+            </div>
+
+            <hr class="border-slate-200 my-6">
+
+            <!-- Soru Alanı -->
+            <div class="flex justify-center items-center space-x-4 md:space-x-8">
+                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+                    id="question-lines"></div>
+                <div class="text-4xl md:text-5xl font-light text-slate-500">➡️</div>
+                <div
+                    class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center text-6xl font-bold text-slate-400">
+                    ❓</div>
+            </div>
+        </div>
+
+
+        <!-- Seçenekler -->
+        <div id="options" class="flex flex-wrap justify-center gap-4 mb-4"></div>
+        <div id="result" class="text-xl font-bold min-h-[28px] mb-6"></div>
+        <button onclick="generateQuestion()"
+            class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+            Yeni Soru
+        </button>
     </div>
-
-    <!-- Soru -->
-    <div class="row question-area">
-        <div class="box" id="question-lines"></div>
-        <div class="arrow">➡️</div>
-        <div class="box"><strong style="font-size: 40px;">❓</strong></div>
-    </div>
-
-    <!-- Seçenekler -->
-    <div id="options"></div>
-    <div id="result"></div>
-    <button onclick="generateQuestion()">Yeni Soru</button>
 
     <script>
+        /**
+         * Belirtilen eleman içine, istenen sayıda, rastgele açılı ve paralel çizgiler çizer.
+         * @param {HTMLElement} element - Canvas'ın ekleneceği HTML elemanı.
+         * @param {number} count - Çizilecek çizgi sayısı.
+         */
         function drawLines(element, count) {
             const canvas = document.createElement("canvas");
-            canvas.width = 100;
-            canvas.height = 100;
+            canvas.width = 120; // Kutulara daha iyi sığması için biraz büyütüldü
+            canvas.height = 120;
             const ctx = canvas.getContext("2d");
-            const spacing = canvas.width / (count + 1);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // --- YENİ EKLENEN KISIM ---
+            // 1. Varsayılan canvas durumunu kaydet.
+            ctx.save();
+
+            // 2. Rastgele bir açı belirle (-45 ile +45 derece arası).
+            // Bu, çizgilerin çok dik veya yatay olmasını engeller.
+            const angle = (Math.random() - 0.5) * (Math.PI / 2); // Math.PI / 2 = 90 derece
+
+            // 3. Döndürme merkezini canvas'ın ortasına taşı.
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+
+            // 4. Canvas'ı belirlediğimiz açıda döndür.
+            ctx.rotate(angle);
+
+            // 5. Döndürme merkezini eski konumuna geri taşı.
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            // --- YENİ KISIM SONU ---
+
+            // Çizgileri sanki dikey çiziyormuş gibi çiz.
+            // Döndürme işlemi sayesinde açılı görünecekler.
+            const spacing = canvas.width / (count + 1.5); // Çizgiler arası boşluk ayarı
+            const lineLength = 70; // Çizgi uzunluğu
+            const startY = (canvas.height - lineLength) / 2; // Çizgileri dikeyde ortalamak için
+
             for (let i = 0; i < count; i++) {
                 ctx.beginPath();
-                ctx.moveTo((i + 1) * spacing, 20);
-                ctx.lineTo((i + 1) * spacing, 80);
+                const x = (i + 1) * spacing;
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, startY + lineLength);
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = "#333";
+                ctx.lineCap = "round"; // Çizgi uçlarını yuvarlak yap
                 ctx.stroke();
             }
+
+            // 6. Canvas'ı kaydedilen ilk durumuna geri döndür (döndürme sıfırlanır).
+            ctx.restore();
+
             element.innerHTML = "";
             element.appendChild(canvas);
         }
 
-        function drawPolygon(sides, size = 35) {
+        /**
+         * Belirtilen kenar sayısına sahip bir çokgen çizer.
+         * @param {number} sides - Çokgenin kenar sayısı.
+         * @param {number} size - Çokgenin boyutu.
+         * @returns {HTMLCanvasElement} - Üzerinde çokgen çizilmiş canvas elemanı.
+         */
+        function drawPolygon(sides, size = 40) {
             const canvas = document.createElement("canvas");
-            canvas.width = 100;
-            canvas.height = 100;
+            canvas.width = 120;
+            canvas.height = 120;
             const ctx = canvas.getContext("2d");
 
-            const centerX = 50, centerY = 50;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
             const angle = (2 * Math.PI) / sides;
+            const rotationOffset = -Math.PI / 2; // Üçgen gibi şekillerin düz durması için
 
             ctx.beginPath();
             for (let i = 0; i < sides; i++) {
-                const x = centerX + size * Math.cos(angle * i - Math.PI / 2);
-                const y = centerY + size * Math.sin(angle * i - Math.PI / 2);
+                const x = centerX + size * Math.cos(angle * i + rotationOffset);
+                const y = centerY + size * Math.sin(angle * i + rotationOffset);
                 i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
             }
             ctx.closePath();
             ctx.fillStyle = "#30cbd0";
+            ctx.strokeStyle = "#0b8a8e";
+            ctx.lineWidth = 3;
+            ctx.stroke();
             ctx.fill();
 
             return canvas;
         }
 
+        /**
+         * Yeni bir soru ve seçenekler oluşturur.
+         */
         function generateQuestion() {
-            const minSides = 3, maxSides = 10;
+            const minSides = 3, maxSides = 8;
 
+            // Örnek ve soru için birbirinden farklı sayılar seç
             const exampleSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
             let questionSides;
             do {
                 questionSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
             } while (questionSides === exampleSides);
 
-            // Örnek
+            // Örnek alanı çiz
             drawLines(document.getElementById("example-lines"), exampleSides);
             const exampleShape = document.getElementById("example-shape");
             exampleShape.innerHTML = "";
             exampleShape.appendChild(drawPolygon(exampleSides));
 
-            // Soru
+            // Soru alanını çiz
             drawLines(document.getElementById("question-lines"), questionSides);
 
-            // Şıklar
+            // Cevap seçeneklerini oluştur (1 doğru, 3 yanlış)
             const answers = new Set([questionSides]);
             while (answers.size < 4) {
                 const fake = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
-                if (fake !== exampleSides) answers.add(fake);
+                if (fake !== exampleSides && fake !== questionSides) {
+                    answers.add(fake);
+                }
             }
 
+            // Şıkları karıştır ve ekrana yerleştir
             const shuffled = Array.from(answers).sort(() => Math.random() - 0.5);
             const optionsDiv = document.getElementById("options");
             optionsDiv.innerHTML = "";
@@ -162,23 +187,35 @@
 
             shuffled.forEach(sides => {
                 const div = document.createElement("div");
-                div.className = "shape-option";
+                div.className = "shape-option cursor-pointer transition-transform transform hover:scale-110";
                 const shape = drawPolygon(sides);
                 div.appendChild(shape);
                 div.onclick = () => {
+                    document.querySelectorAll('.shape-option').forEach(el => {
+                        el.style.borderColor = 'transparent';
+                        el.style.transform = 'scale(1)';
+                    });
+
                     if (sides === questionSides) {
                         resultDiv.textContent = "✅ Doğru cevap!";
-                        resultDiv.style.color = "green";
+                        resultDiv.className = "text-xl font-bold min-h-[28px] mb-6 text-green-600";
+                        div.style.backgroundColor = 'rgba(74, 222, 128, 0.3)';
+                        div.style.borderRadius = '8px';
                     } else {
                         resultDiv.textContent = `❌ Yanlış. Doğru cevap ${questionSides} kenarlı şekildi.`;
-                        resultDiv.style.color = "red";
+                        resultDiv.className = "text-xl font-bold min-h-[28px] mb-6 text-red-600";
+                        div.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
+                        div.style.borderRadius = '8px';
                     }
+                    // Tıkladıktan sonra tekrar tıklanmasını engellemek için
+                    optionsDiv.childNodes.forEach(child => child.onclick = null);
                 };
                 optionsDiv.appendChild(div);
             });
         }
 
-        generateQuestion();
+        // Sayfa yüklendiğinde ilk soruyu oluştur
+        window.onload = generateQuestion;
     </script>
 </body>
 

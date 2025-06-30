@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izgara Döndürme Bulmacası</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .grid-cell,
+        .option-cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9fafb;
+            /* gray-50 */
+            border: 2px solid #e5e7eb;
+            /* gray-200 */
+            border-radius: 0.5rem;
+            /* rounded-lg */
+            overflow: hidden;
+            /* Taşmayı önlemek için eklendi */
+        }
+
+        .option-cell {
+            border: 3px solid #d1d5db;
+            /* gray-300 */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #ffffff;
+        }
+
+        .option-cell:hover {
+            transform: scale(1.05);
+            border-color: #3b82f6;
+            /* blue-500 */
+        }
+
+        .option-cell.correct {
+            border-color: #22c55e;
+            /* green-500 */
+            background-color: #dcfce7;
+            transform: scale(1.05);
+        }
+
+        .option-cell.incorrect {
+            border-color: #ef4444;
+            /* red-500 */
+            background-color: #fee2e2;
+        }
+
+        .shape-container {
+            display: flex;
+            gap: 4px;
+            font-size: 1.5rem;
+            /* text-xl - Sığması için küçültüldü */
+            line-height: 1;
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Izgara Döndürme Bulmacası</h1>
+            <p id="status-message" class="mt-2 text-gray-600 h-6">Sırayı ve dönüşü takip et, son şekli bul!</p>
+        </header>
+
+        <!-- Oyun Izgarası -->
+        <div class="mb-8 p-4 bg-gray-100 rounded-lg shadow-inner flex justify-center items-center">
+            <div id="game-grid" class="grid grid-cols-3 gap-2">
+                <!-- Izgara hücreleri buraya JS ile eklenecek -->
+            </div>
+        </div>
+
+        <!-- Seçenekler -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Senin Tahminin Hangisi?</h2>
+            <div id="options-container" class="flex flex-wrap justify-center gap-4">
+                <!-- Seçenekler buraya JS ile eklenecek -->
+            </div>
+        </div>
+
+        <!-- Kontrol Düğmeleri -->
+        <div class="text-center mt-8">
+            <button id="new-game-button"
+                class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                Yeni Oyun
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- Oyun Ayarları ---
+        const EMOJIS = ['⭐', '❤️', '😂', '🔥', '💎', '🚀', '🎉', '💡', '⚽', '🏀', '🍎', '🍇', '🍓', '🍔', '🍕', '🚗', '✈️', '⛵', '🎸', '🎹', '🎨', '🎲', '🤖', '👻', '👽'];
+        const SEQUENCE = [1, 2, 3]; // Her zaman 1-2-3 sırası kullanılacak
+        const ROTATIONS = [0, 90, 180, 270];
+
+        // --- DOM Elementleri ---
+        const gridContainer = document.getElementById('game-grid');
+        const optionsContainer = document.getElementById('options-container');
+        const newGameButton = document.getElementById('new-game-button');
+        const statusMessage = document.getElementById('status-message');
+
+        // --- Oyun Değişkenleri ---
+        let correctAnswer = { count: 0, rotation: 0 };
+        let isAnswered = false;
+        let currentEmoji = '⭐';
+
+        /**
+         * Belirli sayıda emoji içeren ve döndürülmüş bir hücre oluşturur.
+         * @param {number} count - Emoji sayısı.
+         * @param {number} rotation - Döndürme açısı.
+         * @param {string} emoji - Kullanılacak emoji.
+         * @returns {HTMLElement} - Oluşturulan div elementi.
+         */
+        function createCell(count, rotation, emoji) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+
+            const shapeContainer = document.createElement('div');
+            shapeContainer.className = 'shape-container';
+            shapeContainer.style.transform = `rotate(${rotation}deg)`;
+
+            for (let i = 0; i < count; i++) {
+                const shape = document.createElement('span');
+                shape.textContent = emoji;
+                shapeContainer.appendChild(shape);
+            }
+            cell.appendChild(shapeContainer);
+            return cell;
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /**
+         * Yeni bir oyun ve bulmaca başlatır.
+         */
+        function startNewGame() {
+            isAnswered = false;
+            statusMessage.textContent = 'Sırayı ve dönüşü takip et, son şekli bul!';
+            gridContainer.innerHTML = '';
+            optionsContainer.innerHTML = '';
+
+            // 1. Rastgele bir emoji ve dönüş açısı seç (0 derece hariç)
+            currentEmoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+            const rowRotation = ROTATIONS.filter(r => r > 0)[Math.floor(Math.random() * 3)]; // 90, 180, or 270
+
+            // 2. Doğru cevabı belirle
+            correctAnswer = {
+                count: SEQUENCE[SEQUENCE.length - 1], // Dizinin son elemanı
+                rotation: rowRotation
+            };
+
+            // 3. Izgarayı oluştur
+            for (let i = 0; i < 6; i++) {
+                const isSecondRow = i >= 3;
+                const rotation = isSecondRow ? rowRotation : 0;
+                const count = SEQUENCE[i % 3];
+
+                if (i === 5) { // Son hücre
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.innerHTML = '<span class="text-5xl font-bold text-gray-700">?</span>';
+                    gridContainer.appendChild(cell);
+                } else {
+                    gridContainer.appendChild(createCell(count, rotation, currentEmoji));
+                }
+            }
+
+            // 4. Seçenekleri oluştur
+            const options = [correctAnswer];
+            // Yanıltıcı seçenekler ekle
+            while (options.length < 4) {
+                const randomCount = SEQUENCE[Math.floor(Math.random() * SEQUENCE.length)];
+                const randomRotation = ROTATIONS[Math.floor(Math.random() * ROTATIONS.length)];
+                const distractor = { count: randomCount, rotation: randomRotation };
+
+                // Aynı seçeneğin tekrar eklenmediğinden emin ol
+                if (!options.some(opt => opt.count === distractor.count && opt.rotation === distractor.rotation)) {
+                    options.push(distractor);
+                }
+            }
+
+            const shuffledOptions = shuffleArray(options);
+            shuffledOptions.forEach(opt => {
+                const optionCell = createCell(opt.count, opt.rotation, currentEmoji);
+                optionCell.classList.replace('grid-cell', 'option-cell');
+                optionCell.dataset.count = opt.count;
+                optionCell.dataset.rotation = opt.rotation;
+                optionCell.addEventListener('click', handleOptionClick);
+                optionsContainer.appendChild(optionCell);
+            });
+        }
+
+        /**
+         * Kullanıcının seçtiği seçeneği kontrol eder.
+         */
+        function handleOptionClick(event) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const selectedOption = event.currentTarget;
+            const selectedCount = parseInt(selectedOption.dataset.count);
+            const selectedRotation = parseInt(selectedOption.dataset.rotation);
+
+            if (selectedCount === correctAnswer.count && selectedRotation === correctAnswer.rotation) {
+                selectedOption.classList.add('correct');
+                statusMessage.textContent = 'Tebrikler, doğru cevap!';
+            } else {
+                selectedOption.classList.add('incorrect');
+                const correctOptionEl = optionsContainer.querySelector(`[data-count='${correctAnswer.count}'][data-rotation='${correctAnswer.rotation}']`);
+                if (correctOptionEl) {
+                    correctOptionEl.classList.add('correct');
+                }
+                statusMessage.textContent = 'Yanlış cevap. Doğrusu işaretlendi.';
+            }
+        }
+
+        // --- OLAY DİNLEYİCİLERİ ---
+        newGameButton.addEventListener('click', startNewGame);
+
+        // Oyunu başlat
+        startNewGame();
+    </script>
+</body>
+
+</html>
