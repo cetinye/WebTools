@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desen Sırası Oyunu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .pattern-sequence-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* Internet Explorer 10+ */
+        }
+
+        .pattern-sequence-container::-webkit-scrollbar {
+            display: none;
+            /* Safari and Chrome */
+        }
+
+        .pattern-item,
+        .option-item {
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0.5rem;
+            background-color: #f3f4f6;
+            /* gray-200 */
+        }
+
+        .pattern-item svg,
+        .option-item svg {
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+
+        .option-item {
+            border: 3px solid #d1d5db;
+            /* gray-300 */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #ffffff;
+            padding: 0.25rem;
+        }
+
+        .option-item:hover {
+            transform: scale(1.05);
+            border-color: #3b82f6;
+            /* blue-500 */
+        }
+
+        .option-item.correct {
+            border-color: #22c55e;
+            /* green-500 */
+            transform: scale(1.05);
+        }
+
+        .option-item.incorrect {
+            border-color: #ef4444;
+            /* red-500 */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Desen Sırası Oyunu</h1>
+            <p id="status-message" class="mt-2 text-gray-600 h-6">Sırayı takip et ve eksik deseni bul!</p>
+        </header>
+
+        <!-- Desen Dizisi -->
+        <div class="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <div id="pattern-sequence-container" class="pattern-sequence-container space-x-3 justify-center">
+                <!-- Desenler buraya JS ile eklenecek -->
+            </div>
+        </div>
+
+        <!-- Seçenekler -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-center text-gray-700 mb-4">Senin Tahminin Hangisi?</h2>
+            <div id="options-container" class="flex flex-wrap justify-center gap-4">
+                <!-- Seçenekler buraya JS ile eklenecek -->
+            </div>
+        </div>
+
+        <!-- Kontrol Düğmeleri -->
+        <div class="text-center mt-8">
+            <button id="new-game-button"
+                class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                Yeni Oyun
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- SVG DESEN HAVUZU ---
+        const PATTERNS = {
+            'diagonal-stripes': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p1" patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="20" stroke="#f59e0b" stroke-width="10"/></pattern></defs><rect width="100" height="100" fill="#fef3c7"/><rect width="100" height="100" fill="url(#p1)"/></svg>`,
+            'dotted-blue': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p2" patternUnits="userSpaceOnUse" width="15" height="15"><circle cx="5" cy="5" r="3" fill="#3b82f6"/></pattern></defs><rect width="100" height="100" fill="#93c5fd"/><rect width="100" height="100" fill="url(#p2)"/></svg>`,
+            'center-flower': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#7e22ce"/><rect x="20" y="20" width="60" height="60" fill="#facc15" rx="15"/><circle cx="50" cy="50" r="15" fill="#f97316"/></svg>`,
+            'rainbow-arc': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#581c87"/><path d="M 10 90 A 40 40 0 0 1 90 90" stroke="#fb7185" stroke-width="12" fill="none"/><path d="M 22 90 A 28 28 0 0 1 78 90" stroke="#34d399" stroke-width="12" fill="none"/><path d="M 34 90 A 16 16 0 0 1 66 90" stroke="#0ea5e9" stroke-width="12" fill="none"/></svg>`,
+            'wavy-lines': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p5" patternUnits="userSpaceOnUse" width="25" height="50"><path d="M 0 12.5 Q 6.25 0, 12.5 12.5 T 25 12.5" stroke="#a7f3d0" stroke-width="5" fill="none"/><path d="M 0 37.5 Q 6.25 25, 12.5 37.5 T 25 37.5" stroke="#a7f3d0" stroke-width="5" fill="none"/></pattern></defs><rect width="100" height="100" fill="#15803d"/><rect width="100" height="100" fill="url(#p5)"/></svg>`,
+            'checkerboard': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p6" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="10" height="10" fill="#f43f5e"/><rect x="10" y="10" width="10" height="10" fill="#f43f5e"/></pattern></defs><rect width="100" height="100" fill="#f9a8d4"/><rect width="100" height="100" fill="url(#p6)"/></svg>`,
+            'concentric-circles': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#0d9488"/><circle cx="50" cy="50" r="45" fill="none" stroke="#99f6e4" stroke-width="8"/><circle cx="50" cy="50" r="25" fill="none" stroke="#99f6e4" stroke-width="8"/></svg>`,
+            'zig-zag': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p8" patternUnits="userSpaceOnUse" width="20" height="20"><path d="M 0 5 L 10 15 L 20 5" stroke="#ffffff" stroke-width="4" fill="none"/></pattern></defs><rect width="100" height="100" fill="#ec4899"/><rect width="100" height="100" fill="url(#p8)"/></svg>`,
+            'plus-signs': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p9" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M15 5v20M5 15h20" stroke="#c084fc" stroke-width="4"/></pattern></defs><rect width="100" height="100" fill="#f3e8ff"/><rect width="100" height="100" fill="url(#p9)"/></svg>`,
+            'triangles': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p10" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 0l10 20L20 0z" fill="#fdba74"/></pattern></defs><rect width="100" height="100" fill="#fff7ed"/><rect width="100" height="100" fill="url(#p10)"/></svg>`,
+            'honeycomb': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p11" width="30" height="17.32" patternUnits="userSpaceOnUse"><path d="M15 0l15 8.66v17.32L15 34.64 0 25.98V8.66z" stroke="#67e8f9" stroke-width="2" fill="none"/></pattern></defs><rect width="100" height="100" fill="#0e7490"/><rect width="100" height="100" fill="url(#p11)"/></svg>`,
+            'target': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#4ade80"/><circle cx="50" cy="50" r="40" fill="#ef4444"/><circle cx="50" cy="50" r="25" fill="white"/><circle cx="50"cy="50" r="10" fill="#ef4444"/></svg>`,
+            'half-circles': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p13" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M0 20 a20 20 0 0 1 40 0" fill="#f472b6"/><path d="M20 0 a20 20 0 0 1 20 20" fill="#818cf8"/></pattern></defs><rect width="100" height="100" fill="#e0e7ff"/><rect width="100" height="100" fill="url(#p13)"/></svg>`,
+            'arrows': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p14" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M5 15h20M20 10l5 5-5 5" stroke="#fb923c" stroke-width="3" fill="none"/></pattern></defs><rect width="100" height="100" fill="#ffedd5"/><rect width="100" height="100" fill="url(#p14)"/></svg>`,
+            'grid-lines': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p15" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 0v20M0 0h20" stroke="#a1a1aa" stroke-width="2"/></pattern></defs><rect width="100" height="100" fill="#e5e5e5"/><rect width="100" height="100" fill="url(#p15)"/></svg>`,
+            'diamond-shape': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#dcfce7"/><path d="M50 10 L90 50 L50 90 L10 50 Z" fill="#4ade80" stroke="#166534" stroke-width="4"/></svg>`,
+            'intersecting-lines': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p17" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0 10h20M10 0v20" stroke="#f87171" stroke-width="3"/></pattern></defs><rect width="100" height="100" fill="#fee2e2"/><rect width="100" height="100" fill="url(#p17)"/></svg>`,
+            'pie-slices': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#f5f3ff"/><path d="M50 50 L50 10 A40 40 0 0 1 84.64 30 Z" fill="#c4b5fd"/><path d="M50 50 L84.64 30 A40 40 0 0 1 78.64 75 Z" fill="#a78bfa"/><path d="M50 50 L78.64 75 A40 40 0 0 1 20 65 Z" fill="#8b5cf6"/><path d="M50 50 L20 65 A40 40 0 0 1 50 10 Z" fill="#7c3aed"/></svg>`,
+            'vertical-bars': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="25" height="100" fill="#fde68a"/><rect x="25" y="0" width="25" height="100" fill="#fcd34d"/><rect x="50" y="0" width="25" height="100" fill="#fbbf24"/><rect x="75" y="0" width="25" height="100" fill="#f59e0b"/></svg>`,
+            'squares-in-square': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#0c4a6e"/><rect x="10" y="10" width="80" height="80" fill="#075985"/><rect x="20" y="20" width="60" height="60" fill="#0369a1"/><rect x="30" y="30" width="40" height="40" fill="#0ea5e9"/><rect x="40" y="40" width="20" height="20" fill="#38bdf8"/></svg>`,
+            'crosses': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p21" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M5 5l15 15M20 5l-15 15" stroke="#fca5a5" stroke-width="4"/></pattern></defs><rect width="100" height="100" fill="#fecaca"/><rect width="100" height="100" fill="url(#p21)"/></svg>`,
+            'spiral-shape': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#111827"/><path d="M 50,50 m 0,-45 a 45,45 0 1,1 0,90 a 35,35 0 1,1 0,-70 a 25,25 0 1,1 0,50 a 15,15 0 1,1 0,-30 a 5,5 0 1,1 0,10" stroke="#f3f4f6" stroke-width="5" fill="none"/></svg>`,
+            'crescent-moons': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p23" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M15 5 a10 10 0 1 1 0 20 a8 8 0 1 0 0-20" fill="#fef08a"/></pattern></defs><rect width="100" height="100" fill="#422006"/><rect width="100" height="100" fill="url(#p23)"/></svg>`,
+            'four-leaf-clover': `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#dcfce7"/><g transform="translate(50,50) rotate(45)"><path d="M0 -10 a25 25 0 1 1 0 20 a15 15 0 0 1 0-20" fill="#4ade80"/><path d="M-10 0 a25 25 0 1 1 20 0 a15 15 0 0 1 -20 0" fill="#22c55e"/></g></svg>`
+        };
+        const ALL_PATTERN_KEYS = Object.keys(PATTERNS);
+
+        // --- DOM ELEMENTLERİ ---
+        const sequenceContainer = document.getElementById('pattern-sequence-container');
+        const optionsContainer = document.getElementById('options-container');
+        const newGameButton = document.getElementById('new-game-button');
+        const statusMessage = document.getElementById('status-message');
+
+        // --- OYUN DEĞİŞKENLERİ ---
+        let correctPatternKey = '';
+        let isAnswered = false;
+
+        /**
+         * Diziyi yerinde karıştıran Fisher-Yates algoritması.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /**
+         * Yeni bir oyun ve bulmaca başlatır.
+         */
+        function startNewGame() {
+            isAnswered = false;
+            statusMessage.textContent = 'Sırayı takip et ve eksik deseni bul!';
+
+            // 1. Çekirdek desen dizisini oluştur
+            const corePatternLength = Math.floor(Math.random() * 3) + 3; // Uzunluk 3, 4 veya 5 olacak
+            const shuffledKeys = shuffleArray([...ALL_PATTERN_KEYS]);
+            const corePattern = shuffledKeys.slice(0, corePatternLength);
+
+            // 2. Tam gösterim dizisini oluştur
+            const displaySequenceLength = corePatternLength * 2 - 1;
+            const fullSequence = [];
+            for (let i = 0; i < displaySequenceLength; i++) {
+                fullSequence.push(corePattern[i % corePatternLength]);
+            }
+
+            // 3. Eksik pozisyonu belirle
+            const missingIndex = corePatternLength + Math.floor(Math.random() * (corePatternLength - 2));
+            correctPatternKey = fullSequence[missingIndex];
+
+            // 4. Desen dizisini ekrana çiz
+            sequenceContainer.innerHTML = '';
+            fullSequence.forEach((key, index) => {
+                const item = document.createElement('div');
+                item.className = 'pattern-item';
+                if (index === missingIndex) {
+                    item.innerHTML = '<span class="text-5xl font-bold text-gray-700">?</span>';
+                } else {
+                    item.innerHTML = PATTERNS[key];
+                }
+                sequenceContainer.appendChild(item);
+            });
+
+            // 5. Seçenekleri oluştur (Her zaman 4 farklı seçenek)
+            const distractors = ALL_PATTERN_KEYS.filter(k => k !== correctPatternKey);
+            const shuffledDistractors = shuffleArray(distractors);
+            const finalOptions = [correctPatternKey, ...shuffledDistractors.slice(0, 3)];
+            const shuffledFinalOptions = shuffleArray(finalOptions);
+
+            optionsContainer.innerHTML = '';
+            shuffledFinalOptions.forEach(key => {
+                const option = document.createElement('div');
+                option.className = 'option-item';
+                option.dataset.key = key;
+                option.innerHTML = PATTERNS[key];
+                option.addEventListener('click', handleOptionClick);
+                optionsContainer.appendChild(option);
+            });
+        }
+
+        /**
+         * Kullanıcının seçtiği seçeneği kontrol eder.
+         */
+        function handleOptionClick(event) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const selectedOption = event.currentTarget;
+            const selectedKey = selectedOption.dataset.key;
+
+            if (selectedKey === correctPatternKey) {
+                selectedOption.classList.add('correct');
+                statusMessage.textContent = 'Tebrikler, doğru cevap!';
+            } else {
+                selectedOption.classList.add('incorrect');
+                const correctOption = optionsContainer.querySelector(`[data-key="${correctPatternKey}"]`);
+                if (correctOption) {
+                    correctOption.classList.add('correct');
+                }
+                statusMessage.textContent = 'Yanlış cevap. Doğrusu işaretlendi.';
+            }
+        }
+
+        // --- OLAY DİNLEYİCİLERİ ---
+        newGameButton.addEventListener('click', startNewGame);
+
+        // Oyunu başlat
+        startNewGame();
+    </script>
+</body>
+
+</html>
