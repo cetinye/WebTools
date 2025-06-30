@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şekil, Desen ve Renk Oyunu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .shape-container {
+            width: 100%;
+            position: relative;
+        }
+
+        .shape-container svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 15%;
+            /* İçeride boşluk bırakmak için */
+            box-sizing: border-box;
+        }
+
+        .option-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-2xl mx-auto text-center">
+        <h1 class="text-2xl md:text-4xl font-bold mb-2 text-gray-900">Eksik Parçayı Bul</h1>
+        <p class="text-base md:text-lg mb-6 text-gray-600">Her satırda her şekil, desen ve renkten yalnızca bir tane
+            olmalı. Soru işaretinin olduğu yere hangi parça gelmeli?</p>
+
+        <!-- Oyun Alanı -->
+        <div id="game-grid" class="grid grid-cols-3 gap-2 md:gap-4 mb-8 p-4 bg-white rounded-2xl shadow-lg">
+            <!-- Hücreler JavaScript ile doldurulacak -->
+        </div>
+
+        <!-- Seçenekler -->
+        <h2 class="text-xl md:text-2xl font-semibold mb-4 text-gray-900">Seçenekler</h2>
+        <div id="options-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+            <!-- Seçenekler JavaScript ile doldurulacak -->
+        </div>
+
+        <!-- Mesaj Alanı -->
+        <div id="message-container" class="mt-6 h-12 flex items-center justify-center">
+            <p id="message-text" class="text-2xl font-bold transition-all duration-300"></p>
+        </div>
+
+        <!-- Yeniden Başlat Butonu -->
+        <button id="restart-button"
+            class="mt-4 px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-all duration-200">
+            Yeni Oyun
+        </button>
+    </div>
+
+    <!-- SVG Desen Tanımları -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <pattern id="pattern-lines" patternUnits="userSpaceOnUse" width="10" height="10">
+                <path d="M 0 0 L 0 10" stroke="#4a5568" stroke-width="2" />
+                <path d="M 5 0 L 5 10" stroke="#4a5568" stroke-width="2" />
+                <path d="M 10 0 L 10 10" stroke="#4a5568" stroke-width="2" />
+            </pattern>
+            <pattern id="pattern-circles" patternUnits="userSpaceOnUse" width="25" height="25">
+                <circle cx="10" cy="10" r="6" fill="#4b5563" />
+            </pattern>
+            <pattern id="pattern-cubes" patternUnits="userSpaceOnUse" width="30" height="30">
+                <path d="M15 0 L30 7.5 L15 15 L0 7.5 Z" fill="#a3a3a3" stroke="#737373" stroke-width="1" />
+                <path d="M0 7.5 L0 22.5 L15 30 L15 15 Z" fill="#d4d4d4" stroke="#737373" stroke-width="1" />
+                <path d="M15 15 L15 30 L30 22.5 L30 7.5 Z" fill="#f5f5f5" stroke="#737373" stroke-width="1" />
+            </pattern>
+            <pattern id="pattern-zigzag" patternUnits="userSpaceOnUse" width="10" height="10"
+                patternTransform="rotate(45)">
+                <path d="M 0 5 L 5 10 L 10 5 L 15 10" stroke="#4a5568" stroke-width="1.5" fill="none" />
+            </pattern>
+            <pattern id="pattern-crosshatch" patternUnits="userSpaceOnUse" width="8" height="8">
+                <path d="M-2,2 l4,-4 M0,8 l8,-8 M6,10 l4,-4" stroke="#4a5568" stroke-width="1" />
+            </pattern>
+            <pattern id="pattern-dots" patternUnits="userSpaceOnUse" width="15" height="15">
+                <circle cx="5" cy="5" r="3" fill="#4a5568" />
+            </pattern>
+        </defs>
+    </svg>
+
+    <script>
+        const gameGrid = document.getElementById('game-grid');
+        const optionsContainer = document.getElementById('options-container');
+        const messageText = document.getElementById('message-text');
+        const restartButton = document.getElementById('restart-button');
+
+        const SHAPES = ['trapezoid', 'pentagon', 'square', 'triangle', 'hexagon', 'circle'];
+        const PATTERNS = ['lines', 'circles', 'cubes', 'zigzag', 'crosshatch', 'dots'];
+        const COLORS = ['#3b82f6' /* blue-500 */, '#22c55e' /* green-500 */, '#ef4444' /* red-500 */, '#8b5cf6' /* violet-500 */, '#f97316' /* orange-500 */, '#14b8a6' /* teal-500 */];
+
+        let solution = {};
+        let isGameOver = false;
+
+        const SVG_PATHS = {
+            trapezoid: 'M 20 80 L 40 20 L 60 20 L 80 80 Z',
+            pentagon: 'M 50 10 L 90 40 L 75 90 L 25 90 L 10 40 Z',
+            square: 'M 20 20 L 80 20 L 80 80 L 20 80 Z',
+            triangle: 'M 50 15 L 85 85 L 15 85 Z',
+            hexagon: 'M 50 12 L 85 31 L 85 69 L 50 88 L 15 69 L 15 31 Z',
+            circle: 'M 50, 50 m -35, 0 a 35,35 0 1,0 70,0 a 35,35 0 1,0 -70,0'
+        };
+
+        function createShapeSVG(shape, pattern, color) {
+            const path = SVG_PATHS[shape];
+            const fill = `url(#pattern-${pattern})`;
+            return `
+                <svg viewBox="0 0 100 100" class="shape-svg">
+                    <path d="${path}" fill="${fill}" stroke="${color}" stroke-width="4" />
+                </svg>
+            `.trim();
+        }
+
+        function shuffle(array) {
+            let newArr = [...array];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        }
+
+        function initGame() {
+            isGameOver = false;
+            gameGrid.innerHTML = '';
+            optionsContainer.innerHTML = '';
+            messageText.textContent = '';
+            messageText.className = 'text-2xl font-bold transition-all duration-300';
+
+            const gameShapes = shuffle(SHAPES).slice(0, 3);
+            const gamePatterns = shuffle(PATTERNS).slice(0, 3);
+            const gameColors = shuffle(COLORS).slice(0, 3);
+
+            const puzzle = [];
+            for (let i = 0; i < 3; i++) {
+                const rowShapes = shuffle(gameShapes);
+                const rowPatterns = shuffle(gamePatterns);
+                const rowColors = shuffle(gameColors);
+                const row = [];
+                for (let j = 0; j < 3; j++) {
+                    row.push({ shape: rowShapes[j], pattern: rowPatterns[j], color: rowColors[j] });
+                }
+                puzzle.push(row);
+            }
+
+            const missingShape = gameShapes.find(s => s !== puzzle[2][0].shape && s !== puzzle[2][1].shape);
+            const missingPattern = gamePatterns.find(p => p !== puzzle[2][0].pattern && p !== puzzle[2][1].pattern);
+            const missingColor = gameColors.find(c => c !== puzzle[2][0].color && c !== puzzle[2][1].color);
+            solution = { shape: missingShape, pattern: missingPattern, color: missingColor };
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bg-gray-200 rounded-lg aspect-square flex items-center justify-center shape-container';
+
+                if (i === 8) {
+                    cell.innerHTML = '<span class="text-6xl font-bold text-gray-400">?</span>';
+                    cell.id = 'solution-cell';
+                } else {
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    const item = puzzle[row][col];
+                    cell.innerHTML = createShapeSVG(item.shape, item.pattern, item.color);
+                }
+                gameGrid.appendChild(cell);
+            }
+
+            const options = [solution];
+            while (options.length < 4) {
+                const randomShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                const randomPattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+                const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                const randomOption = { shape: randomShape, pattern: randomPattern, color: randomColor };
+
+                if (!options.some(opt => opt.shape === randomOption.shape && opt.pattern === randomOption.pattern && opt.color === randomOption.color)) {
+                    options.push(randomOption);
+                }
+            }
+
+            shuffle(options).forEach(option => {
+                const optionCard = document.createElement('div');
+                optionCard.className = 'option-card bg-white p-2 rounded-lg shadow-md cursor-pointer transition-all duration-200';
+                optionCard.innerHTML = `<div class="shape-container aspect-square">${createShapeSVG(option.shape, option.pattern, option.color)}</div>`;
+                optionCard.addEventListener('click', () => handleOptionClick(option, optionCard));
+                optionsContainer.appendChild(optionCard);
+            });
+        }
+
+        function handleOptionClick(chosenOption, chosenCard) {
+            if (isGameOver) return;
+
+            const allOptions = optionsContainer.querySelectorAll('.option-card');
+            allOptions.forEach(opt => opt.style.pointerEvents = 'none');
+
+            if (chosenOption.shape === solution.shape && chosenOption.pattern === solution.pattern && chosenOption.color === solution.color) {
+                isGameOver = true;
+                messageText.textContent = 'Tebrikler!';
+                messageText.className += ' text-green-500';
+                chosenCard.classList.add('ring-4', 'ring-green-500');
+
+                const solutionCell = document.getElementById('solution-cell');
+                solutionCell.innerHTML = createShapeSVG(solution.shape, solution.pattern, solution.color);
+
+                const svgElement = solutionCell.firstElementChild;
+                if (svgElement) {
+                    svgElement.style.transform = 'scale(0)';
+                    setTimeout(() => {
+                        svgElement.style.transition = 'transform 0.3s ease-out';
+                        svgElement.style.transform = 'scale(1)';
+                    }, 50);
+                }
+
+            } else {
+                messageText.textContent = 'Tekrar Dene!';
+                messageText.className += ' text-red-500';
+                chosenCard.classList.add('ring-4', 'ring-red-500');
+
+                setTimeout(() => {
+                    messageText.textContent = '';
+                    chosenCard.classList.remove('ring-4', 'ring-red-500');
+                    allOptions.forEach(opt => opt.style.pointerEvents = 'auto');
+                }, 1200);
+            }
+        }
+
+        restartButton.addEventListener('click', initGame);
+
+        window.onload = initGame;
+    </script>
+</body>
+
+</html>
