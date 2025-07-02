@@ -171,7 +171,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-wrapper">
         <h1>Sıralı Dizilim Oyunu</h1>
         <p class="description">Her satır aynı üç şekli farklı bir sırayla içerir. Soru işaretli yere hangi şekil
@@ -294,6 +294,10 @@
                 }
 
                 const shuffledOptions = shuffleArray(options);
+
+                const correctIndex = shuffledOptions.findIndex(opt => opt.path === correctShapeInfo.path);
+                document.getElementById('correctIndex').textContent = correctIndex;
+
                 shuffledOptions.forEach(shapeInfo => {
                     const btn = document.createElement('div');
                     btn.className = 'option-cell';

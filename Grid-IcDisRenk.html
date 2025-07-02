@@ -75,7 +75,7 @@
 </head>
 
 <body class="flex items-center justify-center min-h-screen">
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="w-full max-w-lg mx-auto p-6 bg-white rounded-2xl shadow-xl">
         <h1 class="text-3xl font-bold text-center mb-2 text-slate-800">Matris Oyunu: Renk Kuralı</h1>
         <p class="text-center text-slate-500 mb-6">Desenleri çöz ve eksik şekli bul!</p>
@@ -202,6 +202,9 @@
                 currentCorrectAnswerSVG,
                 ...Array.from(wrongOptions)
             ]);
+
+            const correctIndex = options.findIndex(svgString => svgString === currentCorrectAnswerSVG);
+            document.getElementById('correctIndex').textContent = correctIndex;
 
             options.forEach(svg => {
                 const button = document.createElement('button');

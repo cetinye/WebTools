@@ -174,7 +174,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-wrapper">
         <h1>Parçalı Boyama Oyunu</h1>
         <p class="description">Her satırda parçalar aynı sırayla boyanır. Kuralı çözün ve eksik şekli bulun!</p>
@@ -332,6 +332,11 @@
                 options.push({ ...correctOption, parts: correctOption.parts.slice(0, 2) });
 
                 const shuffledOptions = shuffleArray(options);
+
+                const correctIndex = shuffledOptions.findIndex(opt =>
+                    opt.key === correctOption.key && arraysHaveSameElements(opt.parts, correctOption.parts)
+                );
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 shuffledOptions.forEach(opt => {
                     const btn = document.createElement('div');

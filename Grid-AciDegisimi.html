@@ -171,7 +171,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-wrapper">
         <h1>Sıralı Döndürme Oyunu</h1>
         <p class="description">Şekiller her hücrede sabit bir açıyla dönüyor. Soru işaretli yere gelecek doğru açıyı
@@ -300,6 +300,9 @@
 
                 const shuffledOptions = Array.from(options);
                 shuffleArray(shuffledOptions);
+
+                const correctIndex = shuffledOptions.findIndex(angle => angle === normalizedCorrectAnswer);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 shuffledOptions.forEach(angle => {
                     const btn = document.createElement('div');
