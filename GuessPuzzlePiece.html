@@ -28,14 +28,12 @@
             border: 2px solid #dddfe2;
             background-color: #f7f8fa;
             max-width: 90vw;
-            /* Mobil cihazlarda taşmayı engeller */
             height: auto;
         }
 
         #choices {
             margin-top: 20px;
             min-height: 100px;
-            /* Seçenekler yüklenirken alan kaplasın */
         }
 
         #newGameButton {
@@ -45,7 +43,6 @@
             border: none;
             cursor: pointer;
             background-color: #42b72a;
-            /* Yeşil renk */
             color: white;
             font-size: 1.1em;
             font-weight: bold;
@@ -85,6 +82,8 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Eksik Yapboz Parçasını Bul</h1>
     <div id="gameContainer">
         <button id="newGameButton">Yeni Oyun</button>
@@ -98,12 +97,9 @@
         const ctx = canvas.getContext('2d');
         const choicesDiv = document.getElementById('choices');
         const newGameButton = document.getElementById('newGameButton');
-
         const gridSize = 3;
         const tabSize = 20;
-
         const toplamResimSayisi = 8;
-
         let pieceGrid = [];
 
         function startNewGame() {
@@ -131,7 +127,6 @@
                 const scale = Math.min(1, maxWidth / img.width);
                 const pw = Math.floor((img.width * scale) / gridSize);
                 const ph = Math.floor((img.height * scale) / gridSize);
-
                 canvas.width = pw * gridSize;
                 canvas.height = ph * gridSize;
 
@@ -198,61 +193,49 @@
                 ctx.fillText('?', missing.x * pw + pw / 2, missing.y * ph + ph / 2);
                 ctx.restore();
 
-                // --- YENİ EKLENEN KISIM: ZORLAŞTIRILMIŞ SEÇENEK OLUŞTURMA ---
-                const finalChoices = [correctCanvas]; // 1. Gerçek parça her zaman listede.
-
-                // Diğer tüm parçaları "kandırıkçı" (decoy) adayı olarak havuza al
+                const finalChoices = [correctCanvas];
                 const decoyPool = pieces.filter(p => p.canvas !== correctCanvas);
-                decoyPool.sort(() => Math.random() - 0.5); // Havuzu karıştır
+                decoyPool.sort(() => Math.random() - 0.5);
 
-                // 2. "Şekli Doğru, Resmi Yanlış" kandırıkçılar oluştur (2 tane)
                 const shapeDecoyCount = 2;
                 for (let i = 0; i < shapeDecoyCount && decoyPool.length > 0; i++) {
-                    const decoySourcePiece = decoyPool.shift(); // Havuzdan bir tane al ve çıkar
-
+                    const decoySourcePiece = decoyPool.shift();
                     const decoyCanvas = document.createElement('canvas');
                     decoyCanvas.width = pw + piecePadding * 2;
                     decoyCanvas.height = ph + piecePadding * 2;
                     const dctx = decoyCanvas.getContext('2d');
-
                     dctx.save();
-                    // ŞEKLİ, KAYIP PARÇANIN ŞEKLİYLE AYNI OLMALI
                     createPuzzlePath(missing.x, missing.y, pw, ph)(dctx, piecePadding, piecePadding);
                     dctx.clip();
-                    // AMA İÇİNDEKİ RESİM, FARKLI BİR PARÇANIN RESMİ OLMALI
-                    dctx.drawImage(img,
-                        0, 0, img.width, img.height,
-                        (-decoySourcePiece.x * pw) + piecePadding, (-decoySourcePiece.y * ph) + piecePadding,
-                        canvas.width, canvas.height
-                    );
+                    dctx.drawImage(img, 0, 0, img.width, img.height, (-decoySourcePiece.x * pw) + piecePadding, (-decoySourcePiece.y * ph) + piecePadding, canvas.width, canvas.height);
                     dctx.restore();
                     finalChoices.push(decoyCanvas);
                 }
 
-                // 3. Kalan boşluğu "Şekli de Resmi de Yanlış" parça ile doldur
                 if (finalChoices.length < 4 && decoyPool.length > 0) {
                     finalChoices.push(decoyPool.shift().canvas);
                 }
 
-                // Son listeyi karıştır ki doğru cevap hep aynı yerde olmasın
                 finalChoices.sort(() => Math.random() - 0.5);
+
+                // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+                const correctIndex = finalChoices.findIndex(canvasEl => canvasEl === correctCanvas);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 choicesDiv.innerHTML = '';
                 finalChoices.forEach(pieceCanvas => {
                     const btn = document.createElement('button');
                     btn.appendChild(pieceCanvas);
                     btn.onclick = () => {
-                        // Sadece en başta sakladığımız doğru tuval ile karşılaştır
                         if (pieceCanvas === correctCanvas) {
                             alert("✅ Doğru! Tebrikler!");
                             startNewGame();
                         } else {
-                            alert("❌ Yanlış! Şekil doğru olabilir ama resim yanlış. Tekrar dene.");
+                            alert("❌ Yanlış! Tekrar dene.");
                         }
                     };
                     choicesDiv.appendChild(btn);
                 });
-                // --- YENİ EKLENEN KISIM BİTTİ ---
 
                 newGameButton.disabled = false;
             };

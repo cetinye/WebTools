@@ -12,7 +12,6 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Ekstra stil, gerekirse */
         .box {
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
@@ -20,14 +19,13 @@
 </head>
 
 <body class="bg-slate-100 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
+    <span id="correctIndex" style="display:none;"></span>
 
     <div class="w-full max-w-2xl text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Çizgileri Şekillerle Eşleştir!</h1>
         <p class="text-slate-600 mb-6">Örnekteki ilişkiyi anla ve soruyu doğru cevapla.</p>
 
-        <!-- Örnek ve Soru Alanı (Birleştirilmiş Çerçeve) -->
-        <div class="bg-white/80 p-6 rounded-xl shadow-lg mb-8">
-            <!-- Örnek Alanı -->
+        <div id="question-area" class="bg-white/80 p-6 rounded-xl shadow-lg mb-8">
             <div class="flex justify-center items-center space-x-4 md:space-x-8 mb-6">
                 <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
                     id="example-lines"></div>
@@ -38,7 +36,6 @@
 
             <hr class="border-slate-200 my-6">
 
-            <!-- Soru Alanı -->
             <div class="flex justify-center items-center space-x-4 md:space-x-8">
                 <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
                     id="question-lines"></div>
@@ -49,53 +46,29 @@
             </div>
         </div>
 
-
-        <!-- Seçenekler -->
         <div id="options" class="flex flex-wrap justify-center gap-4 mb-4"></div>
         <div id="result" class="text-xl font-bold min-h-[28px] mb-6"></div>
-        <button onclick="generateQuestion()"
+        <button id="newGameBtn" onclick="generateQuestion()"
             class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md">
             Yeni Soru
         </button>
     </div>
 
     <script>
-        /**
-         * Belirtilen eleman içine, istenen sayıda, rastgele açılı ve paralel çizgiler çizer.
-         * @param {HTMLElement} element - Canvas'ın ekleneceği HTML elemanı.
-         * @param {number} count - Çizilecek çizgi sayısı.
-         */
         function drawLines(element, count) {
             const canvas = document.createElement("canvas");
-            canvas.width = 120; // Kutulara daha iyi sığması için biraz büyütüldü
+            canvas.width = 120;
             canvas.height = 120;
             const ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // --- YENİ EKLENEN KISIM ---
-            // 1. Varsayılan canvas durumunu kaydet.
             ctx.save();
-
-            // 2. Rastgele bir açı belirle (-45 ile +45 derece arası).
-            // Bu, çizgilerin çok dik veya yatay olmasını engeller.
-            const angle = (Math.random() - 0.5) * (Math.PI / 2); // Math.PI / 2 = 90 derece
-
-            // 3. Döndürme merkezini canvas'ın ortasına taşı.
+            const angle = (Math.random() - 0.5) * (Math.PI / 2);
             ctx.translate(canvas.width / 2, canvas.height / 2);
-
-            // 4. Canvas'ı belirlediğimiz açıda döndür.
             ctx.rotate(angle);
-
-            // 5. Döndürme merkezini eski konumuna geri taşı.
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
-            // --- YENİ KISIM SONU ---
-
-            // Çizgileri sanki dikey çiziyormuş gibi çiz.
-            // Döndürme işlemi sayesinde açılı görünecekler.
-            const spacing = canvas.width / (count + 1.5); // Çizgiler arası boşluk ayarı
-            const lineLength = 70; // Çizgi uzunluğu
-            const startY = (canvas.height - lineLength) / 2; // Çizgileri dikeyde ortalamak için
-
+            const spacing = canvas.width / (count + 1.5);
+            const lineLength = 70;
+            const startY = (canvas.height - lineLength) / 2;
             for (let i = 0; i < count; i++) {
                 ctx.beginPath();
                 const x = (i + 1) * spacing;
@@ -103,34 +76,23 @@
                 ctx.lineTo(x, startY + lineLength);
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = "#333";
-                ctx.lineCap = "round"; // Çizgi uçlarını yuvarlak yap
+                ctx.lineCap = "round";
                 ctx.stroke();
             }
-
-            // 6. Canvas'ı kaydedilen ilk durumuna geri döndür (döndürme sıfırlanır).
             ctx.restore();
-
             element.innerHTML = "";
             element.appendChild(canvas);
         }
 
-        /**
-         * Belirtilen kenar sayısına sahip bir çokgen çizer.
-         * @param {number} sides - Çokgenin kenar sayısı.
-         * @param {number} size - Çokgenin boyutu.
-         * @returns {HTMLCanvasElement} - Üzerinde çokgen çizilmiş canvas elemanı.
-         */
         function drawPolygon(sides, size = 40) {
             const canvas = document.createElement("canvas");
             canvas.width = 120;
             canvas.height = 120;
             const ctx = canvas.getContext("2d");
-
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
             const angle = (2 * Math.PI) / sides;
-            const rotationOffset = -Math.PI / 2; // Üçgen gibi şekillerin düz durması için
-
+            const rotationOffset = -Math.PI / 2;
             ctx.beginPath();
             for (let i = 0; i < sides; i++) {
                 const x = centerX + size * Math.cos(angle * i + rotationOffset);
@@ -143,33 +105,24 @@
             ctx.lineWidth = 3;
             ctx.stroke();
             ctx.fill();
-
             return canvas;
         }
 
-        /**
-         * Yeni bir soru ve seçenekler oluşturur.
-         */
         function generateQuestion() {
             const minSides = 3, maxSides = 8;
-
-            // Örnek ve soru için birbirinden farklı sayılar seç
             const exampleSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
             let questionSides;
             do {
                 questionSides = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
             } while (questionSides === exampleSides);
 
-            // Örnek alanı çiz
             drawLines(document.getElementById("example-lines"), exampleSides);
             const exampleShape = document.getElementById("example-shape");
             exampleShape.innerHTML = "";
             exampleShape.appendChild(drawPolygon(exampleSides));
 
-            // Soru alanını çiz
             drawLines(document.getElementById("question-lines"), questionSides);
 
-            // Cevap seçeneklerini oluştur (1 doğru, 3 yanlış)
             const answers = new Set([questionSides]);
             while (answers.size < 4) {
                 const fake = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
@@ -178,8 +131,12 @@
                 }
             }
 
-            // Şıkları karıştır ve ekrana yerleştir
             const shuffled = Array.from(answers).sort(() => Math.random() - 0.5);
+
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctIndex = shuffled.findIndex(sideValue => sideValue === questionSides);
+            document.getElementById('correctIndex').textContent = correctIndex;
+
             const optionsDiv = document.getElementById("options");
             optionsDiv.innerHTML = "";
             const resultDiv = document.getElementById("result");
@@ -195,7 +152,6 @@
                         el.style.borderColor = 'transparent';
                         el.style.transform = 'scale(1)';
                     });
-
                     if (sides === questionSides) {
                         resultDiv.textContent = "✅ Doğru cevap!";
                         resultDiv.className = "text-xl font-bold min-h-[28px] mb-6 text-green-600";
@@ -207,14 +163,11 @@
                         div.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
                         div.style.borderRadius = '8px';
                     }
-                    // Tıkladıktan sonra tekrar tıklanmasını engellemek için
                     optionsDiv.childNodes.forEach(child => child.onclick = null);
                 };
                 optionsDiv.appendChild(div);
             });
         }
-
-        // Sayfa yüklendiğinde ilk soruyu oluştur
         window.onload = generateQuestion;
     </script>
 </body>

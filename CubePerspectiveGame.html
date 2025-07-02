@@ -25,6 +25,8 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Üstten Bakış Küp Oyunu</h1>
     <canvas id="mainCanvas" width="300" height="300"></canvas>
     <div class="options">
@@ -45,7 +47,6 @@
         function generateStructure() {
             const cubes = [];
             const heightMap = {};
-
             while (cubes.length < 6) {
                 const x = getRandomInt(gridSize);
                 const y = getRandomInt(gridSize);
@@ -54,14 +55,12 @@
                 cubes.push({ x, y, z: height, color: colors[getRandomInt(colors.length)] });
                 heightMap[key]++;
             }
-
             return cubes;
         }
 
         function draw3DCube(ctx, x, y, size, color) {
             const half = size / 2;
             const quarter = size / 4;
-
             // Top face
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -72,7 +71,6 @@
             ctx.fillStyle = color;
             ctx.fill();
             ctx.stroke();
-
             // Left face
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -83,7 +81,6 @@
             ctx.fillStyle = shadeColor(color, -15);
             ctx.fill();
             ctx.stroke();
-
             // Right face
             ctx.beginPath();
             ctx.moveTo(x + size, y);
@@ -110,10 +107,7 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const size = 40;
-
-            // çizim sırası: arkadaki daha önce
             cubes.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
-
             for (let cube of cubes) {
                 const isoX = 150 + (cube.x - cube.y) * (size * 0.5);
                 const isoY = 100 + (cube.x + cube.y) * (size * 0.25) - cube.z * (size * 0.75);
@@ -148,9 +142,12 @@
 
         const correctView = generateTopView(structure);
         const optionCanvases = document.querySelectorAll('.optionCanvas');
-        const correctIndex = getRandomInt(4);
-        const views = [];
 
+        const correctIndex = getRandomInt(4);
+        // ✨ EKLENDİ: Doğru cevabın index'ini HTML'e yazar.
+        document.getElementById('correctIndex').textContent = correctIndex;
+
+        const views = [];
         for (let i = 0; i < 4; i++) {
             if (i === correctIndex) {
                 views.push(correctView);

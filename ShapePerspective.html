@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
     <meta charset="UTF-8">
@@ -38,14 +38,18 @@
             border: 2px solid blue;
         }
 
-        svg {
-            width: 100px;
+        /* ✨ DEĞİŞTİRİLDİ: Soru SVG'sinin genişliği artık CSS ile kontrol ediliyor */
+        #stack svg {
+            width: 300px;
+            /* Soru görselinin genişliği artırıldı */
             height: auto;
         }
     </style>
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h2>Yukarıdan Bakış Açısını Seç</h2>
     <div class="stack" id="stack"></div>
 
@@ -90,26 +94,28 @@
             return shape;
         }
 
-        function createSideViewSVG(type, color, size = 40, yOffset = 0) {
+        // ✨ DEĞİŞTİRİLDİ: Fonksiyon artık çizim yapılacak canvas genişliğini parametre olarak alıyor
+        function createSideViewSVG(type, color, size = 40, yOffset = 0, canvasWidth) {
             const svgNS = "http://www.w3.org/2000/svg";
             let shape;
+            const centerX = canvasWidth / 2; // Merkezi dinamik olarak hesapla
+
             if (type === 'cylinder') {
                 shape = document.createElementNS(svgNS, 'circle');
-                shape.setAttribute('cx', 50);
+                shape.setAttribute('cx', centerX);
                 shape.setAttribute('cy', yOffset + size / 2);
                 shape.setAttribute('r', size / 2);
             } else if (type === 'cube') {
                 shape = document.createElementNS(svgNS, 'rect');
-                const xOffset = (100 - size) / 2;
+                const xOffset = (canvasWidth - size) / 2;
                 shape.setAttribute('x', xOffset);
                 shape.setAttribute('y', yOffset);
                 shape.setAttribute('width', size);
                 shape.setAttribute('height', size);
             } else if (type === 'pyramid') {
                 const half = size / 2;
-                const xOffset = (100 - size) / 2;
                 shape = document.createElementNS(svgNS, 'polygon');
-                shape.setAttribute('points', `50,${yOffset} ${50 + half},${yOffset + size} ${50 - half},${yOffset + size}`);
+                shape.setAttribute('points', `${centerX},${yOffset} ${centerX + half},${yOffset + size} ${centerX - half},${yOffset + size}`);
             }
             shape.setAttribute('fill', color);
             return shape;
@@ -121,7 +127,8 @@
             while (stackData.length < shapeCount) {
                 let type = getRandom(prisms);
                 let color = getRandom(colors);
-                let size = 30 + Math.floor(Math.random() * 30);
+                // ✨ DEĞİŞTİRİLDİ: Şekillerin boyut aralığı daha büyük olacak şekilde artırıldı
+                let size = 60 + Math.floor(Math.random() * 60);
                 let key = type + '_' + color;
                 if (!usedCombos.has(key)) {
                     usedCombos.add(key);
@@ -134,15 +141,22 @@
             const stack = document.getElementById('stack');
             stack.innerHTML = '';
 
+            // ✨ DEĞİŞTİRİLDİ: Soru görseli için yeni ve daha büyük bir genişlik tanımlandı
+            const canvasWidth = 300;
+
             const totalHeight = stackData.reduce((acc, item) => acc + item.size, 0);
             const stackSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            stackSVG.setAttribute("viewBox", `0 0 100 ${totalHeight}`);
-            stackSVG.setAttribute("width", "100");
+
+            // ✨ DEĞİŞTİRİLDİ: viewBox ve height/width yeni genişliğe göre ayarlandı
+            stackSVG.setAttribute("viewBox", `0 0 ${canvasWidth} ${totalHeight}`);
             stackSVG.setAttribute("height", totalHeight);
+            // Genişlik artık CSS ile kontrol ediliyor, bu satır kaldırıldı veya yoruma alındı:
+            // stackSVG.setAttribute("width", canvasWidth);
 
             let yOffset = 0;
             for (let i = stackData.length - 1; i >= 0; i--) {
-                const shape = createSideViewSVG(stackData[i].type, stackData[i].color, stackData[i].size, yOffset);
+                // ✨ DEĞİŞTİRİLDİ: Çizim fonksiyonuna yeni genişlik parametresi eklendi
+                const shape = createSideViewSVG(stackData[i].type, stackData[i].color, stackData[i].size, yOffset, canvasWidth);
                 stackSVG.appendChild(shape);
                 yOffset += stackData[i].size;
             }
@@ -152,12 +166,15 @@
 
         function renderOptions() {
             correctAnswer = Math.floor(Math.random() * 4);
+            document.getElementById('correctIndex').textContent = correctAnswer;
+
             for (let i = 0; i < 4; i++) {
                 const optionSVG = document.getElementById('option' + i);
                 optionSVG.innerHTML = '';
                 let data = i === correctAnswer ? stackData : shuffle(stackData).map(d => ({ ...d, color: getRandom(colors) }));
+                // ✨ DEĞİŞTİRİLDİ: Seçeneklerdeki şekiller de daha büyük görünecek şekilde ayarlandı
                 for (let j = 0; j < data.length; j++) {
-                    const shape = createTopViewSVG(data[j].type, data[j].color, data[j].size);
+                    const shape = createTopViewSVG(data[j].type, data[j].color, data[j].size * 0.8); // 0.8 ile ölçeklendi
                     optionSVG.appendChild(shape);
                 }
             }

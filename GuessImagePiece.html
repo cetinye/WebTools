@@ -33,7 +33,6 @@
         canvas {
             border: 1px solid #ccc;
             max-width: 90vw;
-            /* Mobil cihazlarda taşmayı engeller */
             height: auto;
         }
 
@@ -80,6 +79,8 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Resimdeki Eksik Parçayı Bul</h1>
     <div id="gameContainer">
         <button id="newGameButton">Yeni Oyun</button>
@@ -94,13 +95,8 @@
         const ctx = canvas.getContext('2d');
         const choicesDiv = document.getElementById('choices');
         const newGameButton = document.getElementById('newGameButton');
-
         let clipW = 100, clipH = 100;
-
-        // --- ÖNEMLİ: DEĞİŞTİRMENİZ GEREKEN TEK YER ---
-        // 'Resimler' klasörünüzde 1.png, 2.png, ... şeklinde kaç tane resim varsa
-        // o sayıyı buraya yazın.
-        const toplamResimSayisi = 9; // Örnek olarak 10 girilmiştir.
+        const toplamResimSayisi = 9;
 
         function startNewGame() {
             newGameButton.disabled = true;
@@ -119,43 +115,35 @@
             const imagePath = `Resimler/${randomSayi}.png`;
 
             const img = new Image();
-            img.crossOrigin = "Anonymous"; // Gerekli olabilir.
+            img.crossOrigin = "Anonymous";
 
             img.onload = function () {
-                // Resmi tuval boyutuna sığdır
-                const maxWidth = 800; // Resmin maksimum genişliği
+                const maxWidth = 800;
                 const scale = Math.min(1, maxWidth / img.width);
                 canvas.width = img.width * scale;
                 canvas.height = img.height * scale;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                // Parça boyutunu resme göre ayarla (resmin 1/4'ü kadar)
                 clipW = canvas.width / 4;
                 clipH = canvas.height / 4;
 
-                // Rastgele bir kesme pozisyonu seç
                 const clipX = Math.floor(Math.random() * (canvas.width - clipW));
                 const clipY = Math.floor(Math.random() * (canvas.height - clipH));
 
-                // 1. Doğru parçanın verisini al (dikdörtgeni çizmeden ÖNCE)
                 const correctImageData = ctx.getImageData(clipX, clipY, clipW, clipH);
 
-                // 2. Yanlış seçenekleri oluştur
                 const options = [correctImageData];
-                const positions = [{ x: clipX, y: clipY }]; // Üst üste binmeyi engellemek için pozisyonları tut
+                const positions = [{ x: clipX, y: clipY }];
 
                 while (options.length < 4) {
                     let x = Math.floor(Math.random() * (canvas.width - clipW));
                     let y = Math.floor(Math.random() * (canvas.height - clipH));
-
-                    // Diğer parçalarla çok yakın olmamasını sağla
                     if (!positions.some(p => Math.abs(p.x - x) < clipW && Math.abs(p.y - y) < clipH)) {
                         options.push(ctx.getImageData(x, y, clipW, clipH));
                         positions.push({ x, y });
                     }
                 }
 
-                // 3. Resimdeki parçanın yerini beyaz bir dikdörtgenle ve soru işaretiyle gizle
                 ctx.fillStyle = "white";
                 ctx.fillRect(clipX, clipY, clipW, clipH);
                 ctx.fillStyle = "blue";
@@ -165,7 +153,6 @@
                 ctx.textBaseline = "middle";
                 ctx.fillText("?", clipX + clipW / 2, clipY + clipH / 2);
 
-                // 4. Seçenekleri karıştır ve buton olarak göster
                 showChoices(options, correctImageData);
                 newGameButton.disabled = false;
             };
@@ -179,12 +166,16 @@
         }
 
         function showChoices(options, correctData) {
-            // Fisher-Yates shuffle algoritması ile seçenekleri karıştır
             const shuffled = [...options];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
+
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctDataString = correctData.data.toString();
+            const correctIndex = shuffled.findIndex(item => item.data.toString() === correctDataString);
+            document.getElementById('correctIndex').textContent = correctIndex;
 
             choicesDiv.innerHTML = '';
             shuffled.forEach(data => {
@@ -198,10 +189,8 @@
                 btn.appendChild(choiceCanvas);
 
                 btn.onclick = () => {
-                    // ImageData'yı string'e çevirerek karşılaştırmak en güvenilir yöntemlerden biridir.
                     if (data.data.toString() === correctData.data.toString()) {
                         alert("✅ Doğru! Tebrikler!");
-                        // Doğru bilince otomatik yeni oyun başlat
                         startNewGame();
                     } else {
                         alert("❌ Yanlış! Tekrar dene.");
@@ -211,12 +200,8 @@
             });
         }
 
-        // Butona tıklama olayı
         newGameButton.addEventListener('click', startNewGame);
-
-        // Sayfa ilk yüklendiğinde oyunu başlat
         document.addEventListener('DOMContentLoaded', startNewGame);
-
     </script>
 </body>
 

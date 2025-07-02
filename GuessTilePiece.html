@@ -87,6 +87,8 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Karışık Yapboz Parçasını Bul</h1>
     <div id="gameContainer">
         <div id="controls">
@@ -94,7 +96,6 @@
             <label>Sütun: <input type="number" id="cols" value="3" min="2" max="10" /></label>
             <button id="startBtn">Yeni Oyun Başlat</button>
         </div>
-
         <canvas id="mainCanvas"></canvas>
         <div id="choices"></div>
     </div>
@@ -104,27 +105,21 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const choicesDiv = document.getElementById('choices');
-
-        // --- ÖNEMLİ: DEĞİŞTİRMENİZ GEREKEN TEK YER ---
-        const toplamResimSayisi = 9; // Kendi toplam resim sayınızla güncelleyin.
+        const toplamResimSayisi = 9;
 
         startBtn.addEventListener('click', () => {
             startBtn.disabled = true;
             startBtn.textContent = "Yükleniyor...";
-
             if (toplamResimSayisi === 0) {
                 alert("Oynanacak resim bulunamadı!");
                 startBtn.disabled = false;
                 startBtn.textContent = "Yeni Oyun Başlat";
                 return;
             }
-
             const rows = parseInt(document.getElementById('rows').value);
             const cols = parseInt(document.getElementById('cols').value);
-
             const randomSayi = Math.floor(Math.random() * toplamResimSayisi) + 1;
             const imagePath = `Resimler/${randomSayi}.png`;
-
             const img = new Image();
             img.onload = () => {
                 runPuzzleGame(img, rows, cols);
@@ -140,17 +135,14 @@
         });
 
         function runPuzzleGame(img, rows, cols) {
-            const maxWidth = 800; // Resmin maksimum genişliği
+            const maxWidth = 800;
             const scale = Math.min(1, maxWidth / img.width);
-
             const pw = Math.floor((img.width * scale) / cols);
             const ph = Math.floor((img.height * scale) / rows);
-
             canvas.width = pw * cols;
             canvas.height = ph * rows;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Parçaları üret
             let pieces = [];
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
@@ -163,22 +155,17 @@
                 }
             }
 
-            // 2. Karıştır
             const shuffledPieces = [...pieces];
             shuffledPieces.sort(() => Math.random() - 0.5);
 
-            // 3. Eksik parçayı seç
             const missingIndex = Math.floor(Math.random() * shuffledPieces.length);
             const missing = shuffledPieces[missingIndex];
             const correctCanvas = missing.canvas;
 
-            // 4. Tüm parçaları yerleştir ve çizgileri çiz
             for (let i = 0; i < shuffledPieces.length; i++) {
                 const x = (i % cols) * pw;
                 const y = Math.floor(i / cols) * ph;
-
                 if (i === missingIndex) {
-                    // Soru işareti bölgesi
                     ctx.fillStyle = "#3498db";
                     ctx.fillRect(x, y, pw, ph);
                     ctx.fillStyle = "white";
@@ -190,14 +177,11 @@
                 } else {
                     ctx.drawImage(shuffledPieces[i].canvas, x, y);
                 }
-
-                // Grid çizgisi
                 ctx.strokeStyle = "#000";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x, y, pw, ph);
             }
 
-            // 5. Seçenekleri oluştur
             const choices = [correctCanvas];
             while (choices.length < 4 && choices.length < pieces.length) {
                 const rand = Math.floor(Math.random() * pieces.length);
@@ -208,15 +192,19 @@
             }
 
             choices.sort(() => Math.random() - 0.5);
-            choicesDiv.innerHTML = '';
 
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctIndex = choices.findIndex(canvasEl => canvasEl === correctCanvas);
+            document.getElementById('correctIndex').textContent = correctIndex;
+
+            choicesDiv.innerHTML = '';
             choices.forEach(piece => {
                 const btn = document.createElement('button');
                 btn.appendChild(piece);
                 btn.onclick = () => {
                     if (piece === correctCanvas) {
                         alert("✅ Doğru! Tebrikler!");
-                        startBtn.click(); // Otomatik yeni oyun başlat
+                        startBtn.click();
                     } else {
                         alert("❌ Yanlış! Tekrar deneyin.");
                     }
@@ -224,8 +212,6 @@
                 choicesDiv.appendChild(btn);
             });
         }
-
-        // Sayfa ilk yüklendiğinde otomatik olarak bir oyun başlat
         document.addEventListener('DOMContentLoaded', () => startBtn.click());
     </script>
 </body>

@@ -137,6 +137,7 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-container">
         <p>Aşağıdaki yapının üstten görünümü hangisidir?</p>
         <div class="question-header">
@@ -401,6 +402,10 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]];
             }
+
+            const correctIndex = allOptions.findIndex(opt => opt.url === correctImageURL);
+            document.getElementById('correctIndex').textContent = correctIndex;
+
             allOptions.forEach(opt => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';

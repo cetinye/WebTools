@@ -30,15 +30,12 @@
             display: inline-block;
             border: 2px solid transparent;
             border-radius: 8px;
-            /* Köşeleri yuvarlaklaştıralım */
             transition: all 0.2s;
-            /* Geçiş efekti ekleyelim */
         }
 
         .option:hover {
             border-color: blue;
             transform: scale(1.1);
-            /* Üzerine gelince hafifçe büyüsün */
         }
 
         .correct {
@@ -58,21 +55,25 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Simge Eşleştirme Oyunu</h1>
 
-    <div class="box">
-        <h3>SÖZCÜKLER</h3>
-        <div id="words"></div>
-    </div>
+    <div id="question-area">
+        <div class="box">
+            <h3>SÖZCÜKLER</h3>
+            <div id="words"></div>
+        </div>
 
-    <div class="box">
-        <h3>SAYISAL EŞLEŞTİRME</h3>
-        <div id="mappings"></div>
-    </div>
+        <div class="box">
+            <h3>SAYISAL EŞLEŞTİRME</h3>
+            <div id="mappings"></div>
+        </div>
 
-    <div class="box">
-        <h3>İSTENEN SÖZCÜK</h3>
-        <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
+        <div class="box">
+            <h3>İSTENEN SÖZCÜK</h3>
+            <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
+        </div>
     </div>
 
     <div id="options" class="box">
@@ -81,35 +82,16 @@
 
     <script>
         const questionPool = [
-            ['KAPI', 'KEDİ', 'KAZA'],
-            ['GÜL', 'GÖL', 'GÜNEŞ'],
-            ['MUM', 'KUM', 'KAM'],
-            ['MASA', 'SABA', 'ASMA'],
-            ['TREN', 'RENK', 'NERİ'],
-            ['BABA', 'BANA', 'BARA'],
-            ['YEL', 'LEY', 'ELİ'],
-            ['KALP', 'KAPL', 'LAPK'],
-            ['KART', 'TRAK', 'AKTR'],
-            ['GEMİ', 'EMGİ', 'İGEM'],
-            ['KAZAK', 'KAKAZ', 'ZAKAK'],
-            ['BALIK', 'BILAK', 'KABLI'],
-            ['MARTI', 'TAMİR', 'MATİR'],
-            ['SİNEK', 'NESİK', 'KİSEN'],
-            ['ODA', 'ADO', 'DOA'],
-            ['ELMA', 'LEMA', 'AMEL'],
-            ['KASA', 'SAKA', 'AKAS'],
-            ['ZİL', 'İZL', 'ZLİ'],
-            ['TEPE', 'ETPE', 'ETEP'],
-            ['GÖZ', 'ÖZG', 'ZGÖ'],
-            ['KUŞ', 'ŞUK', 'UKŞ'],
-            ['TABA', 'BATA', 'ABTA'],
-            ['KİLİT', 'TİKİL', 'İKİTL'],
-            ['SABA', 'BASA', 'ASAB'],
+            ['KAPI', 'KEDİ', 'KAZA'], ['GÜL', 'GÖL', 'GÜNEŞ'], ['MUM', 'KUM', 'KAM'],
+            ['MASA', 'SABA', 'ASMA'], ['TREN', 'RENK', 'NERİ'], ['BABA', 'BANA', 'BARA'],
+            ['YEL', 'LEY', 'ELİ'], ['KALP', 'KAPL', 'LAPK'], ['KART', 'TRAK', 'AKTR'],
+            ['GEMİ', 'EMGİ', 'İGEM'], ['KAZAK', 'KAKAZ', 'ZAKAK'], ['BALIK', 'BILAK', 'KABLI'],
+            ['MARTI', 'TAMİR', 'MATİR'], ['SİNEK', 'NESİK', 'KİSEN'], ['ODA', 'ADO', 'DOA'],
+            ['ELMA', 'LEMA', 'AMEL'], ['KASA', 'SAKA', 'AKAS'], ['ZİL', 'İZL', 'ZLİ'],
+            ['TEPE', 'ETPE', 'ETEP'], ['GÖZ', 'ÖZG', 'ZGÖ'], ['KUŞ', 'ŞUK', 'UKŞ'],
+            ['TABA', 'BATA', 'ABTA'], ['KİLİT', 'TİKİL', 'İKİTL'], ['SABA', 'BASA', 'ASAB'],
             ['LİMON', 'MONLİ', 'OLİMN']
         ];
-
-        // --- DEĞİŞTİRİLEN BÖLÜM ---
-        // Eskisi: const symbols = ['♥', '♫', '☁', '★', '■', '▲'];
         const symbols = ['✨', '🍀', '💎', '🚀', '🌐', '🎨'];
 
         function shuffleArray(arr) {
@@ -135,7 +117,6 @@
             let attempts = 0;
             let validSet = null;
             let letterToSymbol = null;
-
             while (attempts < 100) {
                 const wordSet = shuffleArray(questionPool)[0];
                 const mapping = createMapping(wordSet);
@@ -146,63 +127,52 @@
                 }
                 attempts++;
             }
-
             if (!validSet) {
                 document.getElementById('words').textContent = 'Soru yüklenemedi';
                 return;
             }
-
             const selectedWords = shuffleArray(validSet);
             const target = selectedWords[Math.floor(Math.random() * selectedWords.length)];
-
             document.getElementById('words').textContent = selectedWords.join(', ');
             document.getElementById('targetWord').textContent = target;
-            document.getElementById('mappings').innerHTML = '';
-
-            // Seçenekler başlığını korumak için innerHTML'i temizlerken dikkatli olalım
-            const optionsDiv = document.getElementById('options');
-            optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';
-
             const mappingsDiv = document.getElementById('mappings');
+            mappingsDiv.innerHTML = '';
             selectedWords.forEach(word => {
                 const p = document.createElement('p');
                 p.textContent = wordToSymbols(word, letterToSymbol);
                 mappingsDiv.appendChild(p);
             });
-
-            // Doğru şıkkı ve diğer seçenekleri oluşturalım
             const correctOption = wordToSymbols(target, letterToSymbol);
-
-            // Tüm kelimelerin sembol karşılıklarını bir havuzda toplayalım
             const allSymbolOptions = validSet.map(w => wordToSymbols(w, letterToSymbol));
             const options = shuffleArray(allSymbolOptions);
 
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctIndex = options.findIndex(optionString => optionString === correctOption);
+            document.getElementById('correctIndex').textContent = correctIndex;
+
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';
             options.forEach(opt => {
                 const div = document.createElement('div');
                 div.className = 'option symbols';
                 div.textContent = opt;
                 div.addEventListener('click', () => {
-                    // Tıklama sonrası diğer seçeneklerin tıklanmasını engelle
                     document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none');
-
                     if (opt === correctOption) {
                         div.classList.add('correct');
                     } else {
                         div.classList.add('wrong');
-                        // Doğru olanı da gösterelim
                         document.querySelectorAll('.option').forEach(el => {
                             if (el.textContent === correctOption) {
                                 el.classList.add('correct');
                             }
                         });
                     }
-                    // 2 saniye sonra yeni oyun başlat
                     setTimeout(initGame, 2000);
                 });
                 optionsDiv.appendChild(div);
             });
         }
-
         initGame();
     </script>
 </body>

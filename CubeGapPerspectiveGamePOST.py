@@ -7,8 +7,8 @@ import time
 
 # === CONFIGURATION ===
 NUM_QUESTIONS = 1
-SAVE_DIR = "C:/Users/cetin/Desktop/ColoredCubeQuestions" # Kaydedilecek klasör
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/ColoredCubePerspective.html" # ❗ KENDİ HTML DOSYA YOLUNUZU YAZIN
+SAVE_DIR = "C:/Users/cetin/Desktop/CubeGapPerspectiveQuestions" # Kaydedilecek klasör
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/CubeGapPerspectiveGame.html"
 API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
@@ -19,7 +19,7 @@ driver = webdriver.Chrome(options=options)
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 driver.get(LOCAL_FILE_URL)
-time.sleep(1) # Oyunun yüklenmesi için 1 saniye bekle
+time.sleep(0.5) # Oyunun yüklenmesi için yarım saniye bekle
 
 choice_labels = ['A', 'B', 'C', 'D']
 
@@ -37,25 +37,25 @@ def resize_image(path, target_size):
     new_img.save(path)
 
 for i in range(1, NUM_QUESTIONS + 1):
-    time.sleep(0.5)
+    time.sleep(0.2)
 
     # --- Soru görüntüsü ---
-    # HTML'e eklediğimiz id="question-area-main" div'ini buluyoruz.
+    # Bu oyunda soru, id="canvas" olan çizim alanıdır.
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-    question_elem = driver.find_element(By.ID, "question-area-main")
+    question_elem = driver.find_element(By.ID, "canvas")
     question_elem.screenshot(question_path)
-    # Bu oyunun yapısına uygun yeni boyutlar.
-    resize_image(question_path, (800, 450))
+    # Canvas boyutlarına uygun yeniden boyutlandırma.
+    resize_image(question_path, (600, 400))
 
     # --- Şıklar ---
-    # Bu oyunda şıklar "option-box" class'ına sahip.
-    options_elements = driver.find_elements(By.CLASS_NAME, "option-box")
+    # Şıklar "option" class'ına sahip, bu önceki kodlarla uyumlu.
+    options_elements = driver.find_elements(By.CLASS_NAME, "option")
     option_paths = []
     for idx, opt in enumerate(options_elements[:4]):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
-        # Şıkların kare yapısına uygun yeni boyutlar.
-        resize_image(choice_path, (250, 250))
+        # Şıkların küçük grid yapısına uygun boyutlandırma.
+        resize_image(choice_path, (150, 150))
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===
@@ -89,15 +89,12 @@ for i in range(1, NUM_QUESTIONS + 1):
         try:
             response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
             print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-            # print("Sunucu Cevabı:", response.text) # Hata ayıklama için gerekirse açın
         except requests.exceptions.RequestException as e:
             print(f"❌ Soru {i} gönderilirken hata oluştu: {e}")
 
-    # Yeni soru için sayfayı yenile (bu oyunda startGame fonksiyonu tekrar çağırıldığı için
-    # refresh yerine bir butona tıklamak veya JS fonksiyonu çağırmak gerekebilir.
-    # Şimdilik refresh() yeterli olacaktır, çünkü sayfa her yenilendiğinde yeni oyun başlar.)
+    # Yeni soru için sayfayı yenile
     driver.refresh()
-    time.sleep(1) # Yenileme sonrası oyunun yüklenmesini bekle
+    time.sleep(0.5) # Yenileme sonrası oyunun yüklenmesini bekle
 
 driver.quit()
 print("🎉 Tüm sorular sunucuya gönderildi.")

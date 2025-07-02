@@ -94,6 +94,8 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <div id="threeJsContainer">
         <div id="cameraIndicator" title="Sağ Önden Görünüm">
             <img src="gorsel-ikon.png" alt="Sağdan Görünüm İkonu" style="width: 100%; height: 100%;">
@@ -114,7 +116,6 @@
         const COLOR_KEYS = Object.keys(COLORS);
         const FIXED_OPTION_BLOCK_PIXEL_SIZE = 25;
 
-
         let currentGridDimension;
         let currentMaxTowerHeight;
         let currentOptionCanvasWidth;
@@ -125,19 +126,14 @@
         function project3DPointTo2D(point3D) {
             const container = document.getElementById('threeJsContainer');
             if (!container || !camera) return { x: 0, y: 0 };
-
             const vector = point3D.clone();
             const width = container.clientWidth;
             const height = container.clientHeight;
-
             vector.project(camera);
-
             const x = (vector.x * 0.5 + 0.5) * width;
             const y = (vector.y * -0.5 + 0.5) * height;
-
             return { x, y };
         }
-
 
         function initThreeJS() {
             if (isThreeJSInitialized) return;
@@ -149,31 +145,22 @@
             camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
             camera.position.set(20, 20, 20);
             camera.lookAt(0, 0, 0);
-
             const ambientLight = new THREE.AmbientLight(0x808080);
             ambientLight.name = "ambient_light";
             scene.add(ambientLight);
-
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
             directionalLight.name = "directional_light";
             directionalLight.position.set(20, 30, 20);
-            directionalLight.castShadow = false;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
             isThreeJSInitialized = true;
         }
 
         function updateCameraAndLights(structure) {
             if (!camera || !renderer) return;
-
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
             let hasBlocks = false;
             for (let x = 0; x < currentGridDimension; x++) {
@@ -188,66 +175,23 @@
                     }
                 }
             }
-
             const centerX = hasBlocks ? (minX + maxX) / 2 : 0;
             const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0;
             const centerZ = hasBlocks ? (minY + maxY) / 2 : 0;
-
             const structureSize = hasBlocks ? Math.max(maxX - minX, maxY - minY, maxZ - minZ) + 2 : currentGridDimension;
             const camPos = structureSize * 2;
             camera.position.set(centerX + camPos, centerY + camPos, centerZ + camPos);
             camera.lookAt(centerX, centerY, centerZ);
-
             const light = scene.getObjectByName("directional_light");
             if (light) {
                 light.position.set(centerX + camPos * 0.5, centerY + camPos, centerZ + camPos * 0.5);
             }
             renderer.render(scene, camera);
-
-            const indicator = document.getElementById('cameraIndicator');
-            if (hasBlocks) {
-                const corners3D = [
-                    new THREE.Vector3(minX, minZ, minY),
-                    new THREE.Vector3(maxX, minZ, minY),
-                    new THREE.Vector3(minX, maxZ, minY),
-                    new THREE.Vector3(maxX, maxZ, minY),
-                    new THREE.Vector3(minX, minZ, maxY),
-                    new THREE.Vector3(maxX, minZ, maxY),
-                    new THREE.Vector3(minX, maxZ, maxY),
-                    new THREE.Vector3(maxX, maxZ, maxY)
-                ];
-
-                const screenCorners = corners3D.map(point => project3DPointTo2D(point));
-
-                let screenMaxX = -Infinity;
-                let screenMaxY = -Infinity;
-                screenCorners.forEach(pos => {
-                    if (pos.x > screenMaxX) screenMaxX = pos.x;
-                    if (pos.y > screenMaxY) screenMaxY = pos.y;
-                });
-
-                // --- DEĞİŞTİRİLEN BÖLÜM: Ofset değerleri daha da artırıldı ---
-                const offsetX = 30;  // İkonu modelden sağa doğru iyice it
-                const offsetY = 20;  // İkonu modelden aşağıya doğru iyice it
-                // --- DEĞİŞEN BÖLÜM SONU ---
-
-                indicator.style.left = (screenMaxX + offsetX) + 'px';
-                indicator.style.top = (screenMaxY + offsetY) + 'px';
-                indicator.style.display = 'block';
-
-            } else {
-                indicator.style.display = 'none';
-            }
         }
 
         function drawStructureThreeJS(structure) {
             const objectsToRemove = [];
-            scene.traverse(child => {
-                if (child.isMesh) {
-                    objectsToRemove.push(child);
-                }
-            });
-
+            scene.traverse(child => { if (child.isMesh) { objectsToRemove.push(child); } });
             objectsToRemove.forEach(obj => {
                 if (obj.geometry) obj.geometry.dispose();
                 if (obj.material) {
@@ -259,7 +203,6 @@
                 }
                 scene.remove(obj);
             });
-
             for (let x = 0; x < currentGridDimension; x++) {
                 for (let y = 0; y < currentGridDimension; y++) {
                     for (let z = 0; z < currentMaxTowerHeight; z++) {
@@ -277,8 +220,6 @@
                             const geometry = new THREE.BoxGeometry(CUBE_SIZE_THREE, CUBE_SIZE_THREE, CUBE_SIZE_THREE);
                             const cube = new THREE.Mesh(geometry, materials);
                             cube.position.set(x, z, y);
-                            cube.castShadow = true;
-                            cube.receiveShadow = true;
                             scene.add(cube);
                         }
                     }
@@ -291,38 +232,31 @@
             let structure;
             let isStructureAcceptable = false;
             let generationAttempts = 0;
-
             while (!isStructureAcceptable && generationAttempts < 1000) {
                 generationAttempts++;
-
                 let candidateStructure = Array.from({ length: currentGridDimension }, () => Array.from({ length: currentGridDimension }, () => Array.from({ length: currentMaxTowerHeight }, () => null)));
                 let allCubesInCandidate = [];
                 const growthCandidates = [];
                 const occupied = new Set();
-
                 const startX = Math.floor(Math.random() * currentGridDimension);
                 const startY = Math.floor(Math.random() * currentGridDimension);
                 candidateStructure[startX][startY][0] = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
                 occupied.add(`${startX},${startY},0`);
                 allCubesInCandidate.push({ x: startX, y: startY, z: 0 });
                 addNeighbors(startX, startY, 0);
-
                 const totalBlocks = 5 + Math.floor(Math.random() * 5);
                 let blocksPlaced = 1;
-
                 while (blocksPlaced < totalBlocks && growthCandidates.length > 0) {
                     const candidateIndex = Math.floor(Math.random() * growthCandidates.length);
                     const { x, y, z } = growthCandidates.splice(candidateIndex, 1)[0];
                     if (occupied.has(`${x},${y},${z}`)) continue;
                     if (z > 0 && !occupied.has(`${x},${y},${z - 1}`)) continue;
-
                     candidateStructure[x][y][z] = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
                     occupied.add(`${x},${y},${z}`);
                     allCubesInCandidate.push({ x, y, z });
                     blocksPlaced++;
                     addNeighbors(x, y, z);
                 }
-
                 function addNeighbors(x, y, z) {
                     const neighbors = [{ x: x + 1, y, z }, { x: x - 1, y, z }, { x, y: y + 1, z }, { x, y: y - 1, z }, { x, y, z: z + 1 }];
                     for (const n of neighbors) {
@@ -331,13 +265,10 @@
                         }
                     }
                 }
-
                 if (allCubesInCandidate.length < 4) continue;
-
                 const visibleCubes = new Set();
                 const screenDepthMap = new Map();
                 allCubesInCandidate.sort((a, b) => (b.x + b.y + b.z) - (a.x + a.y + a.z));
-
                 for (const cube of allCubesInCandidate) {
                     const screenX = (cube.x - cube.y);
                     const screenY = (cube.z * 2) - (cube.x + cube.y);
@@ -347,18 +278,14 @@
                         visibleCubes.add(`${cube.x},${cube.y},${cube.z}`);
                     }
                 }
-
                 if (allCubesInCandidate.length === visibleCubes.size) {
                     isStructureAcceptable = true;
                     structure = candidateStructure;
                 }
             }
-
             if (!isStructureAcceptable) {
-                console.warn("Adil bir yapı bulunamadı! Son deneme kullanılıyor veya yeniden başlatılıyor...");
                 return generateStructure();
             }
-
             return structure;
         }
 
@@ -413,14 +340,12 @@
                 });
                 if (isCorrect) {
                     optionCanvas.classList.add('correct-answer');
-                    setTimeout(() => { alert("✅ Doğru cevap!"); }, 100);
                 } else {
                     optionCanvas.classList.add('wrong-answer');
                     const correctOption = document.querySelector('.option.is-correct');
                     if (correctOption) {
                         correctOption.classList.add('correct-answer');
                     }
-                    setTimeout(() => { alert("❌ Yanlış cevap!"); }, 100);
                 }
             };
             if (isCorrect) {
@@ -477,8 +402,7 @@
                         wrongGrid[block.c][block.r] = availableColors[Math.floor(Math.random() * availableColors.length)];
                         changesMade++;
                     }
-                }
-                else if (mutationType < 0.7 && allBlocks.length > 0) {
+                } else if (mutationType < 0.7 && allBlocks.length > 0) {
                     const block = allBlocks[Math.floor(Math.random() * allBlocks.length)];
                     for (let row_to_clear = block.r; row_to_clear >= 0; row_to_clear--) {
                         if (wrongGrid[block.c][row_to_clear]) {
@@ -486,8 +410,7 @@
                             changesMade = 1;
                         }
                     }
-                }
-                else {
+                } else {
                     const validAddSpots = emptyCells.filter(cell => cell.r === currentMaxTowerHeight - 1 || (wrongGrid[cell.c][cell.r + 1] !== null));
                     if (validAddSpots.length > 0) {
                         const spot = validAddSpots[Math.floor(Math.random() * validAddSpots.length)];
@@ -522,22 +445,14 @@
             currentMaxTowerHeight = 4;
             currentOptionCanvasWidth = currentGridDimension * FIXED_OPTION_BLOCK_PIXEL_SIZE;
             currentOptionCanvasHeight = currentMaxTowerHeight * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-
             initThreeJS();
-
             const structure = generateStructure();
-            if (!structure) {
-                alert("Adil bir yapı üretilemedi, lütfen sayfayı yenileyin. Bu nadiren olur.");
-                return;
-            }
-
+            if (!structure) { return; }
             drawStructureThreeJS(structure);
-
             const dummyCanvas = document.createElement('canvas');
             dummyCanvas.width = currentOptionCanvasWidth;
             dummyCanvas.height = currentOptionCanvasHeight;
             const dummyCtx = dummyCanvas.getContext('2d', { willReadFrequently: true });
-
             const correctViewImageData = getRightSideViewImageData(structure, dummyCtx);
             const wrongViewsImageData = [];
             let attempts = 0;
@@ -551,8 +466,12 @@
                 }
                 attempts++;
             }
-
             const allOptions = [{ view: correctViewImageData, correct: true }, ...wrongViewsImageData.map(v => ({ view: v, correct: false }))].sort(() => Math.random() - 0.5);
+
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctIndex = allOptions.findIndex(opt => opt.correct);
+            document.getElementById('correctIndex').textContent = correctIndex;
+
             const optionsContainer = document.getElementById("optionsContainer");
             optionsContainer.innerHTML = '';
             allOptions.forEach(opt => drawView(opt.view, optionsContainer, opt.correct));

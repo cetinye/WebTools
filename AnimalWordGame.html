@@ -49,23 +49,26 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
+
     <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
 
-    <div class="box">
-        <h3>SÖZCÜKLER</h3>
-        <div id="words"></div>
-    </div>
+    <div id="question-area">
+        <div class="box">
+            <h3>SÖZCÜKLER</h3>
+            <div id="words"></div>
+        </div>
 
-    <div class="box">
-        <h3>EŞLEŞTİRME</h3>
-        <div id="mappings"></div>
-    </div>
+        <div class="box">
+            <h3>EŞLEŞTİRME</h3>
+            <div id="mappings"></div>
+        </div>
 
-    <div class="box">
-        <h3>İSTENEN SÖZCÜK</h3>
-        <div id="targetWord"></div>
+        <div class="box">
+            <h3>İSTENEN SÖZCÜK</h3>
+            <div id="targetWord"></div>
+        </div>
     </div>
-
     <div id="options" class="box">
         <h3>SEÇENEKLER</h3>
     </div>
@@ -124,6 +127,9 @@
 
             const correct = wordToSymbols(target, letterToEmoji);
             const options = shuffle([correct, ...shuffledWords.filter(w => w !== target).slice(0, 3).map(w => wordToSymbols(w, letterToEmoji))]);
+
+            // ✨ EKLENDİ: Doğru cevabın index'ini (sırasını) gizli span elementine yazar.
+            document.getElementById('correctIndex').textContent = options.indexOf(correct);
 
             options.forEach(opt => {
                 const div = document.createElement('div');

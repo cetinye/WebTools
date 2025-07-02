@@ -126,9 +126,10 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
 
     <div class="game-container">
-        <div class="puzzle-area">
+        <div id="question-area-main" class="puzzle-area">
             <div id="puzzle-container">
             </div>
         </div>
@@ -256,7 +257,6 @@
                                     newRow.push(null);
                                 }
                             }
-                            // DÜZELTME: Hatalı satır kaldırıldı ve bu doğru satır eklendi.
                             newOption.push(newRow);
                         }
                         options.push(newOption);
@@ -275,9 +275,7 @@
                 optionsContainer.innerHTML = '';
 
                 const blocksToRender = gameState.structure.flat().filter(Boolean);
-
                 if (blocksToRender.length === 0) return;
-
                 blocksToRender.sort((a, b) => (a.r + a.c) - (b.r + b.c));
 
                 let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -329,7 +327,6 @@
                 indicator.className = 'view-indicator';
                 indicator.innerHTML = `<i class="fas fa-eye"></i><i class="fas fa-arrow-down"></i>`;
                 indicator.style.left = `${(minX + maxX) / 2 + offsetX}px`;
-                // DÜZELTME: İkonun pozisyonu sabitlendi.
                 indicator.style.top = `30px`;
                 puzzleContainer.appendChild(indicator);
 
@@ -359,7 +356,8 @@
                     optionsContainer.appendChild(optionBox);
                 });
 
-                document.body.dataset.correctIndex = gameState.correctIndex;
+                // ✨ EKLENDİ: Doğru cevabın index'ini (sırasını) gizli span elementine yazar.
+                document.getElementById('correctIndex').textContent = gameState.correctIndex;
             }
 
             function handleOptionClick(event) {

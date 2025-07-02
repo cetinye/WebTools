@@ -200,6 +200,7 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
     <div id="game-container">
         <div id="main-target-display">
             <p>Akıllı şekil üretiliyor...</p>
@@ -535,6 +536,9 @@
                     { data: wrong2, isCorrect: false },
                     { data: wrong3, isCorrect: false }
                 ]);
+
+                const correctIndex = options.findIndex(opt => opt.isCorrect);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 options.forEach((opt) => {
                     const box = document.createElement('div');
