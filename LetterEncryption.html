@@ -2,7 +2,7 @@
 <html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Letter Encryption</title>
     <style>
         body {
@@ -47,152 +47,49 @@
 </head>
 
 <body>
-    <!-- <h1>Anahtar Oyunu</h1> -->
+    <span id="correctIndex" style="display:none;"></span>
 
-    <div class="row" id="wordRow"></div>
-    <div class="arrow">⬇️</div>
-    <div class="row" id="questionRow"></div>
-    <!-- <h3>Hangi kombinasyon doğrudur?</h3> -->
+    <div id="question-area">
+        <div class="row" id="wordRow"></div>
+        <div class="arrow">⬇️</div>
+        <div class="row" id="questionRow"></div>
+    </div>
+
     <div id="optionsContainer"></div>
 
     <script>
         const words = ["ANAHTAR", "KALPLER", "RENKLER", "ARABA", "OYUNCULUK", "BİLGİSAYAR", "YAZILIM", "KODLAMA", "TEKNOLOJİ"];
         const colors = ["red", "blue", "green", "purple", "orange", "yellow", "cyan", "magenta", "lime", "brown"];
 
-        function shuffle(arr) {
-            const copy = [...arr];
-            for (let i = copy.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [copy[i], copy[j]] = [copy[j], copy[i]];
-            }
-            return copy;
-        }
-
-        function generateCorrectMap(word) {
-            const uniqueLetters = [...new Set(word)];
-            const shuffledColors = shuffle(colors);
-            const map = {};
-            uniqueLetters.forEach((letter, i) => {
-                map[letter] = shuffledColors[i];
-            });
-            return map;
-        }
-
-        function applyColorMap(word, map) {
-            return word.split('').map(char => map[char]);
-        }
-
-        function createColorRow(colorsArr, isOption = false) {
-            const row = document.createElement("div");
-            row.className = "option row";
-            colorsArr.forEach(color => {
-                const box = document.createElement("div");
-                box.className = "box";
-                box.style.backgroundColor = color;
-                row.appendChild(box);
-            });
-
-            if (isOption) {
-                row.addEventListener("click", () => {
-                    if (JSON.stringify(colorsArr) === JSON.stringify(correctColors)) {
-                        alert("✅ Doğru cevap!");
-                    } else {
-                        alert("❌ Yanlış, tekrar dene.");
-                    }
-                });
-            }
-
-            return row;
-        }
-
-        function generateWrongOption(word, correctColors) {
-            const newColors = [];
-            const usedColors = shuffle(colors);
-
-            const usedPositions = {};
-            for (let i = 0; i < word.length; i++) {
-                const currentChar = word[i];
-                if (!(currentChar in usedPositions)) {
-                    usedPositions[currentChar] = [i];
-                } else {
-                    usedPositions[currentChar].push(i);
-                }
-            }
-
-            // aynı harflerin renklerini bilerek boz
-            let colorIndex = 0;
-            for (let i = 0; i < word.length; i++) {
-                const currentChar = word[i];
-                if (usedPositions[currentChar].length > 1) {
-                    // aynı harf birden çok yerde varsa bu harflerin her birine farklı renk atayalım
-                    newColors[i] = usedColors[colorIndex++ % usedColors.length];
-                } else {
-                    newColors[i] = correctColors[i]; // tekil harfse sorun yok
-                }
-            }
-
-            // güvenlik: doğru kombinasyonla aynı olmasın
-            if (JSON.stringify(newColors) === JSON.stringify(correctColors)) {
-                return generateWrongOption(word, correctColors);
-            }
-
-            return newColors;
-        }
+        function shuffle(arr) { const copy = [...arr]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
+        function generateCorrectMap(word) { const uniqueLetters = [...new Set(word)]; const shuffledColors = shuffle(colors); const map = {}; uniqueLetters.forEach((letter, i) => { map[letter] = shuffledColors[i]; }); return map; }
+        function applyColorMap(word, map) { return word.split('').map(char => map[char]); }
+        function createColorRow(colorsArr, isOption = false) { const row = document.createElement("div"); row.className = "option row"; colorsArr.forEach(color => { const box = document.createElement("div"); box.className = "box"; box.style.backgroundColor = color; row.appendChild(box); }); if (isOption) { row.addEventListener("click", () => { if (JSON.stringify(colorsArr) === JSON.stringify(correctColors)) { alert("✅ Doğru cevap!"); } else { alert("❌ Yanlış, tekrar dene."); } }); } return row; }
+        function generateWrongOption(word, correctColors) { const newColors = []; const usedColors = shuffle(colors); const usedPositions = {}; for (let i = 0; i < word.length; i++) { const currentChar = word[i]; if (!(currentChar in usedPositions)) { usedPositions[currentChar] = [i]; } else { usedPositions[currentChar].push(i); } } let colorIndex = 0; for (let i = 0; i < word.length; i++) { const currentChar = word[i]; if (usedPositions[currentChar].length > 1) { newColors[i] = usedColors[colorIndex++ % usedColors.length]; } else { newColors[i] = correctColors[i]; } } if (JSON.stringify(newColors) === JSON.stringify(correctColors)) { return generateWrongOption(word, correctColors); } return newColors; }
 
         function startGame() {
             const word = words[Math.floor(Math.random() * words.length)];
             const wordRow = document.getElementById("wordRow");
             const questionRow = document.getElementById("questionRow");
             const optionsContainer = document.getElementById("optionsContainer");
-
-            wordRow.innerHTML = "";
-            questionRow.innerHTML = "";
-            optionsContainer.innerHTML = "";
-
-            word.split("").forEach(letter => {
-                const box = document.createElement("div");
-                box.className = "box";
-                box.textContent = letter;
-                wordRow.appendChild(box);
-            });
-
-            for (let i = 0; i < word.length; i++) {
-                const box = document.createElement("div");
-                box.className = "box";
-                box.textContent = "?";
-                questionRow.appendChild(box);
-            }
-
+            wordRow.innerHTML = ""; questionRow.innerHTML = ""; optionsContainer.innerHTML = "";
+            word.split("").forEach(letter => { const box = document.createElement("div"); box.className = "box"; box.textContent = letter; wordRow.appendChild(box); });
+            for (let i = 0; i < word.length; i++) { const box = document.createElement("div"); box.className = "box"; box.textContent = "?"; questionRow.appendChild(box); }
             const correctMap = generateCorrectMap(word);
             correctColors = applyColorMap(word, correctMap);
-
             const allOptions = [correctColors];
-
-            while (allOptions.length < 5) {
-                const wrong = generateWrongOption(word, correctColors);
-
-                // aynı harfler aynı renk mi kontrolü (eğer öyleyse yanlış oluşturulmamış demektir)
-                let valid = true;
-                const seen = {};
-                for (let i = 0; i < word.length; i++) {
-                    const letter = word[i];
-                    if (!seen[letter]) {
-                        seen[letter] = wrong[i];
-                    } else if (seen[letter] === wrong[i]) {
-                        valid = false; // aynı harfe aynı renk verilmiş, bozamadık demektir
-                        break;
-                    }
-                }
-
-                if (valid) allOptions.push(wrong);
-            }
+            while (allOptions.length < 5) { const wrong = generateWrongOption(word, correctColors); let valid = true; const seen = {}; for (let i = 0; i < word.length; i++) { const letter = word[i]; if (!seen[letter]) { seen[letter] = wrong[i]; } else if (seen[letter] === wrong[i]) { valid = false; break; } } if (valid) allOptions.push(wrong); }
 
             const shuffledOptions = shuffle(allOptions);
+
+            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+            const correctIndex = shuffledOptions.findIndex(optionArr => JSON.stringify(optionArr) === JSON.stringify(correctColors));
+            document.getElementById('correctIndex').textContent = correctIndex;
+
             shuffledOptions.forEach(opt => {
                 optionsContainer.appendChild(createColorRow(opt, true));
             });
         }
-
         let correctColors = [];
         startGame();
     </script>

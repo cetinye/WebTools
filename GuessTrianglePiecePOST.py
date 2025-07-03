@@ -84,7 +84,7 @@ for i in range(1, NUM_QUESTIONS + 1):
         }
 
         data = {
-            "category_id": "25",
+            "category_id": "27",
             "grade": "[1,2,3,4,9]",
             "knowledge": "0",
             "level": "1"

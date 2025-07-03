@@ -13,12 +13,12 @@ import time
 
 # 1. Enter the full path to your HTML file, using the file:/// protocol.
 # IMPORTANT: Use forward slashes (/) for the path.
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/TopDownStackedGuess.html" # EXAMPLE: "file:///C:/Games/TopDown/game.html"
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/LetterEncryption.html" # EXAMPLE: "file:///C:/Games/Encryption/game.html"
 
 # 2. Other settings
 NUM_QUESTIONS = 1
-SAVE_DIR = "C:/Users/cetin/Desktop/TopDownStackedQuestions"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+SAVE_DIR = "C:/Users/cetin/Desktop/LetterEncryptionQuestions"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
@@ -32,7 +32,7 @@ driver = webdriver.Chrome(options=options)
 os.makedirs(SAVE_DIR, exist_ok=True)
 driver.get(LOCAL_FILE_URL)
 
-choice_labels = ['A', 'B', 'C', 'D']
+choice_labels = ['A', 'B', 'C', 'D', 'E'] # This game has 5 options
 
 def resize_image(path, target_size):
     """Resizes the image proportionally on a transparent background."""
@@ -49,29 +49,29 @@ try:
         
         # Smart wait: Wait for the game to be fully loaded by checking for the options
         try:
-            wait = WebDriverWait(driver, 20) # Increased wait time for complex 3D rendering
-            # Wait for an element with the class 'option' to be present
+            wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "option")))
             print("👍 Game loaded, taking screenshots.")
-            time.sleep(1) # Extra wait for 3D rendering to settle completely
+            time.sleep(0.5) 
         except Exception:
-            print(f"❌ Error: Game could not be loaded for question {i} within 20 seconds.")
+            print(f"❌ Error: Game could not be loaded for question {i} within 10 seconds.")
             break 
 
         # --- Question Image ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-        question_elem = driver.find_element(By.ID, "viewArea") # Corrected ID from HTML
+        question_elem = driver.find_element(By.ID, "question-area")
         question_elem.screenshot(question_path)
-        resize_image(question_path, (600, 400))
+        resize_image(question_path, (600, 150))
         print("📸 Question screenshot taken.")
 
         # --- Answer Choices ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option")
         option_paths = []
-        for idx, opt in enumerate(options_elements[:4]):
+        # This game has 5 options
+        for idx, opt in enumerate(options_elements[:5]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (160, 160))
+            resize_image(choice_path, (600, 60))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 
@@ -80,14 +80,25 @@ try:
         correct_path = option_paths[correct_index]
         wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
 
+        # Since we have 5 options, we need to handle 4 wrong answers
         with open(question_path, 'rb') as q_img, \
              open(correct_path, 'rb') as correct, \
              open(wrong_paths[0], 'rb') as wrong1, \
              open(wrong_paths[1], 'rb') as wrong2, \
-             open(wrong_paths[2], 'rb') as wrong3:
+             open(wrong_paths[2], 'rb') as wrong3, \
+             open(wrong_paths[3], 'rb') as wrong4:
             
-            files = {"question_image": q_img, "correct_answer": correct, "wrong_answer_1": wrong1, "wrong_answer_2": wrong2, "wrong_answer_3": wrong3}
-            data = {"category_id": "34", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
+            # NOTE: Your API must be able to accept "wrong_answer_4".
+            # If it only accepts 3, you must remove the fourth one.
+            files = {
+                "question_image": q_img,
+                "correct_answer": correct,
+                "wrong_answer_1": wrong1,
+                "wrong_answer_2": wrong2,
+                "wrong_answer_3": wrong3,
+                # "wrong_answer_4": wrong4 # Uncomment if your API supports it
+            }
+            data = {"category_id": "24", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
                 response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
@@ -97,23 +108,9 @@ try:
 
         # --- Proceed to the Next Question ---
         if i < NUM_QUESTIONS:
-            print("Clicking 'Sonraki Soru' button for the next question...")
+            print("Refreshing page for the next question...")
+            driver.refresh()
             
-            # Before clicking, get a reference to the current options
-            old_options = driver.find_elements(By.CLASS_NAME, "option")
-            
-            # Click the "Sonraki Soru" button
-            driver.find_element(By.ID, "nextButton").click()
-            
-            # Wait for the old options to be removed from the DOM
-            if old_options:
-                try:
-                    wait = WebDriverWait(driver, 5)
-                    wait.until(EC.staleness_of(old_options[0]))
-                    print("...Old options cleared, waiting for new question.")
-                except Exception:
-                    print("...Could not confirm old options were cleared, proceeding anyway.")
-
 finally:
     driver.quit()
     print("\n🎉 Automation complete. Browser closed.")

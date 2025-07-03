@@ -142,8 +142,10 @@
 
         /* ANA GRID'DEKI ŞEKİLLERİN STİLİ */
         .grid-cell .dot {
-            width: 12px;
-            height: 12px;
+            width: 20px;
+            /* Büyütüldü */
+            height: 20px;
+            /* Büyütüldü */
         }
 
         .grid-cell .shape {
@@ -184,8 +186,10 @@
 
         /* SEÇENEK BUTONLARINDAKİ ŞEKİLLERİN STİLİ */
         .option-button .dot {
-            width: 8px;
-            height: 8px;
+            width: 14px;
+            /* Büyütüldü */
+            height: 14px;
+            /* Büyütüldü */
         }
 
         .option-button .shape {
@@ -464,19 +468,47 @@
                 initGameUI(matrixConfig, [...wrongAnswers, currentCorrectAnswer]);
             }
 
-            function initGameUI(matrixConfig, wrongAnswers) {
-                grid.innerHTML = ''; optionsContainer.innerHTML = ''; feedback.innerHTML = ''; feedback.className = 'feedback-message';
-                matrixConfig.forEach(config => { const cell = document.createElement('div'); cell.className = 'grid-cell'; if (config) { cell.appendChild(createCellContent(config)); } else { cell.innerHTML = '<span class="question-mark">?</span>'; } grid.appendChild(cell); });
-                const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
+            // =================================================================
+            // FIXED FUNCTION
+            // =================================================================
+            function initGameUI(matrixConfig, optionsList) {
+                // Clear previous game state from the UI
+                grid.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                feedback.innerHTML = '';
+                feedback.className = 'feedback-message';
 
-                // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+                // Populate the grid cells based on the generated configuration
+                matrixConfig.forEach(config => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if (config) {
+                        // FIX: Called the existing 'createShape' function instead of the undefined 'createCellContent'
+                        cell.appendChild(createShape(config));
+                    } else {
+                        // This is the cell for the question mark
+                        cell.innerHTML = '<span class="question-mark">?</span>';
+                    }
+                    grid.appendChild(cell);
+                });
+
+                // FIX: The passed 'optionsList' is shuffled directly.
+                // The original code would have caused a TypeError because shuffleArray returns undefined,
+                // and it also incorrectly duplicated the correct answer in the options.
+                shuffleArray(optionsList);
+                const options = optionsList;
+
+                // Find the correct answer's new index after shuffling and store it (for debugging/verification)
                 const correctIndex = options.findIndex(opt => opt.isCorrect === true);
                 document.getElementById('correctIndex').textContent = correctIndex;
 
+                // Create the option buttons from the now-shuffled list
                 options.forEach(optionConfig => {
-                    const button = document.createElement('button'); button.className = 'option-button';
+                    const button = document.createElement('button');
+                    button.className = 'option-button';
                     button.dataset.correct = optionConfig.isCorrect || false;
-                    button.appendChild(createCellContent(optionConfig));
+                    // FIX: Called the existing 'createShape' function here as well
+                    button.appendChild(createShape(optionConfig));
                     button.addEventListener('click', handleOptionClick);
                     optionsContainer.appendChild(button);
                 });
@@ -486,6 +518,7 @@
                 const chosenButton = event.currentTarget;
                 const isCorrect = chosenButton.dataset.correct === 'true';
 
+                // Disable all option buttons after a choice is made
                 document.querySelectorAll('.option-button').forEach(btn => {
                     btn.disabled = true;
                 });
@@ -493,6 +526,7 @@
                 if (isCorrect) {
                     feedback.textContent = 'Tebrikler, doğru cevap!';
                     feedback.className = 'feedback-message correct';
+                    // Replace the question mark with the correct answer shape
                     const lastCell = grid.children[8];
                     lastCell.innerHTML = '';
                     lastCell.appendChild(createShape(currentCorrectAnswer));
@@ -502,7 +536,10 @@
                 }
             }
 
+            // Add event listener for the reset button
             resetButton.addEventListener('click', generatePuzzle);
+
+            // Initial game setup
             generatePuzzle();
         });
     </script>

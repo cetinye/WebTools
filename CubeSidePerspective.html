@@ -87,7 +87,12 @@
             height: 60px;
             pointer-events: none;
             z-index: 10;
+            /* ✨ DEĞİŞTİRİLDİ: Konum artık JavaScript ile dinamik olarak ayarlanacak. */
+            /* 'bottom' ve 'right' özellikleri kaldırıldı. */
+            /* İkonu, hesaplanan köşe noktasından biraz uzağa taşımak için transform kullanılıyor. */
+            transform: translate(10px, 10px);
             transition: left 0.5s ease-out, top 0.5s ease-out;
+            /* Yumuşak geçiş eklendi */
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -98,7 +103,9 @@
 
     <div id="threeJsContainer">
         <div id="cameraIndicator" title="Sağ Önden Görünüm">
-            <img src="gorsel-ikon.png" alt="Sağdan Görünüm İkonu" style="width: 100%; height: 100%;">
+            <img src="gorsel-ikon.png"
+                onerror="this.onerror=null;this.src='https://placehold.co/80x60/cccccc/333333?text=ikon';"
+                alt="Sağdan Görünüm İkonu" style="width: 100%; height: 100%;">
         </div>
     </div>
     <div class="options" id="optionsContainer"></div>
@@ -123,6 +130,7 @@
         let scene, camera, renderer;
         let isThreeJSInitialized = false;
 
+        // 3D dünya koordinatını 2D ekran pikseline dönüştürür.
         function project3DPointTo2D(point3D) {
             const container = document.getElementById('threeJsContainer');
             if (!container || !camera) return { x: 0, y: 0 };
@@ -159,8 +167,12 @@
             isThreeJSInitialized = true;
         }
 
+        // ✨ DEĞİŞTİRİLDİ: Bu fonksiyon artık kamera ve ışıkları ayarlamanın yanı sıra,
+        // ikonun konumunu da modelin boyutlarına göre güncelliyor.
         function updateCameraAndLights(structure) {
             if (!camera || !renderer) return;
+
+            // Modelin sınırlarını (bounding box) hesapla
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
             let hasBlocks = false;
             for (let x = 0; x < currentGridDimension; x++) {
@@ -175,6 +187,8 @@
                     }
                 }
             }
+
+            // Kamera ve ışık konumlarını modelin merkezine ve boyutuna göre ayarla
             const centerX = hasBlocks ? (minX + maxX) / 2 : 0;
             const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0;
             const centerZ = hasBlocks ? (minY + maxY) / 2 : 0;
@@ -186,6 +200,29 @@
             if (light) {
                 light.position.set(centerX + camPos * 0.5, centerY + camPos, centerZ + camPos * 0.5);
             }
+
+            // ✨ YENİ: İkon konumunu güncelleme mantığı
+            const indicator = document.getElementById('cameraIndicator');
+            if (hasBlocks) {
+                // Modelin sağ alt köşesini temsil eden 3D noktayı belirle.
+                // Küp boyutu kadar ofset ekleyerek modelin biraz dışında kalmasını sağla.
+                const anchorPoint3D = new THREE.Vector3(maxX + CUBE_SIZE_THREE, minZ, minY);
+
+                // 3D noktayı 2D ekran koordinatlarına yansıt.
+                const screenPos = project3DPointTo2D(anchorPoint3D);
+
+                // İkonun stilini (konumunu) güncelle.
+                indicator.style.display = 'block';
+                indicator.style.left = `${screenPos.x}px`;
+                indicator.style.top = `${screenPos.y}px`;
+                // 'bottom' ve 'right' stillerini kaldırarak yeni konumlandırmanın etkili olmasını sağla.
+                indicator.style.bottom = 'auto';
+                indicator.style.right = 'auto';
+            } else {
+                // Model yoksa ikonu gizle.
+                indicator.style.display = 'none';
+            }
+
             renderer.render(scene, camera);
         }
 
@@ -468,7 +505,6 @@
             }
             const allOptions = [{ view: correctViewImageData, correct: true }, ...wrongViewsImageData.map(v => ({ view: v, correct: false }))].sort(() => Math.random() - 0.5);
 
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
             const correctIndex = allOptions.findIndex(opt => opt.correct);
             document.getElementById('correctIndex').textContent = correctIndex;
 

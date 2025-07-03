@@ -87,7 +87,7 @@ try:
              open(wrong_paths[2], 'rb') as wrong3:
             
             files = {"question_image": q_img, "correct_answer": correct, "wrong_answer_1": wrong1, "wrong_answer_2": wrong2, "wrong_answer_3": wrong3}
-            data = {"category_id": "25", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
+            data = {"category_id": "34", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
                 response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
