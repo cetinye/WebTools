@@ -17,7 +17,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-AlanDoldurma.html
 
 # 2. Other settings
 NUM_QUESTIONS = 2
-SAVE_DIR = "C:/Users/cetin/Desktop/SegmentedPaintingQuestions"
+SAVE_DIR = "C:/Users/cetin/Desktop/Grid-AlanDoldurma"
 API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 

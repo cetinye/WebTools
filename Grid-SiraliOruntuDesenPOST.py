@@ -24,7 +24,7 @@ HTML_FILE_NAME = "Grid-SiraliOruntuDesen.html" # This must match the name of you
 
 # 3. Other settings
 NUM_QUESTIONS = 1
-SAVE_DIR = os.path.join(PROJECT_DIRECTORY, "Grid-SiraliOruntuDesen")
+SAVE_DIR = "C:/Users/cetin/Desktop/Grid-SiraliOruntuDesen"
 API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
