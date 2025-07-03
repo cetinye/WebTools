@@ -124,6 +124,7 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
     <div id="game-container">
         <h1>Gelişmiş Matris Bulmacası</h1>
         <div id="rule-explanation">
@@ -316,6 +317,8 @@
                 // Son seçenek listesini karıştır
                 shuffleArray(options);
                 // *** YENİ MANTIK SONU ***
+
+                document.getElementById('correctIndex').textContent = options.findIndex(opt => opt.isCorrect);
 
                 options.forEach(opt => {
                     const optionDiv = document.createElement('div');

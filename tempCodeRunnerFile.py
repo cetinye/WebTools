@@ -122,9 +122,9 @@ for i in range(1, NUM_QUESTIONS + 1):
         }
 
         try:
-            response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-            print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-            # print(f"✅ Soru {i} işlendi. Doğru şık: {choice_labels[correct_index]}. (API çağrısı yorum satırında)")
+            # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+            # print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
+            print(f"✅ Soru {i} işlendi. Doğru şık: {choice_labels[correct_index]}. (API çağrısı yorum satırında)")
         except requests.exceptions.RequestException as e:
             print(f"❌ Soru {i} gönderilirken hata oluştu: {e}")
 

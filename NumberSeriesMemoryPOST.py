@@ -16,9 +16,9 @@ import time
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/NumberSeriesMemory.html" # EXAMPLE: "file:///C:/Games/Memory/game.html"
 
 # 2. Other settings
-NUM_QUESTIONS = 2
+NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/NumberSeriesMemoryQuestions"
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================

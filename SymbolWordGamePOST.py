@@ -17,7 +17,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/SymbolWordGame.html"
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/SymbolWordGameQuestions"
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # EKLENDİ: Soru görselinin etrafına eklenecek boşluk miktarı (piksel cinsinden)
@@ -137,9 +137,9 @@ try:
             data = {"category_id": "24", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
-                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                # print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
-                print(f"✅ Question {i} processed. Correct choice: {choice_labels[correct_index]}. (API call is commented out)")
+                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
+                # print(f"✅ Question {i} processed. Correct choice: {choice_labels[correct_index]}. (API call is commented out)")
             except requests.exceptions.RequestException as e:
                 print(f"❌ Error: API error while sending question {i}: {e}")
 

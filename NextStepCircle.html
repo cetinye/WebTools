@@ -43,6 +43,7 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
     <div class="sequence" id="sequence"></div>
     <div class="options" id="options"></div>
     <div class="feedback" id="feedback"></div>
@@ -139,6 +140,9 @@
             sequenceEl.innerHTML += `<div style="font-size: 60px;">❓</div>`;
 
             const correctIndex = Math.floor(Math.random() * 4);
+
+            document.getElementById('correctIndex').textContent = correctIndex;
+
             const usedOptions = new Set();
             usedOptions.add(JSON.stringify(correctAnswer));
 

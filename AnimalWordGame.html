@@ -56,6 +56,7 @@
 </head>
 
 <body>
+    <span id="correctIndex" style="display:none;"></span>
     <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
 
     <div id="question-area">
@@ -142,6 +143,8 @@
             // 4 kelimenin hepsini simgelere çevirip karıştırarak 4 farklı seçenek oluşturur.
             const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji));
             const options = shuffle(allSymbolOptions);
+
+            document.getElementById('correctIndex').textContent = options.indexOf(correctOption);
 
             options.forEach(opt => {
                 const div = document.createElement('div');

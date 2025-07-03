@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/NextStepCircleQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/NextStepCircle.html"
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===

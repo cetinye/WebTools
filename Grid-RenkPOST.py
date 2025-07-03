@@ -22,7 +22,7 @@ NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/Grid-Renk"
 
 # 4. API Bilgileri (Bu bilgileri kendi API'nize göre düzenleyin).
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer YOUR_SECRET_TOKEN_HERE"} # "YOUR_SECRET_TOKEN_HERE" kısmını kendi token'ınız ile değiştirin.
 
 # ==============================================================================

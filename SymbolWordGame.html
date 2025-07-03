@@ -137,30 +137,33 @@
             }
 
             const shuffledWordSet = shuffleArray(validSet);
-            const target = shuffledWordSet[0]; // Hedef kelimeyi belirle
+            const target = shuffledWordSet[0];
 
-            // Eşleştirme için gösterilecek kelimeleri karıştır (hedef kelime dahil)
             const displayWords = shuffleArray(shuffledWordSet);
             document.getElementById('words').textContent = displayWords.join(', ');
             document.getElementById('targetWord').textContent = target;
 
             const mappingsDiv = document.getElementById('mappings');
             mappingsDiv.innerHTML = '';
-            // Eşleştirmeleri karıştırarak göster
+
             shuffleArray(shuffledWordSet).forEach(word => {
                 const p = document.createElement('p');
-                p.textContent = `${word}  →  ${wordToSymbols(word, letterToSymbol)}`;
+                p.textContent = `${wordToSymbols(word, letterToSymbol)}`;
                 mappingsDiv.appendChild(p);
             });
 
             const correctOption = wordToSymbols(target, letterToSymbol);
-
-            // Seçenekler, soru setindeki tüm kelimelerin simge karşılıklarıdır
             const allSymbolOptions = validSet.map(w => wordToSymbols(w, letterToSymbol));
-            const options = shuffleArray(allSymbolOptions); // Seçenekleri karıştır
+            const options = shuffleArray(allSymbolOptions);
 
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';
+
+            // =================================================================
+            // === ⬇️ ADD THIS LINE HERE ⬇️ ===
+            // =================================================================
+            document.getElementById('correctIndex').textContent = options.indexOf(correctOption);
+
             options.forEach(opt => {
                 const div = document.createElement('div');
                 div.className = 'option symbols';
