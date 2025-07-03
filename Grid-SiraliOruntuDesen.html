@@ -80,7 +80,7 @@
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
         <header class="text-center mb-6">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Desen Sırası Oyunu</h1>
@@ -203,6 +203,9 @@
             const shuffledDistractors = shuffleArray(distractors);
             const finalOptions = [correctPatternKey, ...shuffledDistractors.slice(0, 3)];
             const shuffledFinalOptions = shuffleArray(finalOptions);
+
+            const correctIndex = shuffledFinalOptions.findIndex(key => key === correctPatternKey);
+            document.getElementById('correctIndex').textContent = correctIndex;
 
             optionsContainer.innerHTML = '';
             shuffledFinalOptions.forEach(key => {

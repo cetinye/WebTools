@@ -178,7 +178,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-wrapper">
         <h1>Sıralı Özellik Oyunu</h1>
         <p class="description">Griddeki gizli kuralı çözün ve soru işaretli yere gelecek doğru şekli bulun.</p>
@@ -352,6 +352,9 @@
                 }
                 const shuffledOptions = Array.from(options);
                 shuffleArray(shuffledOptions);
+
+                const correctIndex = shuffledOptions.findIndex(count => count === correctFeatureCount);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 shuffledOptions.forEach(count => {
                     const btn = document.createElement('div');

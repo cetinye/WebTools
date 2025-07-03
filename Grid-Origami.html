@@ -124,7 +124,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div id="game-container">
         <h1>Gelişmiş Matris Bulmacası</h1>
         <div id="rule-explanation">
@@ -291,6 +291,9 @@
                     ...Array.from(distractors).map(svg => ({ html: svg, isCorrect: false }))
                 ];
                 shuffleArray(options);
+
+                const correctIndex = options.findIndex(opt => opt.isCorrect);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 options.forEach(opt => {
                     const optionDiv = document.createElement('div');

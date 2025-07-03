@@ -39,7 +39,7 @@
 </head>
 
 <body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
-
+    <span id="correctIndex" style="display:none;"></span>
     <div id="game-container" class="w-full max-w-2xl mx-auto text-center">
         <h1 class="text-2xl md:text-4xl font-bold mb-2 text-gray-900">Eksik Parçayı Bul</h1>
         <p class="text-base md:text-lg mb-6 text-gray-600">Her satırda her şekil, desen ve renkten yalnızca bir tane
@@ -194,7 +194,19 @@
                 }
             }
 
-            shuffle(options).forEach(option => {
+            // 1. Önce karıştır ve bir değişkene ata
+            const shuffledOptions = shuffle(options);
+
+            // 2. Doğru cevabın karıştırılmış dizideki yerini bul ve HTML'e yazar
+            const correctIndex = shuffledOptions.findIndex(opt =>
+                opt.shape === solution.shape &&
+                opt.pattern === solution.pattern &&
+                opt.color === solution.color
+            );
+            document.getElementById('correctIndex').textContent = correctIndex;
+
+            // 3. Şimdi karıştırılmış dizi üzerinden döngüyü başlat
+            shuffledOptions.forEach(option => {
                 const optionCard = document.createElement('div');
                 optionCard.className = 'option-card bg-white p-2 rounded-lg shadow-md cursor-pointer transition-all duration-200';
                 optionCard.innerHTML = `<div class="shape-container aspect-square">${createShapeSVG(option.shape, option.pattern, option.color)}</div>`;

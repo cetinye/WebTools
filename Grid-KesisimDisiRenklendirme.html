@@ -154,7 +154,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-container">
         <h1>Matris Oyunu - Maskeleme Kuralı</h1>
         <p class="rule-description">
@@ -346,6 +346,9 @@
                     return;
                 }
                 const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
+
+                const correctIndex = options.findIndex(opt => opt.isCorrect === true);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
                 options.forEach(optionConfig => {
                     const button = document.createElement('button');

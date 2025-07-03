@@ -68,7 +68,7 @@
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="w-full max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Şekil Döndürme Oyunu</h1>
@@ -227,6 +227,9 @@
 
             // 4. Seçenekleri oluştur ve karıştır.
             const optionRotations = shuffleArray([0, 90, 180, 270]);
+
+            const correctIndex = optionRotations.findIndex(angle => angle === correctAnswerRotation);
+            document.getElementById('correctIndex').textContent = correctIndex;
 
             optionsContainer.innerHTML = '';
             optionRotations.forEach(rot => {

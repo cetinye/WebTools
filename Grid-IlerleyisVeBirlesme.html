@@ -295,7 +295,7 @@
 </head>
 
 <body>
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="game-container">
         <h1>Gelişmiş Rastgele Matris Oyunu</h1>
         <p class="rule-description">
@@ -464,29 +464,19 @@
                 initGameUI(matrixConfig, [...wrongAnswers, currentCorrectAnswer]);
             }
 
-            function initGameUI(matrixConfig, options) {
-                grid.innerHTML = '';
-                optionsContainer.innerHTML = '';
-                feedback.innerHTML = '';
-                feedback.className = 'feedback-message';
+            function initGameUI(matrixConfig, wrongAnswers) {
+                grid.innerHTML = ''; optionsContainer.innerHTML = ''; feedback.innerHTML = ''; feedback.className = 'feedback-message';
+                matrixConfig.forEach(config => { const cell = document.createElement('div'); cell.className = 'grid-cell'; if (config) { cell.appendChild(createCellContent(config)); } else { cell.innerHTML = '<span class="question-mark">?</span>'; } grid.appendChild(cell); });
+                const options = shuffleArray([...wrongAnswers, currentCorrectAnswer]);
 
-                matrixConfig.forEach(config => {
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    if (config) {
-                        cell.appendChild(createShape(config));
-                    } else {
-                        cell.innerHTML = '<span class="question-mark">?</span>';
-                    }
-                    grid.appendChild(cell);
-                });
+                // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
+                const correctIndex = options.findIndex(opt => opt.isCorrect === true);
+                document.getElementById('correctIndex').textContent = correctIndex;
 
-                shuffleArray(options);
                 options.forEach(optionConfig => {
-                    const button = document.createElement('button');
-                    button.className = 'option-button';
+                    const button = document.createElement('button'); button.className = 'option-button';
                     button.dataset.correct = optionConfig.isCorrect || false;
-                    button.appendChild(createShape(optionConfig));
+                    button.appendChild(createCellContent(optionConfig));
                     button.addEventListener('click', handleOptionClick);
                     optionsContainer.appendChild(button);
                 });

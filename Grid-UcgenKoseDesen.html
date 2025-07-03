@@ -83,7 +83,7 @@
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-
+    <span id="correctIndex" style="display:none;"></span>
     <div class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
         <header class="text-center mb-6">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Desen Döndürme Oyunu</h1>
@@ -272,6 +272,9 @@
             // Seçenekleri oluştur (Doğru cevap dahil 4 farklı desen)
             let optionPatterns = [0, 1, 2, 3];
             shuffleArray(optionPatterns);
+
+            const correctIndex = optionPatterns.findIndex(p => p === correctAnswerPatternType);
+            document.getElementById('correctIndex').textContent = correctIndex;
 
             optionsContainer.innerHTML = '';
             for (const pattern of optionPatterns) {
