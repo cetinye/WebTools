@@ -18,7 +18,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-UcgenKoseDesen.ht
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/Grid-UcgenKoseDesen"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
@@ -69,6 +69,14 @@ try:
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
+            
+            # === EKLENECEK SATIR ===
+            # Ekran görüntüsü almadan önce elementi ekrana ortala.
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", opt)
+            
+            # Küçük bir bekleme, tarayıcının scroll işlemini tamamlamasına izin verir.
+            time.sleep(0.2) 
+
             opt.screenshot(choice_path)
             resize_image(choice_path, (120, 120))
             option_paths.append(choice_path)

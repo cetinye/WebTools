@@ -8,21 +8,25 @@ import os
 import time
 
 # ==============================================================================
-# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
+# === 			CONFIGURATION (SADECE BU BÖLÜMÜ DÜZENLEYİN) 		 ===
 # ==============================================================================
 
-# 1. Enter the full path to your HTML file, using the file:/// protocol.
-# IMPORTANT: Use forward slashes (/) for the path.
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-Renk.html" # EXAMPLE: "file:///C:/Games/Matrix/game.html"
+# 1. HTML dosyanızın tam yolunu "file:///" protokolü ile girin.
+# ÖNEMLİ: Yol için ters eğik çizgi (\) yerine düz eğik çizgi (/) kullanın.
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-Renk.html" # ÖRNEK: "file:///C:/Oyunlar/Matrix/oyun.html"
 
-# 2. Other settings
+# 2. Kaç adet soru işleneceğini belirtin.
 NUM_QUESTIONS = 1
+
+# 3. Görüntülerin kaydedileceği klasör.
 SAVE_DIR = "C:/Users/cetin/Desktop/Grid-Renk"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
-HEADERS = {"Authorization": "Bearer your_token_here"}
+
+# 4. API Bilgileri (Bu bilgileri kendi API'nize göre düzenleyin).
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+HEADERS = {"Authorization": "Bearer YOUR_SECRET_TOKEN_HERE"} # "YOUR_SECRET_TOKEN_HERE" kısmını kendi token'ınız ile değiştirin.
 
 # ==============================================================================
-# === AUTOMATION CODE (DO NOT CHANGE) ===
+# === 			OTOMASYON KODU (DEĞİŞTİRMEYİN) 				 ===
 # ==============================================================================
 
 options = webdriver.ChromeOptions()
@@ -35,7 +39,7 @@ driver.get(LOCAL_FILE_URL)
 choice_labels = ['A', 'B', 'C', 'D']
 
 def resize_image(path, target_size):
-    """Resizes the image proportionally on a transparent background."""
+    """Görüntüyü şeffaf bir arka plan üzerinde orantılı olarak yeniden boyutlandırır."""
     img = Image.open(path).convert("RGBA")
     img.thumbnail(target_size, Image.Resampling.LANCZOS)
     new_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
@@ -45,26 +49,26 @@ def resize_image(path, target_size):
 
 try:
     for i in range(1, NUM_QUESTIONS + 1):
-        print(f"\n--- Processing Question {i} ---")
-        
-        # Smart wait: Wait for the game to be fully loaded by checking for the options
+        print(f"\n--- Soru {i} işleniyor ---")
+
         try:
             wait = WebDriverWait(driver, 10)
-            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "option-button")))
-            print("👍 Game loaded, taking screenshots.")
-            time.sleep(0.5) 
-        except Exception:
-            print(f"❌ Error: Game could not be loaded for question {i} within 10 seconds.")
-            break 
+            # Sayfanın hazır olduğunu anlamak için seçenek butonlarını bekle
+            option_buttons = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "option-button")))
+            # Butonların tıklanabilir olmasını bekle
+            wait.until(EC.element_to_be_clickable(option_buttons[0]))
+            print("👍 Oyun yüklendi, ekran görüntüleri alınıyor.")
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"❌ Hata: Oyun 10 saniye içinde yüklenemedi. Hata: {e}")
+            break
 
-        # --- Question Image ---
+        # --- Soru ve Cevapların Görüntülerini Alma ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-        question_elem = driver.find_element(By.ID, "game-grid")
-        question_elem.screenshot(question_path)
+        driver.find_element(By.ID, "game-grid").screenshot(question_path)
         resize_image(question_path, (600, 600))
-        print("📸 Question screenshot taken.")
+        print("📸 Soru ekran görüntüsü alındı.")
 
-        # --- Answer Choices ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option-button")
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
@@ -72,33 +76,63 @@ try:
             opt.screenshot(choice_path)
             resize_image(choice_path, (120, 120))
             option_paths.append(choice_path)
-        print("📸 Options screenshots taken.")
+        print("📸 Seçeneklerin ekran görüntüleri alındı.")
 
-        # --- Read Correct Answer and Send to API ---
-        correct_index = int(driver.execute_script("return document.getElementById('correctIndex').textContent;"))
+        # --- Doğru Cevabı Oku ---
+        correct_index_str = driver.execute_script("return document.getElementById('correctIndex').textContent;")
+        if not correct_index_str:
+            print("❌ Hata: 'correctIndex' elementi boş. Lütfen HTML dosyasındaki JavaScript kodunu kontrol edin.")
+            break
+
+        correct_index = int(correct_index_str)
+        print(f"🧠 Doğru cevap {correct_index}. indekste ({choice_labels[correct_index]}).")
+
+        # --- API için Dosyaları ve Verileri Hazırla ve Gönder ---
         correct_path = option_paths[correct_index]
         wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
 
+        # Dosyaları 'with' bloğu içinde açarak otomatik kapanmalarını sağla
         with open(question_path, 'rb') as q_img, \
-             open(correct_path, 'rb') as correct, \
-             open(wrong_paths[0], 'rb') as wrong1, \
-             open(wrong_paths[1], 'rb') as wrong2, \
-             open(wrong_paths[2], 'rb') as wrong3:
-            
-            files = {"question_image": q_img, "correct_answer": correct, "wrong_answer_1": wrong1, "wrong_answer_2": wrong2, "wrong_answer_3": wrong3}
-            data = {"category_id": "25", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
+             open(correct_path, 'rb') as correct_img, \
+             open(wrong_paths[0], 'rb') as wrong1_img, \
+             open(wrong_paths[1], 'rb') as wrong2_img, \
+             open(wrong_paths[2], 'rb') as wrong3_img:
+
+            # API'nin beklediği dosya anahtarlarını ve verileri tanımla
+            files = {
+                "question_image": q_img,
+                "correct_answer": correct_img,
+                "wrong_answer_1": wrong1_img,
+                "wrong_answer_2": wrong2_img,
+                "wrong_answer_3": wrong3_img
+            }
+            data = {
+                "category_id": "25",
+                "grade": "[1,2,3,4,9]",
+                "knowledge": "0",
+                "level": "1"
+            }
 
             try:
+                print("📤 API'ye gönderiliyor...")
                 response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
+                response.raise_for_status() # Hatalı durum kodları (4xx veya 5xx) için bir exception fırlatır
+                print(f"✅ Soru {i} başarıyla gönderildi. Doğru seçenek: {choice_labels[correct_index]} | Sunucu Yanıtı: {response.status_code}")
             except requests.exceptions.RequestException as e:
-                print(f"❌ Error: API error while sending question {i}: {e}")
+                print(f"❌ Hata: Soru {i} gönderilirken API hatası oluştu: {e}")
 
-        # --- Proceed to the Next Question ---
+        # --- Sonraki Soruya Geç ---
         if i < NUM_QUESTIONS:
-            print("Refreshing page for the next question...")
-            driver.refresh()
+            # Doğru cevaba tıkla ve bir sonraki butonun görünmesini bekle
+            options_elements[correct_index].click()
+            print("🖱️ Doğru seçenek tıklandı, sonraki bulmaca bekleniyor.")
             
+            next_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.ID, "next-level-button"))
+            )
+            next_button.click()
+
 finally:
+    time.sleep(2) # Kapanmadan önce son durumu görmek için
     driver.quit()
-    print("\n🎉 Automation complete. Browser closed.")
+    print("\n🎉 Otomasyon tamamlandı. Tarayıcı kapatıldı.")

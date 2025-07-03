@@ -124,7 +124,6 @@
 </head>
 
 <body>
-    <span id="correctIndex" style="display:none;"></span>
     <div id="game-container">
         <h1>Gelişmiş Matris Bulmacası</h1>
         <div id="rule-explanation">
@@ -225,11 +224,9 @@
                     const part1_template = part1_template_options[Math.floor(Math.random() * part1_template_options.length)];
                     const part2_template = part2_template_options[Math.floor(Math.random() * part2_template_options.length)];
 
-                    // YENİ MANTIK: Her parça için rastgele bir doluluk durumu belirle.
                     const fill1 = Math.random() < 0.5 ? 'black' : 'none';
                     const fill2 = Math.random() < 0.5 ? 'black' : 'none';
 
-                    // Parçaların son SVG hallerini, doluluk durumuna göre oluştur.
                     const part1 = {
                         out: part1_template.out.replace('{FILL}', fill1),
                         in: part1_template.in.replace('{FILL}', fill1)
@@ -281,19 +278,44 @@
                     gridContainer.innerHTML += `<div class="matrix-cell">${state3}</div>`;
                 }
 
-                const correctAnswer = `<svg viewBox="0 0 100 100">${questionRow.states.state3}</svg>`;
-                const distractors = new Set();
-                distractors.add(`<svg viewBox="0 0 100 100">${questionRow.states.state2}</svg>`);
-                distractors.add(`<svg viewBox="0 0 100 100">${questionRow.states.state1}</svg>`);
+                // *** YENİ SEÇENEK OLUŞTURMA MANTIĞI ***
+                const correctAnswerHTML = `<svg viewBox="0 0 100 100">${questionRow.states.state3}</svg>`;
 
-                let options = [
-                    { html: correctAnswer, isCorrect: true },
-                    ...Array.from(distractors).map(svg => ({ html: svg, isCorrect: false }))
-                ];
+                // Benzersizliği sağlamak için Set kullan
+                const finalOptionsSet = new Set();
+                finalOptionsSet.add(correctAnswerHTML);
+
+                // Tüm olası çeldiricileri bir havuzda topla
+                const distractorPool = [];
+                currentPuzzle.rows.forEach((row, rowIndex) => {
+                    Object.values(row.states).forEach(stateSVG => {
+                        const fullSVG = `<svg viewBox="0 0 100 100">${stateSVG}</svg>`;
+                        // Havuza doğru cevabı ekleme
+                        if (fullSVG !== correctAnswerHTML) {
+                            distractorPool.push(fullSVG);
+                        }
+                    });
+                });
+
+                // Çeldirici havuzunu karıştır
+                shuffleArray(distractorPool);
+
+                // Set'e 4 seçenek olana kadar benzersiz çeldirici ekle
+                let i = 0;
+                while (finalOptionsSet.size < 4 && i < distractorPool.length) {
+                    finalOptionsSet.add(distractorPool[i]);
+                    i++;
+                }
+
+                // Set'i bir obje dizisine dönüştür
+                let options = Array.from(finalOptionsSet).map(optHtml => ({
+                    html: optHtml,
+                    isCorrect: optHtml === correctAnswerHTML
+                }));
+
+                // Son seçenek listesini karıştır
                 shuffleArray(options);
-
-                const correctIndex = options.findIndex(opt => opt.isCorrect);
-                document.getElementById('correctIndex').textContent = correctIndex;
+                // *** YENİ MANTIK SONU ***
 
                 options.forEach(opt => {
                     const optionDiv = document.createElement('div');
