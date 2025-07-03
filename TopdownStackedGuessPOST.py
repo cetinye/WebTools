@@ -18,7 +18,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/TopDownStackedGuess.ht
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/TopDownStackedQuestions"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
@@ -58,12 +58,14 @@ try:
             print(f"❌ Error: Game could not be loaded for question {i} within 20 seconds.")
             break 
 
+        # YENİ HALİ
         # --- Question Image ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-        question_elem = driver.find_element(By.ID, "viewArea") # Corrected ID from HTML
+        # Yeni oluşturulan ve hem gözü hem de 3D alanı kapsayan div'i hedefle
+        question_elem = driver.find_element(By.ID, "question-area") 
         question_elem.screenshot(question_path)
-        resize_image(question_path, (600, 400))
-        print("📸 Question screenshot taken.")
+        resize_image(question_path, (600, 400)) # Boyutu ihtiyaca göre ayarlayabilirsiniz
+        print("📸 Question screenshot taken (including eye icon).")
 
         # --- Answer Choices ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option")

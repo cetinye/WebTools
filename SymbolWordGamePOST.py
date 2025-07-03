@@ -3,23 +3,25 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from PIL import Image
+from PIL import Image, ImageChops
 import os
 import time
 
 # ==============================================================================
-# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
+# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
 # ==============================================================================
 
 # 1. Enter the full path to your HTML file, using the file:/// protocol.
-# IMPORTANT: Use forward slashes (/) for the path.
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/SymbolWordGame.html" # EXAMPLE: "file:///C:/Games/SymbolGame/game.html"
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/SymbolWordGame.html"
 
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/SymbolWordGameQuestions"
 # API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
+
+# EKLENDİ: Soru görselinin etrafına eklenecek boşluk miktarı (piksel cinsinden)
+QUESTION_PADDING = 20
 
 # ==============================================================================
 # === AUTOMATION CODE (DO NOT CHANGE) ===
@@ -34,8 +36,48 @@ driver.get(LOCAL_FILE_URL)
 
 choice_labels = ['A', 'B', 'C', 'D']
 
+# EKLENDİ: Görüntüdeki Boşlukları Otomatik Olarak Kırpan ve Boşluk Ekleyen Fonksiyon
+def trim_and_pad_image(image_path, padding=0):
+    """
+    Bir görüntünün kenarlarındaki boş alanları kırpar ve ardından belirtilen miktarda
+    boşluk (padding) ekler.
+    """
+    try:
+        img = Image.open(image_path).convert("RGB")
+        # Arka plan rengiyle aynı olan piksellerden bir fark görüntüsü oluştur
+        bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
+        diff = ImageChops.difference(img, bg)
+        # Farklı piksellerin olduğu alanın sınırlayıcı kutusunu bul
+        bbox = diff.getbbox()
+        
+        if bbox:
+            # Görüntüyü sınırlayıcı kutuya göre kırp
+            trimmed_img = img.crop(bbox)
+
+            # Eğer padding isteniyorsa, yeni bir tuval oluştur ve ortasına yapıştır
+            if padding > 0:
+                new_size = (trimmed_img.width + 2 * padding, trimmed_img.height + 2 * padding)
+                # Orijinal arka plan rengiyle yeni bir tuval oluştur
+                padded_img = Image.new(img.mode, new_size, img.getpixel((0,0)))
+                # Kırpılmış resmi bu yeni tuvalin ortasına yapıştır
+                padded_img.paste(trimmed_img, (padding, padding))
+                # Son resmi kaydet
+                padded_img.save(image_path)
+                print(f"✨ Whitespace trimmed and {padding}px padding added.")
+            else:
+                # Padding istenmiyorsa sadece kırpılmış halini kaydet
+                trimmed_img.save(image_path)
+                print("✨ Whitespace trimmed successfully.")
+        else:
+            # Görüntü tamamen boşsa dokunma
+            print("⚠️ Image is empty, no trim needed.")
+    except Exception as e:
+        print(f"❌ Error while trimming/padding image: {e}")
+
+
 def resize_image(path, target_size):
     """Resizes the image proportionally on a transparent background."""
+    if not os.path.exists(path): return
     img = Image.open(path).convert("RGBA")
     img.thumbnail(target_size, Image.Resampling.LANCZOS)
     new_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
@@ -47,12 +89,11 @@ try:
     for i in range(1, NUM_QUESTIONS + 1):
         print(f"\n--- Processing Question {i} ---")
 
-        # Smart wait: Wait for the game to be fully loaded by checking for the options
         try:
             wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "option")))
             print("👍 Game loaded, taking screenshots.")
-            time.sleep(0.5) # Extra wait for drawing to settle
+            time.sleep(0.5)
         except Exception:
             print(f"❌ Error: Game could not be loaded for question {i} within 10 seconds.")
             break
@@ -60,11 +101,18 @@ try:
         # --- Question Image ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "question-area")
+        
         question_elem.screenshot(question_path)
-        resize_image(question_path, (700, 250))
         print("📸 Question screenshot taken.")
 
-        # --- Answer Choices ---
+        # EKLENDİ: Soru görselindeki gereksiz beyaz boşlukları kırp ve padding ekle
+        trim_and_pad_image(question_path, padding=QUESTION_PADDING)
+        
+        # Temizlenmiş ve padding eklenmiş görüntüyü yeniden boyutlandır
+        resize_image(question_path, (700, 250))
+
+
+        # --- Answer Choices (DEĞİŞİKLİK YOK) ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option")
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
@@ -89,8 +137,9 @@ try:
             data = {"category_id": "24", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
-                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
+                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                # print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
+                print(f"✅ Question {i} processed. Correct choice: {choice_labels[correct_index]}. (API call is commented out)")
             except requests.exceptions.RequestException as e:
                 print(f"❌ Error: API error while sending question {i}: {e}")
 

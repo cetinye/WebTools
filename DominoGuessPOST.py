@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/DominoGuessQuestions" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/DominoGuess.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -45,7 +45,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem = driver.find_element(By.ID, "domino-grid")
     question_elem.screenshot(question_path)
     # Izgara boyutlarına uygun yeniden boyutlandırma.
-    resize_image(question_path, (400, 300))
+    resize_image(question_path, (800, 600))
 
     # --- Şıklar ---
     # Şıklar "option-domino" class'ına sahip domino elemanlarıdır.

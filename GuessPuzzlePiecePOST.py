@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from PIL import Image
 
 # ==============================================================================
-# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
+# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
 # ==============================================================================
 
 # 1. Enter the full path to the folder containing your project files.
@@ -115,7 +115,7 @@ try:
             wait = WebDriverWait(driver, 20)
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#choices button")))
             print("👍 Game loaded, taking screenshots.")
-            time.sleep(1) # Extra wait for drawing to settle
+            time.sleep(1.5) # Bu oyun daha karmaşık olduğu için bekleme süresini biraz artırmak faydalı olabilir
         except Exception as e:
             print(f"❌ Error: Game could not be loaded for question {i} within 20 seconds.")
             continue 
@@ -123,6 +123,11 @@ try:
         # --- Question Image ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "mainCanvas")
+        
+        # EKLENDİ: Kırpılmayı önlemek için elementi ekranın ortasına kaydır
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", question_elem)
+        time.sleep(0.5) # Kaydırmanın tamamlanmasını bekle
+
         question_elem.screenshot(question_path)
         resize_image(question_path, (600, 600))
 
@@ -131,6 +136,11 @@ try:
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
+            
+            # EKLENDİ: Kırpılmayı önlemek için HER BİR ŞIKKI da ekranın ortasına kaydır
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", opt)
+            time.sleep(0.3) # Kaydırmanın tamamlanmasını bekle
+            
             opt.screenshot(choice_path)
             resize_image(choice_path, (250, 250))
             option_paths.append(choice_path)

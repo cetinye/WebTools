@@ -96,8 +96,11 @@
             <label>Sütun: <input type="number" id="cols" value="3" min="2" max="10" /></label>
             <button id="startBtn">Yeni Oyun Başlat</button>
         </div>
-        <canvas id="mainCanvas"></canvas>
-        <div id="choices"></div>
+
+        <div id="questionArea">
+            <canvas id="mainCanvas"></canvas>
+            <div id="choices"></div>
+        </div>
     </div>
 
     <script>
@@ -193,7 +196,6 @@
 
             choices.sort(() => Math.random() - 0.5);
 
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
             const correctIndex = choices.findIndex(canvasEl => canvasEl === correctCanvas);
             document.getElementById('correctIndex').textContent = correctIndex;
 

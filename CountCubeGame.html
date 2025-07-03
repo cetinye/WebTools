@@ -149,6 +149,9 @@
         <div class="score">Skor: <span id="score">0</span> / <span id="total">0</span></div>
         <button class="next-btn" onclick="generateNewPuzzle()">Yeni Soru</button>
     </div>
+
+    <div id="correctIndex" style="display: none;"></div>
+
     <script>
         let currentAnswer = 0;
         let score = 0;
@@ -247,6 +250,9 @@
                 btn.onclick = () => checkAnswer(choice, correctAnswer, btn);
                 section.appendChild(btn);
             });
+
+            const correctIndex = choices.indexOf(correctAnswer);
+            document.getElementById('correctIndex').textContent = correctIndex;
         }
 
         function checkAnswer(selected, correct, btn) {

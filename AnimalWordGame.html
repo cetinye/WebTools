@@ -16,6 +16,8 @@
             display: inline-block;
             margin: 10px;
             padding: 10px;
+            vertical-align: top;
+            min-width: 250px;
         }
 
         .symbols {
@@ -28,18 +30,23 @@
             padding: 10px;
             display: inline-block;
             border: 2px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s;
         }
 
         .option:hover {
             border-color: blue;
+            transform: scale(1.1);
         }
 
         .correct {
             border-color: green;
+            background-color: #e6ffed;
         }
 
         .wrong {
             border-color: red;
+            background-color: #ffeeee;
         }
 
         #options {
@@ -49,8 +56,6 @@
 </head>
 
 <body>
-    <span id="correctIndex" style="display:none;"></span>
-
     <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
 
     <div id="question-area">
@@ -66,7 +71,7 @@
 
         <div class="box">
             <h3>İSTENEN SÖZCÜK</h3>
-            <div id="targetWord"></div>
+            <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
         </div>
     </div>
     <div id="options" class="box">
@@ -74,19 +79,22 @@
     </div>
 
     <script>
-        const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵'];
+        const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵', '🐸', '🐔'];
 
+        // ✨ GÜNCELLENDİ: Tüm kelime grupları 4 kelime içerecek şekilde düzenlendi.
         const wordGroups = [
-            ['ALMAN', 'ANLAM', 'YALAN', 'YANAL'],
-            ['MASA', 'SABA', 'ASMA'],
-            ['KASA', 'SAKA', 'AKAS'],
-            ['TREN', 'RENT', 'TERN'],
-            ['KART', 'TRAK', 'AKTR'],
-            ['ELMA', 'LEMA', 'AMEL'],
-            ['BALIK', 'BILAK', 'KABLI'],
-            ['LİMON', 'MONLİ', 'OLİMN'],
-            ['ODA', 'ADO', 'DOA'],
-            ['KUŞ', 'ŞUK', 'UKŞ']
+            ['ALMAN', 'ANLAM', 'YALAN', 'NALAN'],
+            ['MASA', 'SABA', 'ASMA', 'SAMA'],
+            ['KASA', 'SAKA', 'AKAS', 'ASAK'],
+            ['TREN', 'RENT', 'TERN', 'KENT'],
+            ['KART', 'TRAK', 'KRAL', 'TARK'],
+            ['ELMA', 'LEMA', 'AMEL', 'ALEM'],
+            ['BALIK', 'KABLI', 'BAKIL', 'AKIL'],
+            ['LİMON', 'ONLİ', 'MİLO', 'NİLÜ'],
+            ['ODA', 'ADO', 'DOA', 'AYO'],
+            ['KUŞ', 'ŞUT', 'TOK', 'KOŞ'],
+            ['KİTAP', 'PATİK', 'KATİP', 'TAKİP'],
+            ['CEVİZ', 'VEZİR', 'CEZA', 'RİZE']
         ];
 
         function shuffle(arr) {
@@ -94,7 +102,7 @@
         }
 
         function createMapping(words) {
-            const uniqueLetters = Array.from(new Set(words.join('').split('')));
+            const uniqueLetters = Array.from(new Set(words.join('').toUpperCase().split('')));
             const map = {};
             const shuffledEmojis = shuffle(animalEmojis);
             uniqueLetters.forEach((char, i) => {
@@ -104,43 +112,58 @@
         }
 
         function wordToSymbols(word, map) {
-            return word.split('').map(l => map[l]).join(' ');
+            return word.toUpperCase().split('').map(l => map[l]).join(' ');
         }
 
         function initGame() {
-            const wordSet = shuffle(wordGroups)[0];
+            // Bir sonraki tur için tıklama olaylarını tekrar aktif et
+            document.getElementById('options').style.pointerEvents = 'auto';
+
+            const wordSet = shuffle(wordGroups)[0]; // Her zaman 4 kelimelik bir set seçer
             const letterToEmoji = createMapping(wordSet);
             const shuffledWords = shuffle(wordSet);
-            const target = shuffledWords[Math.floor(Math.random() * shuffledWords.length)];
+            const target = shuffledWords[0]; // Hedef kelime olarak birini seç
 
             document.getElementById('words').textContent = wordSet.join(', ');
             document.getElementById('targetWord').textContent = target;
             document.getElementById('mappings').innerHTML = '';
             document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
 
-            // Eşleştirme kutusu
+            // Eşleştirme kutusunu doldur
             shuffledWords.forEach(word => {
                 const p = document.createElement('p');
-                p.textContent = wordToSymbols(word, letterToEmoji);
+                p.textContent = `${wordToSymbols(word, letterToEmoji)}`;
                 document.getElementById('mappings').appendChild(p);
             });
 
-            const correct = wordToSymbols(target, letterToEmoji);
-            const options = shuffle([correct, ...shuffledWords.filter(w => w !== target).slice(0, 3).map(w => wordToSymbols(w, letterToEmoji))]);
+            const correctOption = wordToSymbols(target, letterToEmoji);
 
-            // ✨ EKLENDİ: Doğru cevabın index'ini (sırasını) gizli span elementine yazar.
-            document.getElementById('correctIndex').textContent = options.indexOf(correct);
+            // ✨ GÜNCELLENDİ: Seçenek oluşturma mantığı basitleştirildi.
+            // 4 kelimenin hepsini simgelere çevirip karıştırarak 4 farklı seçenek oluşturur.
+            const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji));
+            const options = shuffle(allSymbolOptions);
 
             options.forEach(opt => {
                 const div = document.createElement('div');
                 div.className = 'option symbols';
                 div.textContent = opt;
                 div.addEventListener('click', () => {
-                    if (opt === correct) {
+                    // Tıklandıktan sonra diğer seçeneklere tıklamayı engelle
+                    document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none');
+
+                    if (opt === correctOption) {
                         div.classList.add('correct');
                     } else {
                         div.classList.add('wrong');
+                        // Yanlış cevap verilse bile doğru olanı göster
+                        document.querySelectorAll('.option').forEach(el => {
+                            if (el.textContent === correctOption) {
+                                el.classList.add('correct');
+                            }
+                        });
                     }
+                    // Yeni oyuna geçmeden önce 2 saniye bekle
+                    setTimeout(initGame, 2000);
                 });
                 document.getElementById('options').appendChild(div);
             });

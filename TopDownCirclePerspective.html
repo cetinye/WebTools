@@ -274,6 +274,9 @@
         function startGame() {
             optionsDiv.innerHTML = '';
 
+            // YENİ: Her yeni soru öncesi indeksi temizle
+            document.getElementById('correctIndex').textContent = '';
+
             const layerCount = Math.floor(Math.random() * (MAX_LAYERS - MIN_LAYERS + 1)) + MIN_LAYERS;
             const stacks = new Set();
             const options = [];
@@ -287,20 +290,26 @@
 
             // Yanlış yığınları oluştur
             while (options.length < 4) {
-                // Her yeni seçenek için renkleri tekrar karıştırarak farklı kombinasyonlar elde et
                 let newColorPool = shuffleArray([...COLORS]);
                 const newStack = generateRandomStack(layerCount, newColorPool);
                 const newStackString = JSON.stringify(newStack);
 
-                // Daha önce oluşturulmamış bir yığın ise ekle
                 if (!stacks.has(newStackString)) {
                     stacks.add(newStackString);
                     options.push({ stack: newStack, isCorrect: false });
                 }
             }
 
-            // Seçenekleri karıştır ve ekrana çiz
+            // Seçenekleri karıştır
             const shuffledOptions = options.sort(() => Math.random() - 0.5);
+
+            // --- YENİ EKLENEN KISIM ---
+            // Karıştırılmış dizideki doğru şıkkın indeksini bul ve gizli div'e yaz.
+            const correctOptIndex = shuffledOptions.findIndex(opt => opt.isCorrect);
+            document.getElementById('correctIndex').textContent = correctOptIndex;
+            // --- BİTTİ ---
+
+            // Seçenekleri ekrana çiz
             shuffledOptions.forEach(opt => drawOption(opt.stack, opt.isCorrect));
         }
 

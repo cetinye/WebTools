@@ -17,6 +17,8 @@
             margin: 10px;
             padding: 10px;
             vertical-align: top;
+            min-width: 200px;
+            /* Kutuların genişliğini sabitlemek için */
         }
 
         .symbols {
@@ -66,7 +68,7 @@
         </div>
 
         <div class="box">
-            <h3>SAYISAL EŞLEŞTİRME</h3>
+            <h3>SİMGESEL EŞLEŞTİRME</h3>
             <div id="mappings"></div>
         </div>
 
@@ -81,18 +83,19 @@
     </div>
 
     <script>
+        // ✨ GÜNCELLENDİ: Soru havuzundaki her dizi 4 kelime içerecek şekilde güncellendi.
         const questionPool = [
-            ['KAPI', 'KEDİ', 'KAZA'], ['GÜL', 'GÖL', 'GÜNEŞ'], ['MUM', 'KUM', 'KAM'],
-            ['MASA', 'SABA', 'ASMA'], ['TREN', 'RENK', 'NERİ'], ['BABA', 'BANA', 'BARA'],
-            ['YEL', 'LEY', 'ELİ'], ['KALP', 'KAPL', 'LAPK'], ['KART', 'TRAK', 'AKTR'],
-            ['GEMİ', 'EMGİ', 'İGEM'], ['KAZAK', 'KAKAZ', 'ZAKAK'], ['BALIK', 'BILAK', 'KABLI'],
-            ['MARTI', 'TAMİR', 'MATİR'], ['SİNEK', 'NESİK', 'KİSEN'], ['ODA', 'ADO', 'DOA'],
-            ['ELMA', 'LEMA', 'AMEL'], ['KASA', 'SAKA', 'AKAS'], ['ZİL', 'İZL', 'ZLİ'],
-            ['TEPE', 'ETPE', 'ETEP'], ['GÖZ', 'ÖZG', 'ZGÖ'], ['KUŞ', 'ŞUK', 'UKŞ'],
-            ['TABA', 'BATA', 'ABTA'], ['KİLİT', 'TİKİL', 'İKİTL'], ['SABA', 'BASA', 'ASAB'],
-            ['LİMON', 'MONLİ', 'OLİMN']
+            ['KAPI', 'KEDİ', 'KAZA', 'PİKA'], ['GÜL', 'GÖL', 'GÜNEŞ', 'GEZİ'], ['MUM', 'KUM', 'KAM', 'MAK'],
+            ['MASA', 'SABA', 'ASMA', 'SANA'], ['TREN', 'RENK', 'KENT', 'KREM'], ['BABA', 'BANA', 'BARA', 'ABRA'],
+            ['YEL', 'LEY', 'SEL', 'YELE'], ['KALP', 'PLAK', 'KAP', 'LAPA'], ['KART', 'TRAK', 'KRAL', 'TARK'],
+            ['GEMİ', 'EMGİ', 'İGEM', 'GİME'], ['KAZAK', 'AZMAK', 'ZAKAZ', 'KAZA'], ['BALIK', 'KABLI', 'AKIL', 'BAKI'],
+            ['MARTI', 'TAMİR', 'RİTİM', 'TIRNAK'], ['SİNEK', 'KESİN', 'EKSİN', 'ESKİ'], ['ODA', 'ADO', 'DOA', 'AYO'],
+            ['ELMA', 'LEMA', 'AMEL', 'ALEM'], ['KASA', 'SAKA', 'AKAS', 'ASAK'], ['ZİL', 'LİZ', 'İZL', 'ZİF'],
+            ['TEPE', 'PETE', 'TEKE', 'EGEP'], ['GÖZ', 'ÖZG', 'ZGÖ', 'GEZ'], ['KUŞ', 'ŞUT', 'TOK', 'KOŞ'],
+            ['ATKI', 'KATI', 'ATIK', 'KITA'], ['KİLİT', 'LİKİT', 'TİLKİ', 'KİTL'], ['SABA', 'ASAB', 'BASA', 'ABAS'],
+            ['LİMON', 'ONLİ', 'MİLO', 'LİMAN']
         ];
-        const symbols = ['✨', '🍀', '💎', '🚀', '🌐', '🎨'];
+        const symbols = ['✨', '🍀', '💎', '🚀', '🌐', '🎨', '🔥', '⭐', '❤️', '💡'];
 
         function shuffleArray(arr) {
             return arr.slice().sort(() => Math.random() - 0.5);
@@ -114,6 +117,7 @@
         }
 
         function initGame() {
+            document.getElementById('options').style.pointerEvents = 'auto';
             let attempts = 0;
             let validSet = null;
             let letterToSymbol = null;
@@ -131,24 +135,29 @@
                 document.getElementById('words').textContent = 'Soru yüklenemedi';
                 return;
             }
-            const selectedWords = shuffleArray(validSet);
-            const target = selectedWords[Math.floor(Math.random() * selectedWords.length)];
-            document.getElementById('words').textContent = selectedWords.join(', ');
+
+            const shuffledWordSet = shuffleArray(validSet);
+            const target = shuffledWordSet[0]; // Hedef kelimeyi belirle
+
+            // Eşleştirme için gösterilecek kelimeleri karıştır (hedef kelime dahil)
+            const displayWords = shuffleArray(shuffledWordSet);
+            document.getElementById('words').textContent = displayWords.join(', ');
             document.getElementById('targetWord').textContent = target;
+
             const mappingsDiv = document.getElementById('mappings');
             mappingsDiv.innerHTML = '';
-            selectedWords.forEach(word => {
+            // Eşleştirmeleri karıştırarak göster
+            shuffleArray(shuffledWordSet).forEach(word => {
                 const p = document.createElement('p');
-                p.textContent = wordToSymbols(word, letterToSymbol);
+                p.textContent = `${word}  →  ${wordToSymbols(word, letterToSymbol)}`;
                 mappingsDiv.appendChild(p);
             });
-            const correctOption = wordToSymbols(target, letterToSymbol);
-            const allSymbolOptions = validSet.map(w => wordToSymbols(w, letterToSymbol));
-            const options = shuffleArray(allSymbolOptions);
 
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
-            const correctIndex = options.findIndex(optionString => optionString === correctOption);
-            document.getElementById('correctIndex').textContent = correctIndex;
+            const correctOption = wordToSymbols(target, letterToSymbol);
+
+            // Seçenekler, soru setindeki tüm kelimelerin simge karşılıklarıdır
+            const allSymbolOptions = validSet.map(w => wordToSymbols(w, letterToSymbol));
+            const options = shuffleArray(allSymbolOptions); // Seçenekleri karıştır
 
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';

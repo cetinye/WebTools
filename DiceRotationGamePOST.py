@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 5
 SAVE_DIR = "C:/Users/cetin/Desktop/DiceRotationGameQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/DiceRotationGame.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse ekle
 
 # === SETUP ===

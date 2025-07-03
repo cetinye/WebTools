@@ -7,9 +7,16 @@
     <title>Shape Perspective</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             text-align: center;
-            background-color: #f0f0f0;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #1c1e21;
         }
 
         .stack {
@@ -24,25 +31,44 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
+            gap: 15px;
         }
 
         .option {
-            width: 100px;
-            height: 100px;
-            margin: 10px;
-            border: 2px solid transparent;
+            width: 120px;
+            height: 120px;
+            border: 3px solid #ddd;
             cursor: pointer;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .option:hover {
-            border: 2px solid blue;
+            border-color: #007bff;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
-        /* ✨ DEĞİŞTİRİLDİ: Soru SVG'sinin genişliği artık CSS ile kontrol ediliyor */
+        .option svg {
+            width: 100%;
+            height: 100%;
+        }
+
         #stack svg {
             width: 300px;
-            /* Soru görselinin genişliği artırıldı */
             height: auto;
+        }
+
+        #result {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 20px;
+            height: 30px;
         }
     </style>
 </head>
@@ -50,6 +76,7 @@
 <body>
     <span id="correctIndex" style="display:none;"></span>
 
+    <!-- ✨ DÜZELTİLDİ: Soru ve başlık artık normal akışında, kapsayıcı olmadan duruyor. -->
     <h2>Yukarıdan Bakış Açısını Seç</h2>
     <div class="stack" id="stack"></div>
 
@@ -63,9 +90,10 @@
     <h3 id="result"></h3>
 
     <script>
-        const prisms = ['cylinder', 'cube', 'pyramid'];
+        const prisms = ['cube', 'pyramid'];
         const colors = ['deepskyblue', 'darkorange', 'forestgreen', 'purple', 'gold', 'crimson'];
         const shapeCount = 4;
+        const sizeTiers = [40, 65, 90, 115];
         let stackData = [];
         let correctAnswer = 0;
 
@@ -84,28 +112,28 @@
 
         function createTopViewSVG(type, color, size = 40) {
             const svgNS = "http://www.w3.org/2000/svg";
-            const shape = document.createElementNS(svgNS, 'rect');
+            const group = document.createElementNS(svgNS, 'g');
             const offset = (100 - size) / 2;
-            shape.setAttribute('x', offset);
-            shape.setAttribute('y', offset);
-            shape.setAttribute('width', size);
-            shape.setAttribute('height', size);
-            shape.setAttribute('fill', color);
-            return shape;
+            let shape;
+
+            if (type === 'cube' || type === 'pyramid') {
+                shape = document.createElementNS(svgNS, 'rect');
+                shape.setAttribute('x', offset);
+                shape.setAttribute('y', offset);
+                shape.setAttribute('width', size);
+                shape.setAttribute('height', size);
+                shape.setAttribute('fill', color);
+                group.appendChild(shape);
+            }
+            return group;
         }
 
-        // ✨ DEĞİŞTİRİLDİ: Fonksiyon artık çizim yapılacak canvas genişliğini parametre olarak alıyor
         function createSideViewSVG(type, color, size = 40, yOffset = 0, canvasWidth) {
             const svgNS = "http://www.w3.org/2000/svg";
             let shape;
-            const centerX = canvasWidth / 2; // Merkezi dinamik olarak hesapla
+            const centerX = canvasWidth / 2;
 
-            if (type === 'cylinder') {
-                shape = document.createElementNS(svgNS, 'circle');
-                shape.setAttribute('cx', centerX);
-                shape.setAttribute('cy', yOffset + size / 2);
-                shape.setAttribute('r', size / 2);
-            } else if (type === 'cube') {
+            if (type === 'cube') {
                 shape = document.createElementNS(svgNS, 'rect');
                 const xOffset = (canvasWidth - size) / 2;
                 shape.setAttribute('x', xOffset);
@@ -123,75 +151,114 @@
 
         function generateStackData() {
             stackData = [];
-            let usedCombos = new Set();
-            while (stackData.length < shapeCount) {
-                let type = getRandom(prisms);
-                let color = getRandom(colors);
-                // ✨ DEĞİŞTİRİLDİ: Şekillerin boyut aralığı daha büyük olacak şekilde artırıldı
-                let size = 60 + Math.floor(Math.random() * 60);
-                let key = type + '_' + color;
-                if (!usedCombos.has(key)) {
-                    usedCombos.add(key);
-                    stackData.push({ type, color, size });
-                }
+            let usedColors = new Set();
+            const sortedSizes = [...sizeTiers].sort((a, b) => a - b);
+
+            for (let i = 0; i < shapeCount; i++) {
+                let color;
+                do {
+                    color = getRandom(colors);
+                } while (usedColors.has(color));
+                usedColors.add(color);
+
+                stackData.push({
+                    type: getRandom(prisms),
+                    color: color,
+                    size: sortedSizes[i]
+                });
             }
         }
 
         function renderStack() {
             const stack = document.getElementById('stack');
             stack.innerHTML = '';
-
-            // ✨ DEĞİŞTİRİLDİ: Soru görseli için yeni ve daha büyük bir genişlik tanımlandı
             const canvasWidth = 300;
-
             const totalHeight = stackData.reduce((acc, item) => acc + item.size, 0);
             const stackSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-            // ✨ DEĞİŞTİRİLDİ: viewBox ve height/width yeni genişliğe göre ayarlandı
             stackSVG.setAttribute("viewBox", `0 0 ${canvasWidth} ${totalHeight}`);
-            stackSVG.setAttribute("height", totalHeight);
-            // Genişlik artık CSS ile kontrol ediliyor, bu satır kaldırıldı veya yoruma alındı:
-            // stackSVG.setAttribute("width", canvasWidth);
 
             let yOffset = 0;
-            for (let i = stackData.length - 1; i >= 0; i--) {
-                // ✨ DEĞİŞTİRİLDİ: Çizim fonksiyonuna yeni genişlik parametresi eklendi
-                const shape = createSideViewSVG(stackData[i].type, stackData[i].color, stackData[i].size, yOffset, canvasWidth);
-                stackSVG.appendChild(shape);
-                yOffset += stackData[i].size;
+            for (let i = 0; i < stackData.length; i++) {
+                const shape = stackData[i];
+                const shapeElement = createSideViewSVG(shape.type, shape.color, shape.size, yOffset, canvasWidth);
+                stackSVG.appendChild(shapeElement);
+                yOffset += shape.size;
             }
-
             stack.appendChild(stackSVG);
         }
 
         function renderOptions() {
-            correctAnswer = Math.floor(Math.random() * 4);
+            const finalOptions = [];
+            const correctOption = JSON.parse(JSON.stringify(stackData));
+            finalOptions.push(correctOption);
+
+            const wrongColorsOption = JSON.parse(JSON.stringify(stackData));
+            const originalColors = new Set(stackData.map(s => s.color));
+            let availableWrongColors = colors.filter(c => !originalColors.has(c));
+            if (availableWrongColors.length < shapeCount) {
+                availableWrongColors = [...colors];
+            }
+            shuffle(availableWrongColors);
+            for (let i = 0; i < wrongColorsOption.length; i++) {
+                wrongColorsOption[i].color = availableWrongColors[i % availableWrongColors.length];
+            }
+            finalOptions.push(wrongColorsOption);
+
+            const wrongOrderOption = shuffle(JSON.parse(JSON.stringify(stackData)));
+            finalOptions.push(wrongOrderOption);
+
+            const missingShapeOption = JSON.parse(JSON.stringify(stackData));
+            missingShapeOption.splice(1, 1);
+            finalOptions.push(missingShapeOption);
+
+            const finalShuffledOptions = shuffle(finalOptions);
+            correctAnswer = finalShuffledOptions.findIndex(option => {
+                return JSON.stringify(option) === JSON.stringify(correctOption);
+            });
             document.getElementById('correctIndex').textContent = correctAnswer;
 
             for (let i = 0; i < 4; i++) {
                 const optionSVG = document.getElementById('option' + i);
                 optionSVG.innerHTML = '';
-                let data = i === correctAnswer ? stackData : shuffle(stackData).map(d => ({ ...d, color: getRandom(colors) }));
-                // ✨ DEĞİŞTİRİLDİ: Seçeneklerdeki şekiller de daha büyük görünecek şekilde ayarlandı
-                for (let j = 0; j < data.length; j++) {
-                    const shape = createTopViewSVG(data[j].type, data[j].color, data[j].size * 0.8); // 0.8 ile ölçeklendi
+                const data = finalShuffledOptions[i];
+
+                for (let j = data.length - 1; j >= 0; j--) {
+                    const shape = createTopViewSVG(data[j].type, data[j].color, data[j].size * 0.8);
                     optionSVG.appendChild(shape);
                 }
             }
         }
 
-        function checkAnswer(selected) {
+        function checkAnswer(selectedIndex) {
             const result = document.getElementById('result');
-            if (selected === correctAnswer) {
-                result.textContent = 'Doğru cevap!';
+            const options = document.querySelectorAll('.option');
+
+            options.forEach(opt => {
+                opt.style.borderColor = '#ddd';
+                opt.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            });
+
+            if (selectedIndex === correctAnswer) {
+                result.textContent = 'Doğru! Harika!';
                 result.style.color = 'green';
+                options[selectedIndex].style.borderColor = 'green';
+                options[selectedIndex].style.boxShadow = '0 0 15px rgba(0, 255, 0, 0.5)';
+                setTimeout(init, 1500);
             } else {
                 result.textContent = 'Yanlış cevap. Tekrar dene!';
                 result.style.color = 'red';
+                options[selectedIndex].style.borderColor = 'red';
+                options[correctAnswer].style.borderColor = 'lightgreen';
             }
         }
 
         function init() {
+            document.getElementById('result').textContent = '';
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.style.borderColor = '#ddd';
+                opt.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            });
+
             generateStackData();
             renderStack();
             renderOptions();
