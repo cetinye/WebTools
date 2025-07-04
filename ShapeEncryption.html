@@ -8,14 +8,55 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background: #f2f2f2;
+      background: #ffffff;
     }
+
+    /* Main container for the entire game board (rules + question) */
+    #game-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      /* 4 columns */
+      gap: 15px;
+      /* space between cells */
+      padding: 15px;
+      border: 2px solid #ffffff;
+      border-radius: 10px;
+      background: #fff;
+      margin: 20px auto;
+      max-width: 800px;
+    }
+
+    /* Styling for each cell containing a rule */
+    .rule-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 5px;
+      background: #ffffff;
+      border: 1px solid #ffffff;
+      border-radius: 8px;
+    }
+
+    /* Styling for the question area that spans the full width */
+    .question-area {
+      grid-column: 1 / -1;
+      /* Span all 4 columns */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding-top: 15px;
+      margin-top: 10px;
+      border-top: 2px dashed #ffffff;
+    }
+
 
     .shape {
       display: inline-block;
       width: 40px;
       height: 40px;
-      margin: 5px;
+      margin: 2px;
       vertical-align: middle;
     }
 
@@ -49,14 +90,6 @@
       border-bottom-color: gold;
     }
 
-    .row {
-      margin: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-    }
-
     .option {
       display: inline-block;
       padding: 10px;
@@ -80,9 +113,7 @@
 
 <body>
   <h1>🧠 Şekil Mantık Oyunu</h1>
-  <div id="rules"></div>
-  <h2>Soru:</h2>
-  <div class="row" id="question"></div>
+  <div id="game-grid"></div>
   <div id="options"></div>
   <div id="feedback"></div>
 
@@ -139,37 +170,48 @@
         steps.push([current, shapeKeys[i], next]);
         current = next;
       }
-      return { result: current, steps };
+      return {
+        result: current,
+        steps
+      };
     }
 
     function shapeFromKey(key) {
       return allShapeObjects.find(s => s.key === key);
     }
 
-    function renderRule(aKey, bKey, resultKey, container) {
-      const row = document.createElement('div');
-      row.className = 'row';
-      renderShape(row, shapeFromKey(aKey));
-      renderShape(row, shapeFromKey(bKey));
-      const eq = document.createElement('div');
-      eq.textContent = '=';
-      eq.style.fontWeight = 'bold';
-      row.appendChild(eq);
-      renderShape(row, shapeFromKey(resultKey));
-      container.appendChild(row);
-    }
-
-    function displayRules(steps) {
-      const container = document.getElementById('rules');
-      container.innerHTML = '';
+    /**
+     * Renders the entire game board, including the 8 rules and the question row.
+     */
+    function renderGameBoard(steps, questionKeys) {
+      const container = document.getElementById('game-grid');
+      container.innerHTML = ''; // Clear previous game
       const shown = new Set();
 
+      const renderRuleCell = (aKey, bKey, resultKey) => {
+        const cell = document.createElement('div');
+        cell.className = 'rule-cell';
+        renderShape(cell, shapeFromKey(aKey));
+        renderShape(cell, shapeFromKey(bKey));
+
+        // Add the '=' sign back into the rule cell
+        const eq = document.createElement('div');
+        eq.textContent = '=';
+        eq.style.fontWeight = 'bold';
+        cell.appendChild(eq);
+
+        renderShape(cell, shapeFromKey(resultKey));
+        container.appendChild(cell);
+      };
+
+      // 1. Render rules derived from the question's solution steps
       steps.forEach(([a, b, result]) => {
         const key = [a, b].sort().join('+');
         shown.add(key);
-        renderRule(a, b, result, container);
+        renderRuleCell(a, b, result);
       });
 
+      // 2. Fill the rest of the 8 slots with random rules
       while (shown.size < 8) {
         let a = randomShape().key;
         let b = randomShape().key;
@@ -177,22 +219,25 @@
         const key = [a, b].sort().join('+');
         if (shown.has(key)) continue;
         const res = defineCombine(a, b);
-        renderRule(a, b, res, container);
+        renderRuleCell(a, b, res);
         shown.add(key);
       }
+
+      // 3. Render the question area at the bottom of the grid
+      const questionArea = document.createElement('div');
+      questionArea.className = 'question-area';
+      questionKeys.forEach(key => renderShape(questionArea, shapeFromKey(key)));
+
+      // Add the ' = ?' back to the question area
+      const eqMark = document.createElement('div');
+      eqMark.textContent = ' = ?';
+      eqMark.style.fontWeight = 'bold';
+      eqMark.style.fontSize = '24px';
+      questionArea.appendChild(eqMark);
+
+      container.appendChild(questionArea);
     }
 
-    function renderQuestion(keys) {
-      const container = document.getElementById('question');
-      container.innerHTML = '';
-      keys.forEach(key => renderShape(container, shapeFromKey(key)));
-      const eq = document.createElement('span');
-      eq.textContent = ' = ?';
-      eq.style.fontWeight = 'bold';
-      eq.style.fontSize = '20px';
-      eq.style.marginLeft = '10px';
-      container.appendChild(eq);
-    }
 
     function renderOptions(correctKey) {
       const container = document.getElementById('options');
@@ -213,6 +258,17 @@
       }
 
       const finalOptions = [correctShape, ...wrongChoices].sort(() => Math.random() - 0.5);
+
+      // Python'un doğru cevabı bulabilmesi için doğru şıkkın indeksini gizli bir elemente yaz.
+      const correctIndex = finalOptions.findIndex(shape => shape.key === correctKey);
+      let indexHolder = document.getElementById('correct-answer-index');
+      if (!indexHolder) {
+        indexHolder = document.createElement('div');
+        indexHolder.id = 'correct-answer-index';
+        indexHolder.style.display = 'none'; // Kullanıcıya gösterme
+        document.body.appendChild(indexHolder);
+      }
+      indexHolder.textContent = correctIndex;
 
       finalOptions.forEach(shape => {
         const div = document.createElement('div');
@@ -251,11 +307,14 @@
         if (!questionKeys.includes(candidate)) questionKeys.push(candidate);
       }
 
-      const { result, steps } = reduceWithTracking(questionKeys);
+      const {
+        result,
+        steps
+      } = reduceWithTracking(questionKeys);
 
-      renderQuestion(questionKeys);
+      // A single function now renders the entire board
+      renderGameBoard(steps, questionKeys);
       renderOptions(result);
-      displayRules(steps);
     }
 
     init();
