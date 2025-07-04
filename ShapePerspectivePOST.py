@@ -105,9 +105,9 @@ try:
             data = {"category_id": "25", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
-                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                # print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-                print(f"✅ Soru {i} API'ye gönderilmeye hazır. Doğru şık: {choice_labels[correct_index]}")
+                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
+                # print(f"✅ Soru {i} API'ye gönderilmeye hazır. Doğru şık: {choice_labels[correct_index]}")
             except requests.exceptions.RequestException as e:
                 print(f"❌ Hata: Soru {i} gönderilirken API hatası oluştu: {e}")
 

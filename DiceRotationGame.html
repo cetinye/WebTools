@@ -369,6 +369,8 @@
                 const options = [correctAnswer, ...otherItems.slice(0, 3)];
                 shuffleArray(options);
 
+                window.correctIndex = options.indexOf(correctAnswer);
+
                 options.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'option-btn';
