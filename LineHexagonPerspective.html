@@ -9,14 +9,19 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background: #f4f4f4;
+            background: #ffffff;
         }
 
         canvas {
             background: white;
-            border: 1px solid #ccc;
+            /* Genel kenarlık buradan kaldırıldı, çünkü sadece seçeneklerde olacak */
             margin: 20px auto;
             display: block;
+        }
+
+        /* ⭐ DEĞİŞİKLİK: Soru canvas'ının kenarlığı kaldırıldı. ⭐ */
+        #prismCanvas {
+            border: none;
         }
 
         .options {
@@ -27,9 +32,11 @@
         }
 
         .option {
-            border: 2px solid transparent;
+            border: none;
+            /* Seçeneklerde hafif bir kenarlık olması için güncellendi */
             padding: 5px;
             cursor: pointer;
+            /* Hafif yuvarlak köşe */
         }
 
         .option:hover {
@@ -47,7 +54,9 @@
     <span id="correctIndex" style="display:none;"></span>
 
     <h2>Line Hexagon Perspective Game</h2>
-    <canvas id="prismCanvas" width="400" height="400"></canvas>
+
+    <canvas id="prismCanvas" width="500" height="500"></canvas>
+
     <div class="options">
         <canvas class="option" width="100" height="100" id="opt1"></canvas>
         <canvas class="option" width="100" height="100" id="opt2"></canvas>
@@ -63,7 +72,7 @@
 
         function drawHexPrism(ctx, centerX, centerY, size, height, edgeColors) {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5; // Çizgi kalınlığı biraz artırıldı
             const angle = Math.PI / 3;
             let top = [],
                 bottom = [];
@@ -136,7 +145,9 @@
         function setupGame() {
             document.getElementById('feedback').textContent = '';
             const correct = generateUniqueCombination();
-            drawHexPrism(prismCtx, 200, 100, 60, 80, correct);
+
+            // ⭐ DEĞİŞİKLİK: Büyüyen canvas'a göre çizim parametreleri güncellendi. ⭐
+            drawHexPrism(prismCtx, 250, 150, 90, 120, correct);
 
             let options = [correct];
             while (options.length < 4) {
@@ -146,7 +157,6 @@
 
             options = options.sort(() => Math.random() - 0.5);
 
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
             const correctString = correct.join(',');
             const correctIndex = options.findIndex(opt => opt.join(',') === correctString);
             document.getElementById('correctIndex').textContent = correctIndex;

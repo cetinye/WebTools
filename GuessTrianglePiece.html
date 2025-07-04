@@ -6,7 +6,7 @@
     <title>Guess Triangle Piece</title>
     <style>
         body {
-            background: #eef2f6;
+            background: #ffffff;
             font-family: sans-serif;
             display: flex;
             flex-direction: column;
@@ -18,20 +18,24 @@
             width: 400px;
             height: 400px;
             background: white;
-            border: 2px solid #ccc;
+            border: 2px solid #ffffff;
         }
 
         .options {
             margin-top: 30px;
             display: flex;
             gap: 20px;
+            align-items: center;
+            /* Dikeyde hizalama için eklendi */
         }
 
         .option {
             cursor: pointer;
-            border: 2px solid #ccc;
-            border-radius: 5px;
             transition: all 0.3s ease;
+            border: 2px solid #f0f0f0;
+            /* Hafif bir sınır */
+            border-radius: 8px;
+            /* Köşeleri yuvarlatma */
         }
 
         .option:hover {
@@ -158,27 +162,21 @@
         }
 
         options.sort(() => 0.5 - Math.random());
-
-        // options dizisi random hale getirildikten hemen sonra
         const correctIndex = options.findIndex(opt => arraysEqual(opt, correct));
-
-        const correctIndexDiv = document.createElement("div");
-        correctIndexDiv.id = "correctIndex";
-        correctIndexDiv.style.display = "none";
-        correctIndexDiv.textContent = correctIndex;
-        document.body.appendChild(correctIndexDiv);
 
         // Seçenekler
         options.forEach(opt => {
             const mini = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             mini.setAttribute("viewBox", "0 0 200 200");
-            mini.setAttribute("width", "100");
-            mini.setAttribute("height", "100");
+
+            // ⭐ DEĞİŞİKLİK: Seçeneklerin boyutunu burada büyüttük ⭐
+            mini.setAttribute("width", "250");
+            mini.setAttribute("height", "250");
+
             mini.classList.add("option");
 
             opt.forEach(index => {
                 const shape = pieces[index];
-
                 let color = "#e0e0e0";
                 if (GROUPS.pink.includes(index)) color = COLORS.pink;
                 else if (GROUPS.green.includes(index)) color = COLORS.green;
@@ -195,10 +193,8 @@
             mini.onclick = () => {
                 if (arraysEqual(opt, correct)) {
                     mini.classList.add("correct");
-                    alert("✔️ Doğru!");
                 } else {
                     mini.classList.add("wrong");
-                    alert("❌ Yanlış seçim.");
                 }
             };
 
@@ -208,9 +204,9 @@
         function arraysEqual(a, b) {
             return a.length === b.length && a.every((v, i) => v === b[i]);
         }
+
         document.body.insertAdjacentHTML("beforeend", `<div id="correctIndex" style="display: none;">${correctIndex}</div>`);
     </script>
-    <div id="correctIndex" style="display: none;">2</div>
 </body>
 
 </html>

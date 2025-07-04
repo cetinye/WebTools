@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/CubeGapPerspectiveQuestions" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/CubeGapPerspectiveGame.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -45,7 +45,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem = driver.find_element(By.ID, "canvas")
     question_elem.screenshot(question_path)
     # Canvas boyutlarına uygun yeniden boyutlandırma.
-    resize_image(question_path, (600, 400))
+    resize_image(question_path, (800, 600))
 
     # --- Şıklar ---
     # Şıklar "option" class'ına sahip, bu önceki kodlarla uyumlu.
@@ -55,7 +55,7 @@ for i in range(1, NUM_QUESTIONS + 1):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
         # Şıkların küçük grid yapısına uygun boyutlandırma.
-        resize_image(choice_path, (150, 150))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===

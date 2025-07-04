@@ -2,8 +2,8 @@
 <html lang="tr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shape Perspective</title>
     <style>
         body {
@@ -59,8 +59,10 @@
             height: 100%;
         }
 
+        /* ⭐ DEĞİŞİKLİK: Soru SVG'sinin genişliği artırıldı */
         #stack svg {
-            width: 300px;
+            width: 350px;
+            /* 300px'den 350px'e */
             height: auto;
         }
 
@@ -76,7 +78,6 @@
 <body>
     <span id="correctIndex" style="display:none;"></span>
 
-    <!-- ✨ DÜZELTİLDİ: Soru ve başlık artık normal akışında, kapsayıcı olmadan duruyor. -->
     <h2>Yukarıdan Bakış Açısını Seç</h2>
     <div class="stack" id="stack"></div>
 
@@ -93,7 +94,10 @@
         const prisms = ['cube', 'pyramid'];
         const colors = ['deepskyblue', 'darkorange', 'forestgreen', 'purple', 'gold', 'crimson'];
         const shapeCount = 4;
-        const sizeTiers = [40, 65, 90, 115];
+
+        /* ⭐ DEĞİŞİKLİK: Şekil boyutları orantılı olarak artırıldı */
+        const sizeTiers = [47, 76, 105, 134]; /* [40, 65, 90, 115]'den büyütüldü */
+
         let stackData = [];
         let correctAnswer = 0;
 
@@ -172,7 +176,10 @@
         function renderStack() {
             const stack = document.getElementById('stack');
             stack.innerHTML = '';
-            const canvasWidth = 300;
+
+            /* ⭐ DEĞİŞİKLİK: Canvas genişliği CSS ile uyumlu hale getirildi */
+            const canvasWidth = 350; /* 300'den 350'ye çıkarıldı */
+
             const totalHeight = stackData.reduce((acc, item) => acc + item.size, 0);
             const stackSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             stackSVG.setAttribute("viewBox", `0 0 ${canvasWidth} ${totalHeight}`);

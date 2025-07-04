@@ -17,19 +17,26 @@
             margin: 10px 0;
         }
 
+        /* ⭐ DEĞİŞİKLİK: Kutu boyutları büyütüldü. ⭐ */
         .box {
             border: 2px solid #000;
             margin: 3px;
-            width: 40px;
-            height: 40px;
-            line-height: 40px;
-            font-size: 24px;
+            width: 60px;
+            /* 40px'den 60px'e */
+            height: 60px;
+            /* 40px'den 60px'e */
+            line-height: 60px;
+            /* 40px'den 60px'e */
+            font-size: 36px;
+            /* 24px'den 36px'e */
             background-color: white;
         }
 
+        /* ⭐ DEĞİŞİKLİK: Okun boyutu kutularla orantılı hale getirildi. ⭐ */
         .arrow {
-            font-size: 30px;
-            margin: 10px;
+            font-size: 40px;
+            /* 30px'den 40px'e */
+            margin: 15px;
         }
 
         .option {
@@ -82,7 +89,6 @@
 
             const shuffledOptions = shuffle(allOptions);
 
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
             const correctIndex = shuffledOptions.findIndex(optionArr => JSON.stringify(optionArr) === JSON.stringify(correctColors));
             document.getElementById('correctIndex').textContent = correctIndex;
 

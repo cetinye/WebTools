@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/ColoredCubeQuestions" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/ColoredCubePerspective.html" # ❗ KENDİ HTML DOSYA YOLUNUZU YAZIN
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation" # API aktif değilse bu satır yorumda kalabilir.
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -40,64 +40,68 @@ for i in range(1, NUM_QUESTIONS + 1):
     time.sleep(0.5)
 
     # --- Soru görüntüsü ---
-    # HTML'e eklediğimiz id="question-area-main" div'ini buluyoruz.
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
     question_elem = driver.find_element(By.ID, "question-area-main")
     question_elem.screenshot(question_path)
-    # Bu oyunun yapısına uygun yeni boyutlar.
-    resize_image(question_path, (800, 450))
+    resize_image(question_path, (800, 60))
 
     # --- Şıklar ---
-    # Bu oyunda şıklar "option-box" class'ına sahip.
     options_elements = driver.find_elements(By.CLASS_NAME, "option-box")
     option_paths = []
     for idx, opt in enumerate(options_elements[:4]):
+        
+        # --- YENİ: ŞIKKI EKRANIN ORTASINA KAYDIRMA ---
+        # Bu satır, "opt" elementini ekranın merkezine getirir.
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", opt)
+        time.sleep(0.3) # Kaydırmanın bitip ekranın oturması için kısa bir bekleme süresi.
+
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
-        # Şıkların kare yapısına uygun yeni boyutlar.
-        resize_image(choice_path, (250, 250))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===
-    # Bu kısım, HTML'e eklediğimiz yapı sayesinde sorunsuz çalışır.
     correct_index = int(driver.execute_script("return document.getElementById('correctIndex').textContent;"))
     correct_path = option_paths[correct_index]
     wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
 
     # --- API'ye gönder ---
-    with open(question_path, 'rb') as q_img, \
-         open(correct_path, 'rb') as correct, \
-         open(wrong_paths[0], 'rb') as wrong1, \
-         open(wrong_paths[1], 'rb') as wrong2, \
-         open(wrong_paths[2], 'rb') as wrong3:
+    # Not: API_URL yorum satırı olduğu için bu blok çalışmayacaktır.
+    # Çalıştırmak için API_URL'nin başındaki # işaretini kaldırın.
+    try:
+        with open(question_path, 'rb') as q_img, \
+             open(correct_path, 'rb') as correct, \
+             open(wrong_paths[0], 'rb') as wrong1, \
+             open(wrong_paths[1], 'rb') as wrong2, \
+             open(wrong_paths[2], 'rb') as wrong3:
 
-        files = {
-            "question_image": q_img,
-            "correct_answer": correct,
-            "wrong_answer_1": wrong1,
-            "wrong_answer_2": wrong2,
-            "wrong_answer_3": wrong3
-        }
+            files = {
+                "question_image": q_img,
+                "correct_answer": correct,
+                "wrong_answer_1": wrong1,
+                "wrong_answer_2": wrong2,
+                "wrong_answer_3": wrong3
+            }
 
-        data = {
-            "category_id": "34", # Bu değeri API'nize göre ayarlayın
-            "grade": "[1,2,3,4,9]",
-            "knowledge": "0",
-            "level": "1"
-        }
-
-        try:
+            data = {
+                "category_id": "34", 
+                "grade": "[1,2,3,4,9]",
+                "knowledge": "0",
+                "level": "1"
+            }
+            
             response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
             print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-            # print("Sunucu Cevabı:", response.text) # Hata ayıklama için gerekirse açın
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Soru {i} gönderilirken hata oluştu: {e}")
+            # print(f"✅ Soru {i} dosyaları oluşturuldu. Doğru şık: {choice_labels[correct_index]}")
 
-    # Yeni soru için sayfayı yenile (bu oyunda startGame fonksiyonu tekrar çağırıldığı için
-    # refresh yerine bir butona tıklamak veya JS fonksiyonu çağırmak gerekebilir.
-    # Şimdilik refresh() yeterli olacaktır, çünkü sayfa her yenilendiğinde yeni oyun başlar.)
+    except NameError:
+         print(f"⚠️ Soru {i} için API_URL tanımlı değil, API'ye gönderilmedi. Dosyalar kaydedildi.")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Soru {i} gönderilirken hata oluştu: {e}")
+
+    # Yeni soru için sayfayı yenile
     driver.refresh()
     time.sleep(1) # Yenileme sonrası oyunun yüklenmesini bekle
 
 driver.quit()
-print("🎉 Tüm sorular sunucuya gönderildi.")
+print("🎉 Tüm işlemler tamamlandı.")

@@ -12,36 +12,32 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .box {
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
+        /* Kenarlık ve gölge oluşturan .box kuralı kaldırıldı */
     </style>
 </head>
 
-<body class="bg-slate-100 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-white text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
     <span id="correctIndex" style="display:none;"></span>
 
-    <div class="w-full max-w-2xl text-center">
+    <div class="w-full max-w-3xl text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Çizgileri Şekillerle Eşleştir!</h1>
         <p class="text-slate-600 mb-6">Örnekteki ilişkiyi anla ve soruyu doğru cevapla.</p>
 
-        <div id="question-area" class="bg-white/80 p-6 rounded-xl shadow-lg mb-8">
+        <div id="question-area" class="bg-white p-6 rounded-xl mb-8">
             <div class="flex justify-center items-center space-x-4 md:space-x-8 mb-6">
-                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+                <div class="w-36 h-36 md:w-48 md:h-48 bg-white rounded-lg flex justify-center items-center"
                     id="example-lines"></div>
                 <div class="text-4xl md:text-5xl font-light text-slate-500">➡️</div>
-                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+                <div class="w-36 h-36 md:w-48 md:h-48 bg-white rounded-lg flex justify-center items-center"
                     id="example-shape"></div>
             </div>
 
-            <hr class="border-slate-200 my-6">
-
-            <div class="flex justify-center items-center space-x-4 md:space-x-8">
-                <div class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center"
+            <div class="flex justify-center items-center space-x-4 md:space-x-8 mt-6">
+                <div class="w-36 h-36 md:w-48 md:h-48 bg-white rounded-lg flex justify-center items-center"
                     id="question-lines"></div>
                 <div class="text-4xl md:text-5xl font-light text-slate-500">➡️</div>
                 <div
-                    class="box w-32 h-32 md:w-40 md:h-40 bg-white rounded-lg flex justify-center items-center text-6xl font-bold text-slate-400">
+                    class="w-36 h-36 md:w-48 md:h-48 bg-white rounded-lg flex justify-center items-center text-6xl font-bold text-slate-400">
                     ❓</div>
             </div>
         </div>
@@ -49,7 +45,7 @@
         <div id="options" class="flex flex-wrap justify-center gap-4 mb-4"></div>
         <div id="result" class="text-xl font-bold min-h-[28px] mb-6"></div>
         <button id="newGameBtn" onclick="generateQuestion()"
-            class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+            class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
             Yeni Soru
         </button>
     </div>
@@ -57,8 +53,9 @@
     <script>
         function drawLines(element, count) {
             const canvas = document.createElement("canvas");
-            canvas.width = 120;
-            canvas.height = 120;
+            // ⭐ DEĞİŞİKLİK: Büyüyen kutuya göre canvas boyutu artırıldı
+            canvas.width = 160;
+            canvas.height = 160;
             const ctx = canvas.getContext("2d");
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
@@ -67,14 +64,15 @@
             ctx.rotate(angle);
             ctx.translate(-canvas.width / 2, -canvas.height / 2);
             const spacing = canvas.width / (count + 1.5);
-            const lineLength = 70;
+            // ⭐ DEĞİŞİKLİK: Çizgi boyu artırıldı
+            const lineLength = 100;
             const startY = (canvas.height - lineLength) / 2;
             for (let i = 0; i < count; i++) {
                 ctx.beginPath();
                 const x = (i + 1) * spacing;
                 ctx.moveTo(x, startY);
                 ctx.lineTo(x, startY + lineLength);
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 4; // Çizgi kalınlığı biraz artırıldı
                 ctx.strokeStyle = "#333";
                 ctx.lineCap = "round";
                 ctx.stroke();
@@ -84,10 +82,11 @@
             element.appendChild(canvas);
         }
 
-        function drawPolygon(sides, size = 40) {
+        function drawPolygon(sides, size = 55) { // ⭐ DEĞİŞİKLİK: Varsayılan şekil boyutu artırıldı
             const canvas = document.createElement("canvas");
-            canvas.width = 120;
-            canvas.height = 120;
+            // ⭐ DEĞİŞİKLİK: Büyüyen kutuya göre canvas boyutu artırıldı
+            canvas.width = 160;
+            canvas.height = 160;
             const ctx = canvas.getContext("2d");
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
@@ -101,9 +100,10 @@
             }
             ctx.closePath();
             ctx.fillStyle = "#30cbd0";
-            ctx.strokeStyle = "#0b8a8e";
-            ctx.lineWidth = 3;
-            ctx.stroke();
+            // ⭐ DEĞİŞİKLİK: Kenarlık rengi ve çizimi kaldırıldı
+            // ctx.strokeStyle = "#0b8a8e";
+            ctx.lineWidth = 4; // Çizgi kalınlığı biraz artırıldı
+            // ctx.stroke(); 
             ctx.fill();
             return canvas;
         }
@@ -132,8 +132,6 @@
             }
 
             const shuffled = Array.from(answers).sort(() => Math.random() - 0.5);
-
-            // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
             const correctIndex = shuffled.findIndex(sideValue => sideValue === questionSides);
             document.getElementById('correctIndex').textContent = correctIndex;
 
@@ -149,7 +147,6 @@
                 div.appendChild(shape);
                 div.onclick = () => {
                     document.querySelectorAll('.shape-option').forEach(el => {
-                        el.style.borderColor = 'transparent';
                         el.style.transform = 'scale(1)';
                     });
                     if (sides === questionSides) {

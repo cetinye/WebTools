@@ -112,7 +112,7 @@ try:
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "pattern-sequence-container")
         question_elem.screenshot(question_path)
-        resize_image(question_path, (800, 100))
+        resize_image(question_path, (800, 600))
         print("📸 Question screenshot taken.")
 
         # --- Answer Choices ---
@@ -121,7 +121,7 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (100, 100))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 

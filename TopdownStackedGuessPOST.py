@@ -64,7 +64,7 @@ try:
         # Yeni oluşturulan ve hem gözü hem de 3D alanı kapsayan div'i hedefle
         question_elem = driver.find_element(By.ID, "question-area") 
         question_elem.screenshot(question_path)
-        resize_image(question_path, (600, 400)) # Boyutu ihtiyaca göre ayarlayabilirsiniz
+        resize_image(question_path, (800, 600)) # Boyutu ihtiyaca göre ayarlayabilirsiniz
         print("📸 Question screenshot taken (including eye icon).")
 
         # --- Answer Choices ---
@@ -73,7 +73,7 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (160, 160))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 

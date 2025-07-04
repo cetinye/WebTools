@@ -11,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/CountCubeGameQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/CountCubeGame.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # === SETUP ===
@@ -47,7 +47,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
     structure_elem = driver.find_element(By.ID, "cubeDisplay")
     structure_elem.screenshot(question_path)
-    resize_image(question_path, (1000, 300))
+    resize_image(question_path, (800, 600))
     print(f"Soru {i} resmi kaydedildi: {question_path}")
 
     # === JavaScript'in doğru şıkkın indeksini gizli div'e yazmasını bekle
@@ -63,7 +63,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     for idx, btn in enumerate(option_buttons):
         option_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         btn.screenshot(option_path)
-        resize_image(option_path, (271, 181))
+        resize_image(option_path, (256, 256))
         option_paths.append(option_path)
         print(f"Seçenek {choice_labels[idx]} resmi kaydedildi: {option_path}")
 

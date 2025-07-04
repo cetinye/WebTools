@@ -17,7 +17,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/SymbolWordGame.html"
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/SymbolWordGameQuestions"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # EKLENDİ: Soru görselinin etrafına eklenecek boşluk miktarı (piksel cinsinden)
@@ -109,7 +109,7 @@ try:
         trim_and_pad_image(question_path, padding=QUESTION_PADDING)
         
         # Temizlenmiş ve padding eklenmiş görüntüyü yeniden boyutlandır
-        resize_image(question_path, (700, 250))
+        resize_image(question_path, (800, 600))
 
 
         # --- Answer Choices (DEĞİŞİKLİK YOK) ---
@@ -118,7 +118,7 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (250, 80))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 

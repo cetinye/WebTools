@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/AnimalWordGameQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/AnimalWordGame.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # EKLENDİ: Soru görselinin etrafına eklenecek boşluk miktarı (piksel cinsinden)
@@ -88,7 +88,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     trim_and_pad_image(question_path, padding=QUESTION_PADDING)
 
     # Temizlenmiş ve padding eklenmiş görüntüyü yeniden boyutlandır
-    resize_image(question_path, (1190, 330))
+    resize_image(question_path, (800, 600))
     print("📸 Question screenshot taken and processed.")
 
     # --- Şıklar (DEĞİŞİKLİK YOK) ---
@@ -97,7 +97,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     for idx, opt in enumerate(options_elements[:4]):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
-        resize_image(choice_path, (271, 181))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
     print("📸 Options screenshots taken.")
     

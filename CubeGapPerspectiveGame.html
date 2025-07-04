@@ -8,14 +8,33 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      background: #f4f4f4;
+      background: #ffffff;
+    }
+
+    /* --- YENİ: Canvas ve SVG'yi sarmalayan kapsayıcı --- */
+    #canvas-wrapper {
+      position: relative;
+      width: 600px;
+      height: 400px;
+      margin: 20px auto;
     }
 
     canvas {
       background: #fff;
       display: block;
-      margin: 20px auto;
-      border: 1px solid #ccc;
+      /* margin kaldırıldı, wrapper'a taşındı */
+    }
+
+    /* --- YENİ: SVG gösterge stili --- */
+    .view-indicator-svg {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      /* SVG boyutu */
+      pointer-events: none;
+      /* Tıklamaları engellememesi için */
     }
 
     .options {
@@ -30,9 +49,8 @@
       grid-template-columns: repeat(4, 20px);
       gap: 2px;
       cursor: pointer;
-      border: 2px solid transparent;
       padding: 5px;
-      border-radius: 5px;
+      /* Kenarlık eklendi */
     }
 
     .option:hover {
@@ -42,8 +60,7 @@
     .cell {
       width: 20px;
       height: 20px;
-      background-color: #ccc;
-      border-radius: 2px;
+      background-color: #ffffff;
     }
 
     .filled {
@@ -62,9 +79,22 @@
 <body>
   <span id="correctIndex" style="display:none;"></span>
 
-  <h1>İzometrik Yapı Tahmini</h1>
-  <p>Yapının <strong>üstten</strong> görünüşü hangisidir?</p>
-  <canvas id="canvas" width="600" height="400"></canvas>
+  <div id="canvas-wrapper">
+    <canvas id="canvas" width="600" height="400"></canvas>
+    <div class="view-indicator-svg">
+      <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333"
+          stroke-width="5" />
+        <circle cx="50" cy="35" r="15" fill="#333" />
+        <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4"
+          stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4"
+          stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4"
+          stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+  </div>
   <div class="options" id="options"></div>
   <p id="result"></p>
   <script>
@@ -170,41 +200,10 @@
       }
     }
 
-    function drawTopViewIndicator() {
-      const eyeY = 40;
-      const arrowsY = eyeY + 20;
-      const arrowLength = 25;
-      ctx.save();
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(offsetX, eyeY, 22, 11, 0, 0, 2 * Math.PI);
-      ctx.fillStyle = 'white';
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(offsetX, eyeY, 7, 0, 2 * Math.PI);
-      ctx.fillStyle = '#333';
-      ctx.fill();
-      ctx.restore();
-      function drawArrow(x, y) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + arrowLength);
-        ctx.moveTo(x, y + arrowLength);
-        ctx.lineTo(x - 5, y + arrowLength - 8);
-        ctx.moveTo(x, y + arrowLength);
-        ctx.lineTo(x + 5, y + arrowLength - 8);
-        ctx.stroke();
-      }
-      ctx.save();
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 2;
-      drawArrow(offsetX - 15, arrowsY);
-      drawArrow(offsetX, arrowsY);
-      drawArrow(offsetX + 15, arrowsY);
-      ctx.restore();
-    }
+    // --- KALDIRILDI: Bu fonksiyon artık kullanılmıyor. ---
+    /*
+    function drawTopViewIndicator() { ... }
+    */
 
     function cloneMatrix(matrix) {
       return matrix.map(row => row.slice());
@@ -231,7 +230,6 @@
       }
       options.sort(() => Math.random() - 0.5);
 
-      // ✨ EKLENDİ: Karıştırılmış dizideki doğru cevabın yeni index'ini bulur ve HTML'e yazar.
       const correctIndex = options.findIndex(opt => opt.correct === true);
       document.getElementById('correctIndex').textContent = correctIndex;
 
@@ -267,7 +265,7 @@
 
     const structure = generateConnectedStructure();
     drawStructure(structure);
-    drawTopViewIndicator();
+    // --- KALDIRILDI: drawTopViewIndicator() çağrısı kaldırıldı. ---
     const topView = getTopView(structure);
     drawOptions(topView);
   </script>

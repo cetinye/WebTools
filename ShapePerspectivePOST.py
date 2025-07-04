@@ -8,7 +8,7 @@ import os
 import time
 
 # ==============================================================================
-# ===  YAPILANDIRMA (SADECE BU BÖLÜMÜ DEĞİŞTİR) ===
+# ===   YAPILANDIRMA (SADECE BU BÖLÜMÜ DEĞİŞTİR)                            ===
 # ==============================================================================
 
 # 1. HTML dosyanızın tam yolunu file:/// protokolü ile buraya yazın.
@@ -18,11 +18,11 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/ShapePerspective.html"
 # 2. Diğer ayarlar
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/ShapePerspectiveQuestions"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
-# === OTOMASYON KODU (DEĞİŞTİRMEYİN) ===
+# === OTOMASYON KODU (DEĞİŞTİRMEYİN)                                        ===
 # ==============================================================================
 
 options = webdriver.ChromeOptions()
@@ -33,6 +33,34 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 driver.get(LOCAL_FILE_URL)
 
 choice_labels = ['A', 'B', 'C', 'D']
+
+# ⭐ YENİ: Görüntüleri istenen boyuta getiren fonksiyon eklendi.
+def resize_image(path, target_size):
+    """
+    Bir görüntüyü, en boy oranını koruyarak ve şeffaf bir tuvale ortalayarak
+    hedef boyuta getirir. Görüntü esnetilmez.
+    """
+    try:
+        img = Image.open(path).convert("RGBA")
+        
+        # Orijinal görüntünün en boy oranını koruyarak küçült/büyüt
+        img.thumbnail(target_size, Image.Resampling.LANCZOS)
+        
+        # Hedef boyutta şeffaf bir arka plan oluştur
+        new_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
+        
+        # Görüntüyü ortaya yapıştırmak için pozisyonu hesapla
+        paste_x = (target_size[0] - img.width) // 2
+        paste_y = (target_size[1] - img.height) // 2
+        
+        # Boyutlandırılmış görüntüyü yeni şeffaf arka planın üzerine yapıştır
+        new_img.paste(img, (paste_x, paste_y))
+        
+        # Sonucu orijinal dosyanın üzerine kaydet
+        new_img.save(path)
+    except Exception as e:
+        print(f"❌ Görüntü yeniden boyutlandırılamadı {path}: {e}")
+
 
 try:
     for i in range(1, NUM_QUESTIONS + 1):
@@ -50,30 +78,29 @@ try:
         # --- Soru görüntüsü ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         
-        # ✨ DEĞİŞTİRİLDİ: Artık #stack elementini geçici olarak büyütüp ekran görüntüsü alıyoruz.
         try:
             print("🎨 Soru elementi daha net bir görüntü için geçici olarak büyütülüyor...")
             question_elem = driver.find_element(By.ID, "stack")
             
-            # Orijinal stilleri sakla
             original_style = driver.execute_script("return arguments[0].getAttribute('style');", question_elem)
             
-            # Yeni stiller uygula
+            # Geçici olarak elementi büyütüp ekran görüntüsü al
             driver.execute_script(
-                "arguments[0].style.width = '800px';" +
-                "arguments[0].style.height = '600px';" +
-                "arguments[0].style.backgroundColor = 'white';" +
-                "arguments[0].style.justifyContent = 'center';",
+                "arguments[0].style.width = '800px'; arguments[0].style.height = '600px';" +
+                "arguments[0].style.backgroundColor = 'white'; arguments[0].style.justifyContent = 'center';",
                 question_elem
             )
             time.sleep(0.2)
             
             question_elem.screenshot(question_path)
-            print("📸 Soru ekran görüntüsü alındı.")
             
             # Orijinal stilleri geri yükle
             driver.execute_script("arguments[0].setAttribute('style', arguments[1] || '');", question_elem, original_style)
             print("🎨 Soru elementinin stili normale döndürüldü.")
+            
+            # ⭐ DEĞİŞİKLİK: Soru görüntüsü 800x600 boyutuna getirildi.
+            resize_image(question_path, (800, 600))
+            print(f"📸 Soru ekran görüntüsü alınıp {question_path} olarak kaydedildi ve 800x600 boyutuna getirildi.")
 
         except Exception as e:
             print(f"❌ Hata: Soru görüntüsü alınırken bir sorun oluştu: {e}")
@@ -86,8 +113,11 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
+            
+            # ⭐ DEĞİŞİKLİK: Her bir şık görüntüsü 256x256 boyutuna getirildi.
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
-        print("📸 Şıkların ekran görüntüleri alındı.")
+        print("📸 Şıkların ekran görüntüleri alındı ve 256x256 boyutuna getirildi.")
 
         # --- Doğru Cevabı Oku ve API'ye Gönder ---
         correct_index = int(driver.execute_script("return document.getElementById('correctIndex').textContent;"))
@@ -105,9 +135,9 @@ try:
             data = {"category_id": "25", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
 
             try:
-                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-                # print(f"✅ Soru {i} API'ye gönderilmeye hazır. Doğru şık: {choice_labels[correct_index]}")
+                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                # print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
+                print(f"✅ Soru {i} API'ye gönderilmeye hazır. Doğru şık: {choice_labels[correct_index]}")
             except requests.exceptions.RequestException as e:
                 print(f"❌ Hata: Soru {i} gönderilirken API hatası oluştu: {e}")
 

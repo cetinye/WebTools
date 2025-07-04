@@ -38,15 +38,11 @@
         }
 
         .eye-icon {
-            font-size: 50px;
-            color: #333;
+            /* Göz ikonu SVG'si için stil ayarları burada kalabilir veya kaldırılabilir. */
+            /* SVG'nin kendi boyutları olduğu için spesifik font-size'a gerek kalmayabilir. */
             line-height: 1;
-        }
-
-        .arrows {
-            font-size: 30px;
-            color: #333;
-            line-height: 1;
+            margin-bottom: 10px;
+            /* Göz ile canvas arasına boşluk ekledik */
         }
 
         .view-area {
@@ -54,7 +50,6 @@
             height: 300px;
             background-color: #ffffff;
             border-radius: 8px;
-            /* margin-bottom: 30px; */
             overflow: hidden;
             position: relative;
         }
@@ -112,26 +107,13 @@
 
         #question-area {
             width: 100%;
-            /* Genişliğin tamamını kapla */
             display: flex;
-            /* İçerik boyutlandırması için flexbox kullan */
             flex-direction: column;
-            /* Çocukları dikey olarak sırala (header üstte, view-area altta) */
             align-items: center;
-            /* Çocukları yatayda ortala */
             margin-bottom: 30px;
-            /* Soru alanı ile seçenekler arasına boşluk koy */
             padding: 20px 0;
-            /* Üstüne ve altına biraz boşluk ekle (isteğe bağlı) */
             background-color: #ffffff;
-            /* Arka plan rengi ekleyerek sınırlarını belirginleştir (isteğe bağlı) */
             border-radius: 8px;
-            /* Kenarları yuvarlat (isteğe bağlı) */
-        }
-
-        .question-header {
-            text-align: center;
-            margin-bottom: 10px;
         }
 
         .next-button {
@@ -166,8 +148,19 @@
         <p>Aşağıdaki yapının üstten görünümü hangisidir?</p>
         <div id="question-area">
             <div class="question-header">
-                <div class="eye-icon">👁️</div>
-                <div class="arrows">↓↓↓</div>
+                <div class="eye-icon">
+                    <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg" width="60" height="55">
+                        <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333"
+                            stroke-width="5" />
+                        <circle cx="50" cy="35" r="15" fill="#333" />
+                        <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
             </div>
             <div class="view-area" id="viewArea"></div>
         </div>
@@ -274,7 +267,6 @@
             return blocks;
         }
 
-        // GÜNCELLENDİ: "Kaydırma" stratejisi kaldırıldı. Artık sadece silme ve renk değiştirme var.
         function createWrongBlockData(originalBlocks) {
             let blocks = JSON.parse(JSON.stringify(originalBlocks));
 
@@ -294,7 +286,6 @@
                 );
             });
 
-            // 50% ihtimalle silmeyi dene (eğer mümkünse)
             if (Math.random() < 0.5 && removableVisibleBlocks.length > 2) {
                 const blockToDelete = removableVisibleBlocks[Math.floor(Math.random() * removableVisibleBlocks.length)];
                 const indexToRemove = blocks.findIndex(b => b === blockToDelete);
@@ -304,7 +295,6 @@
                 }
             }
 
-            // Silme olmadıysa veya o yol seçilmediyse, rengini değiştir.
             const blockToChange = visibleBlocks[Math.floor(Math.random() * visibleBlocks.length)];
             const indexToChange = blocks.findIndex(b => b === blockToChange);
             if (indexToChange > -1) {

@@ -24,7 +24,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             text-align: center;
-            max-width: 600px;
+            max-width: 1000px;
             width: 90%;
         }
 
@@ -43,15 +43,18 @@
         #domino-grid {
             display: flex;
             flex-direction: column;
-            margin-bottom: 25px;
+            margin: 40px auto;
+            padding-bottom: 20px;
+            padding-top: 30px;
+            /* YENİ: Sorunun üstüne beyaz boşluk eklendi */
         }
 
         .domino-row {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 35px;
+            gap: 25px;
+            margin-bottom: 50px;
         }
 
         #domino-grid .domino-row:last-child {
@@ -59,8 +62,8 @@
         }
 
         .domino {
-            width: 100px;
-            height: 50px;
+            width: 150px;
+            height: 75px;
             border: 2px solid #ccc;
             border-radius: 8px;
             display: flex;
@@ -81,7 +84,7 @@
         }
 
         .domino .divider {
-            width: 2px;
+            width: 3px;
             height: 80%;
             background-color: #333;
             opacity: 0.5;
@@ -89,8 +92,8 @@
         }
 
         .pip {
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             background-color: white;
             border-radius: 50%;
             align-self: center;
@@ -183,13 +186,13 @@
 
         .question-mark {
             color: white;
-            font-size: 32px;
+            font-size: 48px;
             font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100px;
-            height: 50px;
+            width: 150px;
+            height: 75px;
             border-radius: 8px;
             box-sizing: border-box;
         }
@@ -200,7 +203,7 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
-            min-height: 70px;
+            min-height: 110px;
             padding: 10px 0;
         }
 
@@ -405,8 +408,6 @@
                 }
 
                 const shuffledOptions = shuffleArray(answerOptions);
-
-                // ✨ EKLENDİ: Doğru cevabın karıştırılmış dizideki yerini bulur ve HTML'e yazar.
                 const correctIndex = shuffledOptions.findIndex(opt => opt.isCorrect);
                 document.getElementById('correctIndex').textContent = correctIndex;
 

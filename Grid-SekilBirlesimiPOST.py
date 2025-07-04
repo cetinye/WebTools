@@ -8,21 +8,21 @@ import os
 import time
 
 # ==============================================================================
-# ===  CONFIGURATION (EDIT ONLY THIS SECTION) ===
+# ===   CONFIGURATION (EDIT ONLY THIS SECTION)                               ===
 # ==============================================================================
 
-# 1. Enter the full path to your HTML file, using the file:/// protocol.
-# IMPORTANT: Use forward slashes (/) for the path.
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-SekilBirlesimi.html" # EXAMPLE: "file:///C:/Games/Matrix/game.html"
+# 1. HTML dosyanızın tam yolunu file:/// protokolü ile girin.
+# ÖNEMLİ: Yol için ters eğik çizgi (\) yerine düz eğik çizgi (/) kullanın.
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-SekilBirlesimi.html" # ÖRNEK: "file:///C:/Games/Matrix/game.html"
 
-# 2. Other settings
+# 2. Diğer ayarlar
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/Grid-SekilBirlesimi"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
-# === AUTOMATION CODE (DO NOT CHANGE) ===
+# === AUTOMATION CODE (DO NOT CHANGE)                                        ===
 # ==============================================================================
 
 options = webdriver.ChromeOptions()
@@ -35,7 +35,7 @@ driver.get(LOCAL_FILE_URL)
 choice_labels = ['A', 'B', 'C', 'D']
 
 def resize_image(path, target_size):
-    """Resizes the image proportionally on a transparent background."""
+    """Görüntüyü şeffaf bir arka plan üzerinde orantılı olarak yeniden boyutlandırır."""
     img = Image.open(path).convert("RGBA")
     img.thumbnail(target_size, Image.Resampling.LANCZOS)
     new_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
@@ -45,36 +45,46 @@ def resize_image(path, target_size):
 
 try:
     for i in range(1, NUM_QUESTIONS + 1):
-        print(f"\n--- Processing Question {i} ---")
+        print(f"\n--- Soru {i} işleniyor ---")
         
-        # Smart wait: Wait for the game to be fully loaded by checking for the options
+        # Akıllı bekleme: Seçeneklerin yüklenmesini bekleyerek oyunun tam olarak hazır olmasını sağla
         try:
             wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.CLASS_NAME, "option-button")))
-            print("👍 Game loaded, taking screenshots.")
+            print("👍 Oyun yüklendi, ekran görüntüleri alınıyor.")
             time.sleep(0.5) 
         except Exception:
-            print(f"❌ Error: Game could not be loaded for question {i} within 10 seconds.")
+            print(f"❌ Hata: {i}. soru için oyun 10 saniye içinde yüklenemedi.")
             break 
 
-        # --- Question Image ---
+        # --- Soru Görseli ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "matrix-grid")
+        
+        # DÜZELTME: Kırpılmayı önlemek için elementi ekranın ortasına kaydır
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", question_elem)
+        time.sleep(0.2) # Kaydırma animasyonunun bitmesi için kısa bir bekleme
+        
         question_elem.screenshot(question_path)
         resize_image(question_path, (350, 350))
-        print("📸 Question screenshot taken.")
+        print("📸 Soru ekran görüntüsü alındı.")
 
-        # --- Answer Choices ---
+        # --- Cevap Seçenekleri ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option-button")
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
+            
+            # DÜZELTME: Kırpılmayı önlemek için her bir seçeneği de ekranın ortasına kaydır
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", opt)
+            time.sleep(0.2) # Kaydırma animasyonunun bitmesi için kısa bir bekleme
+
             opt.screenshot(choice_path)
             resize_image(choice_path, (120, 120))
             option_paths.append(choice_path)
-        print("📸 Options screenshots taken.")
+        print("📸 Seçeneklerin ekran görüntüleri alındı.")
 
-        # --- Read Correct Answer and Send to API ---
+        # --- Doğru Cevabı Oku ve API'ye Gönder ---
         correct_index = int(driver.execute_script("return document.getElementById('correctIndex').textContent;"))
         correct_path = option_paths[correct_index]
         wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
@@ -90,29 +100,26 @@ try:
 
             try:
                 response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                print(f"✅ Question {i} sent. Correct choice: {choice_labels[correct_index]} | Status: {response.status_code}")
+                print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Durum: {response.status_code}")
             except requests.exceptions.RequestException as e:
-                print(f"❌ Error: API error while sending question {i}: {e}")
+                print(f"❌ Hata: {i}. soru gönderilirken API hatası: {e}")
 
-        # --- Proceed to the Next Question ---
+        # --- Sonraki Soruya Geç ---
         if i < NUM_QUESTIONS:
-            print("Clicking 'Yeni Oyun' button for the next question...")
+            print("'Yeni Oyun' butonuna tıklanıyor...")
             
-            # Before clicking, get a reference to the current options
             old_options = driver.find_elements(By.CLASS_NAME, "option-button")
             
-            # Click the "Yeni Oyun" button
             driver.find_element(By.ID, "reset-button").click()
             
-            # Wait for the old options to be removed from the DOM
             if old_options:
                 try:
                     wait = WebDriverWait(driver, 5)
                     wait.until(EC.staleness_of(old_options[0]))
-                    print("...Old options cleared, waiting for new question.")
+                    print("...Eski seçenekler temizlendi, yeni soru bekleniyor.")
                 except Exception:
-                    print("...Could not confirm old options were cleared, proceeding anyway.")
+                    print("...Eski seçeneklerin temizlendiği doğrulanamadı, yine de devam ediliyor.")
 
 finally:
     driver.quit()
-    print("\n🎉 Automation complete. Browser closed.")
+    print("\n🎉 Otomasyon tamamlandı. Tarayıcı kapatıldı.")

@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/PyramidPerspectiveQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/PyramidPerspective.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # === SETUP ===

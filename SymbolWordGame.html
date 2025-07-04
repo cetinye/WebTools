@@ -21,8 +21,10 @@
             /* Kutuların genişliğini sabitlemek için */
         }
 
+        /* ⭐ DEĞİŞİKLİK: Sembollerin boyutu büyütüldü */
         .symbols {
-            font-size: 24px;
+            font-size: 28px;
+            /* 24px'den 28px'e çıkarıldı */
         }
 
         .option {
@@ -74,7 +76,7 @@
 
         <div class="box">
             <h3>İSTENEN SÖZCÜK</h3>
-            <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
+            <div id="targetWord" style="font-weight: bold; font-size: 1.4em;"></div>
         </div>
     </div>
 
@@ -83,7 +85,6 @@
     </div>
 
     <script>
-        // ✨ GÜNCELLENDİ: Soru havuzundaki her dizi 4 kelime içerecek şekilde güncellendi.
         const questionPool = [
             ['KAPI', 'KEDİ', 'KAZA', 'PİKA'], ['GÜL', 'GÖL', 'GÜNEŞ', 'GEZİ'], ['MUM', 'KUM', 'KAM', 'MAK'],
             ['MASA', 'SABA', 'ASMA', 'SANA'], ['TREN', 'RENK', 'KENT', 'KREM'], ['BABA', 'BANA', 'BARA', 'ABRA'],
@@ -148,6 +149,8 @@
 
             shuffleArray(shuffledWordSet).forEach(word => {
                 const p = document.createElement('p');
+                // ⭐ DEĞİŞİKLİK: Soru alanındaki simgelerin de büyük olması için class eklendi.
+                p.className = 'symbols';
                 p.textContent = `${wordToSymbols(word, letterToSymbol)}`;
                 mappingsDiv.appendChild(p);
             });
@@ -159,9 +162,6 @@
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '<h3>SEÇENEKLER</h3>';
 
-            // =================================================================
-            // === ⬇️ ADD THIS LINE HERE ⬇️ ===
-            // =================================================================
             document.getElementById('correctIndex').textContent = options.indexOf(correctOption);
 
             options.forEach(opt => {

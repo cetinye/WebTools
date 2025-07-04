@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/CubeSidePerspective" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/CubeSidePerspective.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -46,7 +46,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem = driver.find_element(By.ID, "threeJsContainer")
     question_elem.screenshot(question_path)
     # Konteyner boyutlarına uygun yeniden boyutlandırma.
-    resize_image(question_path, (500, 500))
+    resize_image(question_path, (800, 600))
 
     # --- Şıklar ---
     # Şıklar dinamik olarak oluşturulan ve "option" class'ına sahip canvas'lardır.
@@ -56,7 +56,7 @@ for i in range(1, NUM_QUESTIONS + 1):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
         # Şıkların canvas boyutlarına (4x4 grid * 25px = 100x100) uygun yeniden boyutlandırma.
-        resize_image(choice_path, (100, 100))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===

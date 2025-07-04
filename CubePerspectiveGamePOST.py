@@ -45,7 +45,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem = driver.find_element(By.ID, "mainCanvas")
     question_elem.screenshot(question_path)
     # Canvas boyutlarına uygun yeniden boyutlandırma.
-    resize_image(question_path, (300, 300))
+    resize_image(question_path, (800, 600))
 
     # --- Şıklar ---
     # Şıklar "optionCanvas" class'ına sahip canvas elemanlarıdır.
@@ -55,7 +55,7 @@ for i in range(1, NUM_QUESTIONS + 1):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
         # Şıkların canvas boyutlarına uygun yeniden boyutlandırma.
-        resize_image(choice_path, (80, 80))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===

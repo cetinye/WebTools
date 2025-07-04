@@ -61,7 +61,7 @@ try:
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "game-grid")
         question_elem.screenshot(question_path)
-        resize_image(question_path, (350, 350))
+        resize_image(question_path, (800, 600))
         print("📸 Question screenshot taken.")
 
         # --- Answer Choices ---
@@ -78,7 +78,7 @@ try:
             time.sleep(0.2) 
 
             opt.screenshot(choice_path)
-            resize_image(choice_path, (120, 120))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 

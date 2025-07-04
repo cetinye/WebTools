@@ -18,7 +18,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/Grid-SiraliDonmeTahmin
 # 2. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/Grid-SiraliDonmeTahmini"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
@@ -61,7 +61,7 @@ try:
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "sequence-container")
         question_elem.screenshot(question_path)
-        resize_image(question_path, (480, 120))
+        resize_image(question_path, (800, 600))
         print("📸 Question screenshot taken.")
 
         # --- Answer Choices ---
@@ -70,7 +70,7 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (120, 120))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Options screenshots taken.")
 

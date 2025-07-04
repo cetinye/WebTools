@@ -18,7 +18,7 @@ LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/LinesToShapes.html" # 
 # 2. Diğer ayarlar
 NUM_QUESTIONS = 1 # Test için sayıyı artırabilirsiniz
 SAVE_DIR = "C:/Users/cetin/Desktop/LinesToShapesQuestions"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
@@ -62,7 +62,7 @@ try:
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
         question_elem = driver.find_element(By.ID, "question-area")
         question_elem.screenshot(question_path)
-        resize_image(question_path, (700, 500))
+        resize_image(question_path, (800, 600))
         print("📸 Soru ekran görüntüsü alındı.")
 
         # --- Şıklar ---
@@ -71,7 +71,7 @@ try:
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
-            resize_image(choice_path, (140, 140))
+            resize_image(choice_path, (256, 256))
             option_paths.append(choice_path)
         print("📸 Şıkların ekran görüntüleri alındı.")
 

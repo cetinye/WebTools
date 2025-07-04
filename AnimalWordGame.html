@@ -20,8 +20,10 @@
             min-width: 250px;
         }
 
+        /* ⭐ DEĞİŞİKLİK: Sembollerin font boyutu büyütüldü. */
         .symbols {
-            font-size: 28px;
+            font-size: 32px;
+            /* 28px'den 32px'e çıkarıldı */
         }
 
         .option {
@@ -72,7 +74,7 @@
 
         <div class="box">
             <h3>İSTENEN SÖZCÜK</h3>
-            <div id="targetWord" style="font-weight: bold; font-size: 1.2em;"></div>
+            <div id="targetWord" style="font-weight: bold; font-size: 1.5em;"></div>
         </div>
     </div>
     <div id="options" class="box">
@@ -82,7 +84,6 @@
     <script>
         const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵', '🐸', '🐔'];
 
-        // ✨ GÜNCELLENDİ: Tüm kelime grupları 4 kelime içerecek şekilde düzenlendi.
         const wordGroups = [
             ['ALMAN', 'ANLAM', 'YALAN', 'NALAN'],
             ['MASA', 'SABA', 'ASMA', 'SAMA'],
@@ -117,30 +118,28 @@
         }
 
         function initGame() {
-            // Bir sonraki tur için tıklama olaylarını tekrar aktif et
             document.getElementById('options').style.pointerEvents = 'auto';
 
-            const wordSet = shuffle(wordGroups)[0]; // Her zaman 4 kelimelik bir set seçer
+            const wordSet = shuffle(wordGroups)[0];
             const letterToEmoji = createMapping(wordSet);
             const shuffledWords = shuffle(wordSet);
-            const target = shuffledWords[0]; // Hedef kelime olarak birini seç
+            const target = shuffledWords[0];
 
             document.getElementById('words').textContent = wordSet.join(', ');
             document.getElementById('targetWord').textContent = target;
             document.getElementById('mappings').innerHTML = '';
             document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
 
-            // Eşleştirme kutusunu doldur
             shuffledWords.forEach(word => {
                 const p = document.createElement('p');
+                // ⭐ DEĞİŞİKLİK: Soru alanındaki simgelerin de büyük görünmesi için "symbols" class'ı eklendi.
+                p.className = 'symbols';
                 p.textContent = `${wordToSymbols(word, letterToEmoji)}`;
                 document.getElementById('mappings').appendChild(p);
             });
 
             const correctOption = wordToSymbols(target, letterToEmoji);
 
-            // ✨ GÜNCELLENDİ: Seçenek oluşturma mantığı basitleştirildi.
-            // 4 kelimenin hepsini simgelere çevirip karıştırarak 4 farklı seçenek oluşturur.
             const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji));
             const options = shuffle(allSymbolOptions);
 
@@ -151,21 +150,18 @@
                 div.className = 'option symbols';
                 div.textContent = opt;
                 div.addEventListener('click', () => {
-                    // Tıklandıktan sonra diğer seçeneklere tıklamayı engelle
                     document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none');
 
                     if (opt === correctOption) {
                         div.classList.add('correct');
                     } else {
                         div.classList.add('wrong');
-                        // Yanlış cevap verilse bile doğru olanı göster
                         document.querySelectorAll('.option').forEach(el => {
                             if (el.textContent === correctOption) {
                                 el.classList.add('correct');
                             }
                         });
                     }
-                    // Yeni oyuna geçmeden önce 2 saniye bekle
                     setTimeout(initGame, 2000);
                 });
                 document.getElementById('options').appendChild(div);

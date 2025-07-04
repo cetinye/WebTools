@@ -25,7 +25,7 @@ HTML_FILE_NAME = "GuessImagePiece.html" #ÖRNEK: "yedinci_oyun.html"
 # 3. Diğer ayarların
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/GuessImagePiece" # Directory to save the screenshots
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================

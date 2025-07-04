@@ -56,7 +56,7 @@ try:
             print("👍 Numbers are visible, taking question screenshot.")
             question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
             question_elem.screenshot(question_path)
-            resize_image(question_path, (700, 100))
+            resize_image(question_path, (800, 600))
         except Exception:
             print("❌ Error: Could not capture the visible numbers for the question.")
             driver.refresh()
@@ -75,7 +75,7 @@ try:
             for idx, opt in enumerate(options_elements[:4]):
                 choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
                 opt.screenshot(choice_path)
-                resize_image(choice_path, (500, 70))
+                resize_image(choice_path, (256, 256))
                 option_paths.append(choice_path)
         except Exception:
             print("❌ Error: Could not capture the options.")

@@ -10,7 +10,7 @@ import random
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/GuessTrianglePieceQuestions"
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/GuessTrianglePiece.html"
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -52,7 +52,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     crop_margin = int(width * 0.001)
     cropped = img.crop((crop_margin, 0, width - crop_margin, height))
     cropped.save(question_path)
-    resize_image(question_path, (1190, 330))
+    resize_image(question_path, (800, 600))
 
      # --- Şıklar ---
     options_elements = driver.find_elements(By.CLASS_NAME, "option")
@@ -60,7 +60,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     for idx, opt in enumerate(options_elements[:4]):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
-        resize_image(choice_path, (271, 181))  # 🔁 Stretch olmadan 271x181
+        resize_image(choice_path, (256, 256))  # 🔁 Stretch olmadan 271x181
         option_paths.append(choice_path)
 
     # === ✅ DOĞRU CEVABI HTML'DEN OKU ===

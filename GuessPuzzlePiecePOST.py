@@ -25,7 +25,7 @@ HTML_FILE_NAME = "GuessPuzzlePiece.html" # EXAMPLE: "jigsaw_game.html"
 # 3. Other settings
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/GuessPuzzlePiece" # Directory to save the screenshots
-API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
+# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # ==============================================================================
