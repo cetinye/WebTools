@@ -39,7 +39,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
     question_elem = driver.find_element(By.ID, "question-area")
     question_elem.screenshot(question_path)
-    resize_image(question_path, (1000, 300))
+    resize_image(question_path, (800, 600))
 
     # === Bekle: 4 şık gelsin
     WebDriverWait(driver, 5).until(lambda d: len(d.find_elements(By.CSS_SELECTOR, ".options button")) == 4)
@@ -49,7 +49,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     for idx, btn in enumerate(option_buttons):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         btn.screenshot(choice_path)
-        resize_image(choice_path, (271, 181))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # ✅ Doğru şıkkı DOM'dan oku

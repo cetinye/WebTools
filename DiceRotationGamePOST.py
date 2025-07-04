@@ -38,7 +38,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
     grid_elem = driver.find_element(By.CLASS_NAME, "cube-sequence")
     grid_elem.screenshot(question_path)
-    resize_image(question_path, (1190, 330))
+    resize_image(question_path, (800, 600))
 
     # --- Seçenekler
     options_elements = driver.find_elements(By.CLASS_NAME, "option-btn")
@@ -46,7 +46,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     for idx, opt in enumerate(options_elements[:4]):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
-        resize_image(choice_path, (271, 181))
+        resize_image(choice_path, (256, 256))
         option_paths.append(choice_path)
 
     # ✅ Doğru cevabın indeksini HTML'den al

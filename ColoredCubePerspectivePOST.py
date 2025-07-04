@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/ColoredCubeQuestions" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/ColoredCubePerspective.html" # ❗ KENDİ HTML DOSYA YOLUNUZU YAZIN
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation" # API aktif değilse bu satır yorumda kalabilir.
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation" # API aktif değilse bu satır yorumda kalabilir.
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
@@ -43,7 +43,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
     question_elem = driver.find_element(By.ID, "question-area-main")
     question_elem.screenshot(question_path)
-    resize_image(question_path, (800, 60))
+    resize_image(question_path, (800, 600))
 
     # --- Şıklar ---
     options_elements = driver.find_elements(By.CLASS_NAME, "option-box")

@@ -9,7 +9,7 @@ import time
 NUM_QUESTIONS = 1
 SAVE_DIR = "C:/Users/cetin/Desktop/DominoGuessQuestions" # Kaydedilecek klasör
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/DominoGuess.html"
-# API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation" # API'yi kullanmak için bu satırın başındaki # işaretini kaldırın.
+API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation" # API'yi kullanmak için bu satırın başındaki # işaretini kaldırın.
 HEADERS = {"Authorization": "Bearer your_token_here"}  # Gerekirse kullan
 
 # === SETUP ===
