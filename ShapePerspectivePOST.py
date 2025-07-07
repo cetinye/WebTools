@@ -3,90 +3,143 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 import os
 import time
 
-# ==============================================================================
-# ===   YAPILANDIRMA (SADECE BU BÖLÜMÜ DEĞİŞTİR)                            ===
-# ==============================================================================
+# === YAPILANDIRMA (SADECE BU BÖLÜMÜ DEĞİŞTİR) ===
+# Kaç adet soru işleneceğini belirtin
+NUM_QUESTIONS = 1
 
-# 1. HTML dosyanızın tam yolunu file:/// protokolü ile buraya yazın.
-# ÖNEMLİ: Windows'ta yol için normal eğik çizgi (/) kullanın.
+# Dosyaların kaydedileceği klasör
+SAVE_DIR = "C:/Users/cetin/Desktop/ShapePerspectiveQuestions"
+
+# Selenium'un açacağı yerel HTML dosyasının yolu
 LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/ShapePerspective.html"
 
-# 2. Diğer ayarlar
-NUM_QUESTIONS = 1
-SAVE_DIR = "C:/Users/cetin/Desktop/ShapePerspectiveQuestions"
+# API bilgileri
 API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
-HEADERS = {"Authorization": "Bearer your_token_here"}
+HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI GİRİN
 
-# ==============================================================================
-# === OTOMASYON KODU (DEĞİŞTİRMEYİN)                                        ===
-# ==============================================================================
+# --- GÖRSEL İŞLEME AYARLARI ---
+# Soru görselinin etrafına eklenecek boşluk (piksel)
+QUESTION_PADDING = 0
+# Şık görsellerinin etrafına eklenecek boşluk (piksel)
+CHOICE_PADDING = 0
 
+# Soru ve şıkların son boyutları
+QUESTION_TARGET_SIZE = (1200, 600)
+CHOICE_TARGET_SIZE = (256, 256)
+
+# === SETUP ===
 options = webdriver.ChromeOptions()
 options.add_argument("--start-maximized")
 driver = webdriver.Chrome(options=options)
 
+# Kayıt klasörünü oluştur (varsa hata verme)
 os.makedirs(SAVE_DIR, exist_ok=True)
+
+# Web sayfasını aç
 driver.get(LOCAL_FILE_URL)
 
 choice_labels = ['A', 'B', 'C', 'D']
 
-# ⭐ YENİ: Görüntüleri istenen boyuta getiren fonksiyon eklendi.
-def resize_image(path, target_size):
+# === GÖRSEL İŞLEME FONKSİYONLARI ===
+
+def trim_and_pad_image(image_path, padding=0):
     """
-    Bir görüntüyü, en boy oranını koruyarak ve şeffaf bir tuvale ortalayarak
-    hedef boyuta getirir. Görüntü esnetilmez.
+    Bir görüntünün kenarlarındaki arka plan rengini otomatik olarak kırpar ve
+    ardından belirtilen miktarda boşluk (padding) ekler.
+    """
+    try:
+        img = Image.open(image_path).convert("RGB")
+        # Arka plan rengini sol üst köşeden al
+        bg_color = img.getpixel((0, 0))
+        
+        # Arka plan rengiyle aynı olan piksellerden bir fark görüntüsü oluştur
+        bg = Image.new(img.mode, img.size, bg_color)
+        diff = ImageChops.difference(img, bg)
+        
+        # Farklı piksellerin olduğu alanın sınırlayıcı kutusunu bul
+        bbox = diff.getbbox()
+
+        if bbox:
+            # Görüntüyü sınırlayıcı kutuya göre kırp
+            trimmed_img = img.crop(bbox)
+
+            if padding > 0:
+                # Yeni bir tuval oluştur ve ortasına yapıştır
+                new_size = (trimmed_img.width + 2 * padding, trimmed_img.height + 2 * padding)
+                padded_img = Image.new(img.mode, new_size, bg_color)
+                padded_img.paste(trimmed_img, (padding, padding))
+                padded_img.save(image_path)
+            else:
+                # Sadece kırpılmış halini kaydet
+                trimmed_img.save(image_path)
+        else:
+            print(f"⚠️ Image '{os.path.basename(image_path)}' is empty, no trim needed.")
+    except Exception as e:
+        print(f"❌ Error while trimming/padding image '{os.path.basename(image_path)}': {e}")
+
+
+def resize_and_fill_image(path, target_size, fill_color=(255, 255, 255, 255)):
+    """
+    Bir görüntüyü, en-boy oranını koruyarak hedef boyuta sığacak şekilde
+    yeniden boyutlandırır (gerekirse büyütür) ve boşlukları belirtilen renkle doldurur.
+    Varsayılan dolgu rengi beyazdır.
     """
     try:
         img = Image.open(path).convert("RGBA")
-        
-        # Orijinal görüntünün en boy oranını koruyarak küçült/büyüt
-        img.thumbnail(target_size, Image.Resampling.LANCZOS)
-        
-        # Hedef boyutta şeffaf bir arka plan oluştur
-        new_img = Image.new("RGBA", target_size, (0, 0, 0, 0))
-        
-        # Görüntüyü ortaya yapıştırmak için pozisyonu hesapla
-        paste_x = (target_size[0] - img.width) // 2
-        paste_y = (target_size[1] - img.height) // 2
-        
-        # Boyutlandırılmış görüntüyü yeni şeffaf arka planın üzerine yapıştır
-        new_img.paste(img, (paste_x, paste_y))
-        
-        # Sonucu orijinal dosyanın üzerine kaydet
+
+        original_ratio = img.width / img.height
+        target_ratio = target_size[0] / target_size[1]
+
+        if original_ratio > target_ratio:
+            new_width = target_size[0]
+            new_height = int(new_width / original_ratio)
+        else:
+            new_height = target_size[1]
+            new_width = int(new_height * original_ratio)
+
+        # Resmi yeni boyutlara ölçekle (LANCZOS en kaliteli filtrelerden biridir)
+        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Hedef boyutta yeni bir tuval oluştur
+        new_img = Image.new("RGBA", target_size, fill_color)
+
+        x_offset = (target_size[0] - new_width) // 2
+        y_offset = (target_size[1] - new_height) // 2
+        new_img.paste(resized_img, (x_offset, y_offset), resized_img) # maske olarak kendisini kullan
+
         new_img.save(path)
     except Exception as e:
-        print(f"❌ Görüntü yeniden boyutlandırılamadı {path}: {e}")
+        print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
 
 
+# === ANA İŞLEM DÖNGÜSÜ ===
 try:
     for i in range(1, NUM_QUESTIONS + 1):
         print(f"\n--- Soru {i} işleniyor ---")
-
+        
+        # Oyunun ve şıkların yüklenmesini bekle
         try:
             wait = WebDriverWait(driver, 10)
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#option3 > *")))
-            print("👍 Oyun yüklendi ve çizimler tamamlandı.")
+            print("✅ Oyun yüklendi ve çizimler tamamlandı.")
             time.sleep(0.5) 
         except Exception:
-            print(f"❌ Hata: Soru {i} için oyun 10 saniyede yüklenemedi.")
-            break
+            print(f"❌ Hata: Soru {i} için oyun 10 saniye içinde yüklenemedi.")
+            break 
 
-        # --- Soru görüntüsü ---
+        # --- Soru görüntüsünü al ve işle ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-        
         try:
-            print("🎨 Soru elementi daha net bir görüntü için geçici olarak büyütülüyor...")
             question_elem = driver.find_element(By.ID, "stack")
             
+            # Elementi geçici olarak büyüt ve arka planını beyaz yap
             original_style = driver.execute_script("return arguments[0].getAttribute('style');", question_elem)
-            
-            # Geçici olarak elementi büyütüp ekran görüntüsü al
             driver.execute_script(
-                "arguments[0].style.width = '800px'; arguments[0].style.height = '600px';" +
+                "arguments[0].style.width = '1200px'; arguments[0].style.height = '600px';" +
                 "arguments[0].style.backgroundColor = 'white'; arguments[0].style.justifyContent = 'center';",
                 question_elem
             )
@@ -96,56 +149,72 @@ try:
             
             # Orijinal stilleri geri yükle
             driver.execute_script("arguments[0].setAttribute('style', arguments[1] || '');", question_elem, original_style)
-            print("🎨 Soru elementinin stili normale döndürüldü.")
             
-            # ⭐ DEĞİŞİKLİK: Soru görüntüsü 800x600 boyutuna getirildi.
-            resize_image(question_path, (800, 600))
-            print(f"📸 Soru ekran görüntüsü alınıp {question_path} olarak kaydedildi ve 800x600 boyutuna getirildi.")
-
+            # Standart görsel işleme adımlarını uygula
+            trim_and_pad_image(question_path, padding=QUESTION_PADDING)
+            resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
+            print("✅ Soru görseli alındı ve işlendi.")
+            
         except Exception as e:
             print(f"❌ Hata: Soru görüntüsü alınırken bir sorun oluştu: {e}")
             continue
 
-
-        # --- Şıklar ---
+        # --- Şık görsellerini al ve işle ---
         options_elements = driver.find_elements(By.CLASS_NAME, "option")
         option_paths = []
         for idx, opt in enumerate(options_elements[:4]):
             choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
             opt.screenshot(choice_path)
             
-            # ⭐ DEĞİŞİKLİK: Her bir şık görüntüsü 256x256 boyutuna getirildi.
-            resize_image(choice_path, (256, 256))
+            trim_and_pad_image(choice_path, padding=CHOICE_PADDING)
+            resize_and_fill_image(choice_path, CHOICE_TARGET_SIZE)
+            
             option_paths.append(choice_path)
-        print("📸 Şıkların ekran görüntüleri alındı ve 256x256 boyutuna getirildi.")
-
-        # --- Doğru Cevabı Oku ve API'ye Gönder ---
+        print("✅ Şık görselleri alındı ve işlendi.")
+        
+        # --- Doğru cevabı HTML'den oku ---
         correct_index = int(driver.execute_script("return document.getElementById('correctIndex').textContent;"))
         correct_path = option_paths[correct_index]
         wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
+        print(f"ℹ️ Doğru cevap '{choice_labels[correct_index]}' olarak belirlendi.")
 
-        # API GÖNDERME BÖLÜMÜ YORUMA ALINDI, İSTERSENİZ AÇABİLİRSİNİZ
-        with open(question_path, 'rb') as q_img, \
-             open(correct_path, 'rb') as correct, \
-             open(wrong_paths[0], 'rb') as wrong1, \
-             open(wrong_paths[1], 'rb') as wrong2, \
-             open(wrong_paths[2], 'rb') as wrong3:
-            
-            files = {"question_image": q_img, "correct_answer": correct, "wrong_answer_1": wrong1, "wrong_answer_2": wrong2, "wrong_answer_3": wrong3}
-            data = {"category_id": "25", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
+        # --- API'ye gönder ---
+        try:
+            with open(question_path, 'rb') as q_img, \
+                 open(correct_path, 'rb') as correct, \
+                 open(wrong_paths[0], 'rb') as wrong1, \
+                 open(wrong_paths[1], 'rb') as wrong2, \
+                 open(wrong_paths[2], 'rb') as wrong3:
 
-            try:
-                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                # print(f"✅ Soru {i} gönderildi. Doğru şık: {choice_labels[correct_index]} | Status: {response.status_code}")
-                print(f"✅ Soru {i} API'ye gönderilmeye hazır. Doğru şık: {choice_labels[correct_index]}")
-            except requests.exceptions.RequestException as e:
-                print(f"❌ Hata: Soru {i} gönderilirken API hatası oluştu: {e}")
+                files = {
+                    "question_image": q_img, 
+                    "correct_answer": correct,
+                    "wrong_answer_1": wrong1, 
+                    "wrong_answer_2": wrong2, 
+                    "wrong_answer_3": wrong3
+                }
+                data = {
+                    "category_id": "25",
+                    "grade": "[1,2,3,4,9]", 
+                    "knowledge": "0", 
+                    "level": "1"
+                }
 
-        # --- Sonraki Soruya Geç ---
+                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
+                
+                print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Soru {i} API'ye gönderilirken hata oluştu: {e}")
+            if 'response' in locals() and response is not None:
+                print(f"    API Yanıtı: {response.text}")
+
+        # --- Sonraki soruya geç ---
         if i < NUM_QUESTIONS:
-            print("Sonraki soru için sayfa yenileniyor...")
+            print("... Sayfa yenileniyor ...")
             driver.refresh()
 
 finally:
     driver.quit()
-    print("\n🎉 Otomasyon tamamlandı. Tarayıcı kapatıldı.")
+    print("\n🎉 Tüm sorular başarıyla işlendi. Program sonlandırıldı.")

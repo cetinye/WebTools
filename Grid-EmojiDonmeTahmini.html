@@ -13,6 +13,7 @@
         body {
             font-family: 'Inter', sans-serif;
             touch-action: manipulation;
+            background-color: #ffffff;
         }
 
         .grid-cell,
@@ -22,9 +23,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f9fafb;
+            background-color: #ffffff;
             /* gray-50 */
-            border: 2px solid #e5e7eb;
+            border: 2px solid #f3f3f3;
             /* gray-200 */
             border-radius: 0.5rem;
             /* rounded-lg */
@@ -33,7 +34,7 @@
         }
 
         .option-cell {
-            border: 3px solid #d1d5db;
+            border: 3px solid #f3f3f3;
             /* gray-300 */
             cursor: pointer;
             transition: all 0.2s ease-in-out;
@@ -49,14 +50,14 @@
         .option-cell.correct {
             border-color: #22c55e;
             /* green-500 */
-            background-color: #dcfce7;
+            background-color: #ffffff;
             transform: scale(1.05);
         }
 
         .option-cell.incorrect {
             border-color: #ef4444;
             /* red-500 */
-            background-color: #fee2e2;
+            background-color: #ffffff;
         }
 
         .shape-container {
@@ -79,7 +80,7 @@
         </header>
 
         <!-- Oyun Izgarası -->
-        <div class="mb-8 p-4 bg-gray-100 rounded-lg shadow-inner flex justify-center items-center">
+        <div class="mb-8 p-4 bg-white-100 rounded-lg shadow-inner flex justify-center items-center">
             <div id="game-grid" class="grid grid-cols-3 gap-2">
                 <!-- Izgara hücreleri buraya JS ile eklenecek -->
             </div>

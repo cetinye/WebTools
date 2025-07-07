@@ -8,7 +8,7 @@
         body {
             font-family: sans-serif;
             text-align: center;
-            background: #f0f0f0;
+            background: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -139,7 +139,7 @@
             if (isThreeJSInitialized) return;
             const container = document.getElementById('threeJsContainer');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0);
+            scene.background = new THREE.Color(0xffffff);
             const aspect = container.clientWidth / container.clientHeight;
             const frustumSize = 8 * CUBE_SIZE_THREE * 1.5;
             camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
@@ -320,7 +320,7 @@
 
         function getRightSideViewImageData(structure, ctx) {
             ctx.clearRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
-            ctx.fillStyle = "#f0f0f0";
+            ctx.fillStyle = "#fff";
             ctx.fillRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
             const finalViewGrid = Array.from({ length: currentGridDimension }, () => Array(currentMaxTowerHeight).fill(null));
             for (let x = currentGridDimension - 1; x >= 0; x--) {
@@ -452,7 +452,7 @@
             wrongOptionCanvas.width = correctImageData.width;
             wrongOptionCanvas.height = correctImageData.height;
             const wrongOptCtx = wrongOptionCanvas.getContext('2d', { willReadFrequently: true });
-            wrongOptCtx.fillStyle = "#f0f0f0";
+            wrongOptCtx.fillStyle = "#fff";
             wrongOptCtx.fillRect(0, 0, correctImageData.width, correctImageData.height);
             for (let c = 0; c < currentGridDimension; c++) {
                 for (let r = 0; r < currentMaxTowerHeight; r++) {

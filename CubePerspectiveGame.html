@@ -20,13 +20,28 @@
             gap: 10px;
             margin-top: 20px;
         }
+
+        /* --- GÖSTERGE VE KAPSAYICI İÇİN STİLLER --- */
+        .view-indicator {
+            margin-bottom: -5px;
+        }
+
+        /* YENİ EKLENEN KAPSAYICI İÇİN STİL */
+        #question-area {
+            display: inline-block;
+            /* text-align:center özelliğine uyması için */
+            padding: 10px;
+            /* Kenarlardan biraz boşluk bırakalım */
+        }
     </style>
 </head>
 
 <body>
     <span id="correctIndex" style="display:none;"></span>
 
-    <canvas id="mainCanvas" width="300" height="300"></canvas>
+    <div id="question-area">
+        <canvas id="mainCanvas" width="300" height="300"></canvas>
+    </div>
     <div class="options">
         <canvas width="80" height="80" class="optionCanvas"></canvas>
         <canvas width="80" height="80" class="optionCanvas"></canvas>
@@ -35,6 +50,10 @@
     </div>
 
     <script>
+        // --- JavaScript KODUNUZDA HİÇBİR DEĞİŞİKLİK GEREKMİYOR ---
+        // Mevcut JS kodunuz, göstergeyi tuvalden önce eklediği için
+        // otomatik olarak yeni "question-area" div'inin içine yerleştirecektir.
+
         const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'];
         const gridSize = 3;
 
@@ -59,7 +78,6 @@
         function draw3DCube(ctx, x, y, size, color) {
             const half = size / 2;
             const quarter = size / 4;
-            // Top face
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(x + half, y - quarter);
@@ -69,7 +87,6 @@
             ctx.fillStyle = color;
             ctx.fill();
             ctx.stroke();
-            // Left face
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(x + half, y + quarter);
@@ -79,7 +96,6 @@
             ctx.fillStyle = shadeColor(color, -15);
             ctx.fill();
             ctx.stroke();
-            // Right face
             ctx.beginPath();
             ctx.moveTo(x + size, y);
             ctx.lineTo(x + half, y + quarter);
@@ -135,6 +151,20 @@
             }
         }
 
+        const mainCanvas = document.getElementById('mainCanvas');
+        const indicator = document.createElement('div');
+        indicator.className = 'view-indicator';
+        indicator.innerHTML = `
+            <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg" width="50"> 
+                <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333" stroke-width="5" /> 
+                <circle cx="50" cy="35" r="15" fill="#333" /> 
+                <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
+                <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
+                <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
+            </svg>
+        `;
+        mainCanvas.parentNode.insertBefore(indicator, mainCanvas);
+
         const structure = generateStructure();
         drawMainScene(structure);
 
@@ -142,7 +172,6 @@
         const optionCanvases = document.querySelectorAll('.optionCanvas');
 
         const correctIndex = getRandomInt(4);
-        // ✨ EKLENDİ: Doğru cevabın index'ini HTML'e yazar.
         document.getElementById('correctIndex').textContent = correctIndex;
 
         const views = [];
