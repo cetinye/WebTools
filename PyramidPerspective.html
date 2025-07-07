@@ -17,6 +17,17 @@
             padding: 2rem;
         }
 
+        #pyramid-question-area {
+            text-align: center;
+            /* İçindeki ikonu ve tuvali yatayda ortalar */
+        }
+
+        /* Göz ikonu için stil */
+        .view-indicator {
+            margin-bottom: -10px;
+            z-index: 10;
+        }
+
         canvas {
             margin-bottom: 1rem;
             background: white;
@@ -42,7 +53,25 @@
 
 <body>
     <h2>Piramit Perspektif Oyunu</h2>
-    <canvas id="mainView" width="300" height="300"></canvas>
+
+    <div id="pyramid-question-area">
+        <div class="view-indicator">
+            <svg viewBox="0 0 100 95" xmlns="http://www.w3.org/2000/svg" width="50">
+                <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333"
+                    stroke-width="5"></path>
+                <circle cx="50" cy="35" r="15" fill="#333"></circle>
+                <path d="M35 55 L35 79 L31 75 M35 79 L39 75" fill="none" stroke="currentColor" stroke-width="4"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M50 55 L50 79 L46 75 M50 79 L54 75" fill="none" stroke="currentColor" stroke-width="4"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M65 55 L65 79 L61 75 M65 79 L69 75" fill="none" stroke="currentColor" stroke-width="4"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </div>
+
+        <canvas id="mainView" width="300" height="300"></canvas>
+    </div>
+
     <div class="options">
         <canvas class="option-canvas" width="200" height="200"></canvas>
         <canvas class="option-canvas" width="200" height="200"></canvas>
@@ -50,7 +79,6 @@
         <canvas class="option-canvas" width="200" height="200"></canvas>
     </div>
 
-    <!-- ✅ Doğru şık buraya yazılıyor (gizli) -->
     <div id="correctIndex" style="display: none;"></div>
 
     <script>
@@ -66,7 +94,9 @@
         let currentSides = 6;
 
         function getRandomColorOrder(length) {
-            const arr = Array.from({ length }, (_, i) => i);
+            const arr = Array.from({
+                length
+            }, (_, i) => i);
             return arr.sort(() => 0.5 - Math.random());
         }
 
@@ -82,12 +112,17 @@
                 const baseAngle = angle * i + Math.PI / 8;
                 const x = cx + r * Math.cos(baseAngle);
                 const y = cy + r * Math.sin(baseAngle) * 0.5;
-                points.push({ x, y });
+                points.push({
+                    x,
+                    y
+                });
             }
 
-            const apex = { x: cx, y: cy - r * 1.4 };
+            const apex = {
+                x: cx,
+                y: cy - r * 1.4
+            };
 
-            // Base edges
             for (let i = 0; i < sides; i++) {
                 const a = points[i];
                 const b = points[(i + 1) % sides];
@@ -99,7 +134,6 @@
                 ctx.stroke();
             }
 
-            // Apex edges
             for (let i = 0; i < sides; i++) {
                 ctx.beginPath();
                 ctx.moveTo(apex.x, apex.y);
@@ -108,22 +142,6 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
-
-            // Arrow
-            const arrowHeight = 25;
-            const arrowWidth = 16;
-            const arrowOffset = 10;
-            const arrowTopY = apex.y - arrowOffset - arrowHeight;
-
-            ctx.beginPath();
-            ctx.moveTo(apex.x, arrowTopY);
-            ctx.lineTo(apex.x, arrowTopY + arrowHeight);
-            ctx.moveTo(apex.x - arrowWidth / 2, arrowTopY + arrowHeight - arrowHeight / 3);
-            ctx.lineTo(apex.x, arrowTopY + arrowHeight);
-            ctx.lineTo(apex.x + arrowWidth / 2, arrowTopY + arrowHeight - arrowHeight / 3);
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.stroke();
         }
 
         function drawTopDownWithInnerLines(ctx, sides, colorOrder) {
@@ -138,7 +156,10 @@
             for (let i = 0; i < sides; i++) {
                 const x = cx + r * Math.cos(angle * i + Math.PI / 8);
                 const y = cy + r * Math.sin(angle * i + Math.PI / 8);
-                points.push({ x, y });
+                points.push({
+                    x,
+                    y
+                });
             }
 
             for (let i = 0; i < sides; i++) {
@@ -168,7 +189,6 @@
             currentColorOrder = getRandomColorOrder(currentSides);
             correctIndex = Math.floor(Math.random() * 4);
 
-            // ✅ doğru index'i div'e yaz
             correctIndexDiv.textContent = correctIndex;
 
             drawWireframePyramid(mainCtx, currentSides, currentColorOrder);

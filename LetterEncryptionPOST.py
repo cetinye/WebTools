@@ -23,13 +23,13 @@ HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI G
 
 # --- GÖRSEL İŞLEME AYARLARI ---
 # Soru görselinin etrafına eklenecek boşluk (piksel)
-QUESTION_PADDING = 0
+QUESTION_PADDING = 50
 # Şık görsellerinin etrafına eklenecek boşluk (piksel)
 CHOICE_PADDING = 0
 
 # Soru ve şıkların son boyutları
 QUESTION_TARGET_SIZE = (1200, 600)
-CHOICE_TARGET_SIZE = (256, 256)
+CHOICE_TARGET_SIZE = (512, 256)
 
 # === SETUP ===
 options = webdriver.ChromeOptions()

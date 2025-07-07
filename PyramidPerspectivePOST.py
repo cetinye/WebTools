@@ -124,6 +124,8 @@ try:
         # Oyunun ve şıkların yüklenmesini bekle
         try:
             wait = WebDriverWait(driver, 10)
+            # Hem soru alanının hem de şıkların varlığını bekle
+            wait.until(EC.presence_of_element_located((By.ID, "pyramid-question-area")))
             wait.until(lambda d: len(d.find_elements(By.CLASS_NAME, "option-canvas")) == 4)
             time.sleep(0.5) 
         except Exception:
@@ -132,7 +134,11 @@ try:
 
         # --- Soru görüntüsünü al ve işle ---
         question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-        question_elem = driver.find_element(By.ID, "mainView")
+        
+        # ***** DEĞİŞİKLİK BURADA *****
+        # Artık sadece canvas'ı değil, hem ikonu hem de canvas'ı içeren kapsayıcıyı seçiyoruz.
+        question_elem = driver.find_element(By.ID, "pyramid-question-area")
+        
         question_elem.screenshot(question_path)
         
         trim_and_pad_image(question_path, padding=QUESTION_PADDING)
@@ -180,21 +186,21 @@ try:
                     "level": "1"
                 }
 
-                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
+                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                # response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
                 
-                print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
+                # print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
+                print(f"🚀 Soru {i} API'ye gönderme adımı simüle edildi.") # Simülasyon için bu satırı kullanın
                 
         except requests.exceptions.RequestException as e:
             print(f"❌ Soru {i} API'ye gönderilirken hata oluştu: {e}")
             if 'response' in locals() and response is not None:
-                print(f"    API Yanıtı: {response.text}")
+                print(f"   API Yanıtı: {response.text}")
 
         # --- Sonraki soruya geç ---
         if i < NUM_QUESTIONS:
             print("... Sayfa yenileniyor ...")
             driver.refresh()
-            time.sleep(1) # Yenilenen sayfanın yüklenmesini bekle
 
 finally:
     driver.quit()
