@@ -23,7 +23,7 @@ HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI G
 
 # --- GÖRSEL İŞLEME AYARLARI ---
 # Soru görselinin etrafına eklenecek boşluk (piksel)
-QUESTION_PADDING = 0
+QUESTION_PADDING = 50
 # Şık görsellerinin etrafına eklenecek boşluk (piksel)
 CHOICE_PADDING = 0
 

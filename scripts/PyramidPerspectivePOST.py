@@ -186,11 +186,11 @@ try:
                     "level": "1"
                 }
 
-                # response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-                # response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
+                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
                 
-                # print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
-                print(f"🚀 Soru {i} API'ye gönderme adımı simüle edildi.") # Simülasyon için bu satırı kullanın
+                print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
+                # print(f"🚀 Soru {i} API'ye gönderme adımı simüle edildi.") # Simülasyon için bu satırı kullanın
                 
         except requests.exceptions.RequestException as e:
             print(f"❌ Soru {i} API'ye gönderilirken hata oluştu: {e}")
