@@ -23,7 +23,7 @@ HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI G
 
 # --- GÖRSEL İŞLEME AYARLARI ---
 # Soru görselinin etrafına eklenecek boşluk (piksel)
-QUESTION_PADDING = 50
+QUESTION_PADDING = 35
 # Şık görsellerinin etrafına eklenecek boşluk (piksel)
 CHOICE_PADDING = 25
 
@@ -129,7 +129,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem.screenshot(question_path)
     
     trim_and_pad_image(question_path, padding=QUESTION_PADDING)
-    resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
+    # resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
     print("✅ Soru görseli alındı ve işlendi.")
 
     # --- Şık görsellerini al ve işle ---

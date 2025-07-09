@@ -1,7 +1,7 @@
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops
 import os
 import time
 
@@ -20,13 +20,10 @@ API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
 HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI GİRİN
 
 # --- GÖRSEL İŞLEME AYARLARI ---
-# Soru görselinin etrafına eklenecek boşluk (piksel)
-QUESTION_PADDING = 0
-# Şık görsellerinin etrafına eklenecek boşluk (piksel)
-CHOICE_PADDING = 0
+# Artık padding ayarları yok, çünkü her zaman tam kırpma yapılacak.
 
 # Soru ve şıkların son boyutları
-QUESTION_TARGET_SIZE = (1200, 600)
+QUESTION_TARGET_SIZE = (1024, 1024)
 CHOICE_TARGET_SIZE = (256, 256)
 
 # === SETUP ===
@@ -45,78 +42,112 @@ choice_labels = ['A', 'B', 'C', 'D']
 
 # === GÖRSEL İŞLEME FONKSİYONLARI ===
 
-def trim_and_pad_image(image_path, padding=0):
+# <-- DEĞİŞİKLİK: Fonksiyon sadece boşlukları kırpmak için basitleştirildi ve yeniden adlandırıldı.
+def trim_whitespace(image_path):
     """
-    Bir görüntünün kenarlarındaki arka plan rengini otomatik olarak kırpar ve
-    ardından belirtilen miktarda boşluk (padding) ekler.
+    Bir görüntünün kenarlarındaki arka plan rengini otomatik olarak kırpar.
+    Kenarlardaki farklı renkleri de dikkate alır.
     """
     try:
-        img = Image.open(image_path).convert("RGB")
-        # Arka plan rengini sol üst köşeden al
-        bg_color = img.getpixel((0, 0))
-        
-        # Arka plan rengiyle aynı olan piksellerden bir fark görüntüsü oluştur
-        bg = Image.new(img.mode, img.size, bg_color)
-        diff = ImageChops.difference(img, bg)
-        
-        # Farklı piksellerin olduğu alanın sınırlayıcı kutusunu bul
-        bbox = diff.getbbox()
+        img = Image.open(image_path).convert("RGBA")
+        width, height = img.size
 
-        if bbox:
-            # Görüntüyü sınırlayıcı kutuya göre kırp
-            trimmed_img = img.crop(bbox)
+        # Kenarlardaki baskın olmayan beyaz tonlarını belirlemek için eşik değeri
+        threshold = 240  # Beyaza yakın RGB değerleri (0-255 arası)
 
-            if padding > 0:
-                # Yeni bir tuval oluştur ve ortasına yapıştır
-                new_size = (trimmed_img.width + 2 * padding, trimmed_img.height + 2 * padding)
-                padded_img = Image.new(img.mode, new_size, bg_color)
-                padded_img.paste(trimmed_img, (padding, padding))
-                padded_img.save(image_path)
-                # print(f"✨ Whitespace trimmed and {padding}px padding added to '{os.path.basename(image_path)}'.")
-            else:
-                # Sadece kırpılmış halini kaydet
-                trimmed_img.save(image_path)
-                # print(f"✨ Whitespace trimmed successfully for '{os.path.basename(image_path)}'.")
+        def is_mostly_white(color, alpha):
+            return alpha > 200 and all(c > threshold for c in color[:3])
+
+        # Sol kenardan ilk dolu pikseli bul
+        left = 0
+        for x in range(width):
+            found = False
+            for y in range(height):
+                color = img.getpixel((x, y))
+                if not is_mostly_white(color[:3], color[-1]):
+                    left = x
+                    found = True
+                    break
+            if found:
+                break
+
+        # Sağ kenardan ilk dolu pikseli bul
+        right = width - 1
+        for x in range(width - 1, -1, -1):
+            found = False
+            for y in range(height):
+                color = img.getpixel((x, y))
+                if not is_mostly_white(color[:3], color[-1]):
+                    right = x
+                    found = True
+                    break
+            if found:
+                break
+
+        # Üst kenardan ilk dolu pikseli bul
+        top = 0
+        for y in range(height):
+            found = False
+            for x in range(width):
+                color = img.getpixel((x, y))
+                if not is_mostly_white(color[:3], color[-1]):
+                    top = y
+                    found = True
+                    break
+            if found:
+                break
+
+        # Alt kenardan ilk dolu pikseli bul
+        bottom = height - 1
+        for y in range(height - 1, -1, -1):
+            found = False
+            for x in range(width):
+                color = img.getpixel((x, y))
+                if not is_mostly_white(color[:3], color[-1]):
+                    bottom = y
+                    found = True
+                    break
+            if found:
+                break
+
+        # Eğer dolu piksel bulunduysa kırp
+        if left <= right and top <= bottom:
+            cropped_img = img.crop((left, top, right + 1, bottom + 1))
+            cropped_img.save(image_path)
+            # print(f"✨ Whitespace trimmed successfully for '{os.path.basename(image_path)}'.")
         else:
-            # Görüntü tamamen boşsa dokunma
-            print(f"⚠️ Image '{os.path.basename(image_path)}' is empty, no trim needed.")
+            print(f"⚠️ Image '{os.path.basename(image_path)}' seems to be entirely whitespace.")
+
     except Exception as e:
-        print(f"❌ Error while trimming/padding image '{os.path.basename(image_path)}': {e}")
+        print(f"❌ Error while trimming image '{os.path.basename(image_path)}': {e}")
 
 
 def resize_and_fill_image(path, target_size, fill_color=(255, 255, 255, 255)):
     """
     Bir görüntüyü, en-boy oranını koruyarak hedef boyuta sığacak şekilde
-    yeniden boyutlandırır (gerekirse büyütür) ve boşlukları belirtilen renkle doldurur.
-    Varsayılan dolgu rengi beyazdır.
+    yeniden boyutlandırır ve boşlukları belirtilen renkle doldurur.
     """
-    try:
-        img = Image.open(path).convert("RGBA")
+    # try:
+    #     img = Image.open(path).convert("RGBA")
 
-        original_ratio = img.width / img.height
-        target_ratio = target_size[0] / target_size[1]
+    #     original_ratio = img.width / img.height
+    #     target_ratio = target_size[0] / target_size[1]
 
-        if original_ratio > target_ratio:
-            new_width = target_size[0]
-            new_height = int(new_width / original_ratio)
-        else:
-            new_height = target_size[1]
-            new_width = int(new_height * original_ratio)
-
-        # Resmi yeni boyutlara ölçekle (LANCZOS en kaliteli filtrelerden biridir)
-        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        # Hedef boyutta yeni bir tuval oluştur
-        new_img = Image.new("RGBA", target_size, fill_color)
-
-        x_offset = (target_size[0] - new_width) // 2
-        y_offset = (target_size[1] - new_height) // 2
-        new_img.paste(resized_img, (x_offset, y_offset), resized_img) # maske olarak kendisini kullan
-
-        new_img.save(path)
-        # print(f"🖼️ Image resized and filled to {target_size} -> '{os.path.basename(path)}'")
-    except Exception as e:
-        print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
+    #     if original_ratio > target_ratio:
+    #         new_width = target_size[0]
+    #         new_height = int(new_width / original_ratio)
+    #     else:
+    #         new_height = target_size[1]
+    #         new_width = int(new_height * original_ratio)
+            
+    #     resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    #     new_img = Image.new("RGBA", target_size, fill_color)
+    #     x_offset = (target_size[0] - new_width) // 2
+    #     y_offset = (target_size[1] - new_height) // 2
+    #     new_img.paste(resized_img, (x_offset, y_offset), resized_img)
+    #     new_img.save(path)
+    # except Exception as e:
+    #     print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
 
 
 # === ANA İŞLEM DÖNGÜSÜ ===
@@ -130,7 +161,8 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem = driver.find_element(By.ID, "question-area")
     question_elem.screenshot(question_path)
     
-    trim_and_pad_image(question_path, padding=QUESTION_PADDING)
+    # <-- DEĞİŞİKLİK: Sadece kırpma fonksiyonu çağrılıyor.
+    trim_whitespace(question_path)
     resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
     print("✅ Soru görseli alındı ve işlendi.")
 
@@ -141,7 +173,8 @@ for i in range(1, NUM_QUESTIONS + 1):
         choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
         opt.screenshot(choice_path)
         
-        trim_and_pad_image(choice_path, padding=CHOICE_PADDING)
+        # <-- DEĞİŞİKLİK: Sadece kırpma fonksiyonu çağrılıyor.
+        trim_whitespace(choice_path)
         resize_and_fill_image(choice_path, CHOICE_TARGET_SIZE)
         
         option_paths.append(choice_path)
@@ -154,7 +187,6 @@ for i in range(1, NUM_QUESTIONS + 1):
     print(f"ℹ️ Doğru cevap '{choice_labels[correct_index]}' olarak belirlendi.")
 
     # --- API'ye gönder ---
-    # Bu bölümü aktif etmek için başındaki ve sonundaki ''' leri kaldırın
     try:
         with open(question_path, 'rb') as q_img, \
              open(correct_path, 'rb') as correct, \
@@ -177,17 +209,14 @@ for i in range(1, NUM_QUESTIONS + 1):
             }
 
             response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-            response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
+            response.raise_for_status()
             
             print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
             
     except requests.exceptions.RequestException as e:
         print(f"❌ Soru {i} API'ye gönderilirken hata oluştu: {e}")
-        if 'response' in locals():
+        if 'response' in locals() and hasattr(response, 'text'):
             print(f"    API Yanıtı: {response.text}")
-
-    # API gönderme kapalıyken çalışmayı simüle etmek için:
-    print(f"➡️ Soru {i} için API gönderme adımı atlandı (kod yorum satırında).")
 
     # --- Sonraki soruya geç ---
     if i < NUM_QUESTIONS:

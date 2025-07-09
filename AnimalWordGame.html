@@ -3,37 +3,108 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Animal Word Game</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
+            background-color: #ffffff;
+        }
+
+        /* ⭐ DEĞİŞİKLİK: Python kodunun hedefleyeceği ana soru alanı */
+        #question-area {
+            padding: 15px;
+            display: inline-block;
+            /* Ekran görüntüsünün sadece içeriği kapsaması için */
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .arrow {
+            font-size: 40px;
+            color: #d9534f;
+            font-weight: bold;
         }
 
         .box {
-            border: 1px solid #ccc;
-            display: inline-block;
-            margin: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
             padding: 10px;
-            vertical-align: top;
-            min-width: 250px;
+            background-color: #ffffff;
+            min-width: 200px;
         }
 
-        /* ⭐ DEĞİŞİKLİK: Sembollerin font boyutu büyütüldü. */
+        .box h3 {
+            margin: 0 0 10px 0;
+            padding: 8px;
+            color: white;
+            border-radius: 5px 5px 0 0;
+            font-size: 1em;
+        }
+
+        #words-box h3 {
+            background-color: #0275d8;
+        }
+
+        #mappings-box h3 {
+            background-color: #5bc0de;
+        }
+
+        #target-box h3 {
+            background-color: #f0ad4e;
+        }
+
+        #options-box h3 {
+            background-color: #5cb85c;
+        }
+
         .symbols {
             font-size: 32px;
-            /* 28px'den 32px'e çıkarıldı */
+            padding: 5px;
+            letter-spacing: 5px;
+        }
+
+        #targetWord {
+            font-weight: bold;
+            font-size: 2em;
+            padding: 10px;
+        }
+
+        #options-box {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
         }
 
         .option {
             cursor: pointer;
-            margin: 5px;
             padding: 10px;
-            display: inline-block;
             border: 2px solid transparent;
             border-radius: 8px;
             transition: all 0.2s;
+            background-color: #ffffff;
+            border: 2px solid #ddd;
         }
 
         .option:hover {
@@ -42,61 +113,58 @@
         }
 
         .correct {
-            border-color: green;
+            border-color: green !important;
             background-color: #e6ffed;
         }
 
         .wrong {
-            border-color: red;
+            border-color: red !important;
             background-color: #ffeeee;
-        }
-
-        #options {
-            margin-top: 30px;
         }
     </style>
 </head>
 
 <body>
     <span id="correctIndex" style="display:none;"></span>
+
     <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
 
     <div id="question-area">
-        <div class="box">
-            <h3>SÖZCÜKLER</h3>
-            <div id="words"></div>
-        </div>
+        <div class="game-container">
+            <div class="top-row">
+                <div id="words-box" class="box">
+                    <h3>SÖZCÜKLER</h3>
+                    <div id="words"></div>
+                </div>
+                <div class="arrow">→</div>
+                <div id="mappings-box" class="box">
+                    <h3>EŞLEŞTİRME</h3>
+                    <div id="mappings"></div>
+                </div>
+            </div>
 
-        <div class="box">
-            <h3>EŞLEŞTİRME</h3>
-            <div id="mappings"></div>
-        </div>
-
-        <div class="box">
-            <h3>İSTENEN SÖZCÜK</h3>
-            <div id="targetWord" style="font-weight: bold; font-size: 1.5em;"></div>
+            <div id="target-box" class="box" style="margin-top: 20px;">
+                <h3>İSTENEN SÖZCÜK</h3>
+                <div id="targetWord"></div>
+            </div>
         </div>
     </div>
-    <div id="options" class="box">
+
+    <div id="options-box" class="box">
         <h3>SEÇENEKLER</h3>
+        <div id="options" class="options-grid"></div>
     </div>
 
     <script>
+        // JavaScript kodunda herhangi bir değişiklik yapılmamıştır.
         const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵', '🐸', '🐔'];
-
         const wordGroups = [
-            ['ALMAN', 'ANLAM', 'YALAN', 'NALAN'],
-            ['MASA', 'SABA', 'ASMA', 'SAMA'],
-            ['KASA', 'SAKA', 'AKAS', 'ASAK'],
-            ['TREN', 'RENT', 'TERN', 'KENT'],
-            ['KART', 'TRAK', 'KRAL', 'TARK'],
-            ['ELMA', 'LEMA', 'AMEL', 'ALEM'],
-            ['BALIK', 'KABLI', 'BAKIL', 'AKIL'],
-            ['LİMON', 'ONLİ', 'MİLO', 'NİLÜ'],
-            ['ODA', 'ADO', 'DOA', 'AYO'],
-            ['KUŞ', 'ŞUT', 'TOK', 'KOŞ'],
-            ['KİTAP', 'PATİK', 'KATİP', 'TAKİP'],
-            ['CEVİZ', 'VEZİR', 'CEZA', 'RİZE']
+            ['ALMAN', 'ANLAM', 'YALAN', 'NALAN'], ['MASA', 'SABA', 'ASMA', 'SAMA'],
+            ['KASA', 'SAKA', 'AKAS', 'ASAK'], ['TREN', 'RENT', 'TERN', 'KENT'],
+            ['KART', 'TRAK', 'KRAL', 'TARK'], ['ELMA', 'LEMA', 'AMEL', 'ALEM'],
+            ['BALIK', 'KABLI', 'BAKIL', 'AKIL'], ['LİMON', 'ONLİ', 'MİLO', 'NİLÜ'],
+            ['ODA', 'ADO', 'DOA', 'AYO'], ['KUŞ', 'ŞUT', 'TOK', 'KOŞ'],
+            ['KİTAP', 'PATİK', 'KATİP', 'TAKİP'], ['CEVİZ', 'VEZİR', 'CEZA', 'RİZE']
         ];
 
         function shuffle(arr) {
@@ -125,28 +193,38 @@
             const shuffledWords = shuffle(wordSet);
             const target = shuffledWords[0];
 
-            document.getElementById('words').textContent = wordSet.join(', ');
+            const wordsDiv = document.getElementById('words');
+            wordsDiv.innerHTML = '';
+            wordSet.forEach(word => {
+                const p = document.createElement('p');
+                p.textContent = word;
+                p.style.margin = '5px 0';
+                p.style.fontSize = '1.2em';
+                wordsDiv.appendChild(p);
+            });
+
             document.getElementById('targetWord').textContent = target;
             document.getElementById('mappings').innerHTML = '';
-            document.getElementById('options').innerHTML = '<h3>SEÇENEKLER</h3>';
+            document.getElementById('options').innerHTML = '';
 
             shuffledWords.forEach(word => {
                 const p = document.createElement('p');
-                // ⭐ DEĞİŞİKLİK: Soru alanındaki simgelerin de büyük görünmesi için "symbols" class'ı eklendi.
                 p.className = 'symbols';
+                p.style.margin = '5px 0';
                 p.textContent = `${wordToSymbols(word, letterToEmoji)}`;
                 document.getElementById('mappings').appendChild(p);
             });
 
             const correctOption = wordToSymbols(target, letterToEmoji);
-
             const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji));
             const options = shuffle(allSymbolOptions);
 
+            // Scriptin okuyacağı doğru şıkkın indeksini ata
             document.getElementById('correctIndex').textContent = options.indexOf(correctOption);
 
             options.forEach(opt => {
                 const div = document.createElement('div');
+                // Scriptin bulacağı "option" class'ı burada atanıyor
                 div.className = 'option symbols';
                 div.textContent = opt;
                 div.addEventListener('click', () => {

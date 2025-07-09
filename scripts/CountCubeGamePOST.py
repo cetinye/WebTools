@@ -85,32 +85,32 @@ def resize_and_fill_image(path, target_size, fill_color=(255, 255, 255, 255)):
     yeniden boyutlandırır (gerekirse büyütür) ve boşlukları belirtilen renkle doldurur.
     Varsayılan dolgu rengi beyazdır.
     """
-    try:
-        img = Image.open(path).convert("RGBA")
+    # try:
+    #     img = Image.open(path).convert("RGBA")
 
-        original_ratio = img.width / img.height
-        target_ratio = target_size[0] / target_size[1]
+    #     original_ratio = img.width / img.height
+    #     target_ratio = target_size[0] / target_size[1]
 
-        if original_ratio > target_ratio:
-            new_width = target_size[0]
-            new_height = int(new_width / original_ratio)
-        else:
-            new_height = target_size[1]
-            new_width = int(new_height * original_ratio)
+    #     if original_ratio > target_ratio:
+    #         new_width = target_size[0]
+    #         new_height = int(new_width / original_ratio)
+    #     else:
+    #         new_height = target_size[1]
+    #         new_width = int(new_height * original_ratio)
 
-        # Resmi yeni boyutlara ölçekle (LANCZOS en kaliteli filtrelerden biridir)
-        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    #     # Resmi yeni boyutlara ölçekle (LANCZOS en kaliteli filtrelerden biridir)
+    #     resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        # Hedef boyutta yeni bir tuval oluştur
-        new_img = Image.new("RGBA", target_size, fill_color)
+    #     # Hedef boyutta yeni bir tuval oluştur
+    #     new_img = Image.new("RGBA", target_size, fill_color)
 
-        x_offset = (target_size[0] - new_width) // 2
-        y_offset = (target_size[1] - new_height) // 2
-        new_img.paste(resized_img, (x_offset, y_offset), resized_img) # maske olarak kendisini kullan
+    #     x_offset = (target_size[0] - new_width) // 2
+    #     y_offset = (target_size[1] - new_height) // 2
+    #     new_img.paste(resized_img, (x_offset, y_offset), resized_img) # maske olarak kendisini kullan
 
-        new_img.save(path)
-    except Exception as e:
-        print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
+    #     new_img.save(path)
+    # except Exception as e:
+    #     print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
 
 
 # === ANA İŞLEM DÖNGÜSÜ ===

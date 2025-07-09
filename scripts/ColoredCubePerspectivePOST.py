@@ -127,7 +127,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem.screenshot(question_path)
     
     trim_and_pad_image(question_path, padding=QUESTION_PADDING)
-    resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
+    # resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
     print("✅ Soru görseli alındı ve işlendi.")
 
     # --- Şık görsellerini al ve işle ---
@@ -142,7 +142,7 @@ for i in range(1, NUM_QUESTIONS + 1):
         opt.screenshot(choice_path)
         
         trim_and_pad_image(choice_path, padding=CHOICE_PADDING)
-        resize_and_fill_image(choice_path, CHOICE_TARGET_SIZE)
+        # resize_and_fill_image(choice_path, CHOICE_TARGET_SIZE)
         
         option_paths.append(choice_path)
     print("✅ Şık görselleri alındı ve işlendi.")

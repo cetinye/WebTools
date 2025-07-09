@@ -27,7 +27,7 @@ CHOICE_PADDING = 0
 
 # Soru ve şıkların son boyutları
 QUESTION_TARGET_SIZE = (1200, 600)
-CHOICE_TARGET_SIZE = (256, 256)
+CHOICE_TARGET_SIZE = (512, 512)
 
 # === SETUP ===
 options = webdriver.ChromeOptions()
@@ -127,7 +127,7 @@ for i in range(1, NUM_QUESTIONS + 1):
     question_elem.screenshot(question_path)
     
     trim_and_pad_image(question_path, padding=QUESTION_PADDING)
-    resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
+    # resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
     print("✅ Soru görseli alındı ve işlendi.")
 
     # --- Şık görsellerini al ve işle ---
