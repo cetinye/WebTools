@@ -6,55 +6,175 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Animal Word Game</title>
     <style>
+        /* ⭐ DEĞİŞİKLİK: Arka plan beyaz yapıldı ⭐ */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
             background-color: #ffffff;
+            font-size: 16px;
         }
 
-        /* ⭐ DEĞİŞİKLİK: Python kodunun hedefleyeceği ana soru alanı */
         #question-area {
-            padding: 15px;
-            display: inline-block;
-            /* Ekran görüntüsünün sadece içeriği kapsaması için */
+            width: 1200px;
+            height: 1200px;
+            padding: 0;
+            box-sizing: border-box;
+            display: flex;
+            background-color: #ffffff;
+            margin: 20px auto;
+            border-radius: 30px;
+            /* Sayfa arka planı beyaz olduğu için kutuyu ayırt etmek adına hafif bir gölge eklendi */
         }
 
         .game-container {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 20px;
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+            gap: 40px;
         }
 
         .top-row {
             display: flex;
             justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            align-items: stretch;
+            gap: 20px;
+            /* Ok ve kutular arası boşluk azaltıldı */
+            width: 100%;
+            flex-grow: 3;
         }
 
+        /* ⭐ DEĞİŞİKLİK: Ok küçültüldü ⭐ */
         .arrow {
-            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            /* 120px'ten küçültüldü */
             color: #d9534f;
             font-weight: bold;
+            flex-basis: 100px;
+            /* Ok için sabit bir alan ayrıldı */
+            flex-shrink: 0;
         }
 
         .box {
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #ffffff;
-            min-width: 200px;
+            background-color: #f7f7f7;
+            border-radius: 20px;
+            padding: 30px;
+            flex: 1;
+            border: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ⭐ DEĞİŞİKLİK: Emoji kutusu büyütüldü ⭐ */
+        #words-box {
+            flex-grow: 2;
+            /* Kelime kutusuna 2 birim alan ver */
+        }
+
+        #mappings-box {
+            flex-grow: 3;
+            /* Emoji kutusuna 3 birim alan ver, böylece daha büyük olur */
         }
 
         .box h3 {
-            margin: 0 0 10px 0;
-            padding: 8px;
+            margin: 0 0 25px 0;
+            padding: 20px;
             color: white;
-            border-radius: 5px 5px 0 0;
-            font-size: 1em;
+            border-radius: 15px;
+            font-size: 2.5em;
+        }
+
+        .word-item-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        .word-item {
+            font-size: 5.5em;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .symbol-container {
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* ⭐ DEĞİŞİKLİK: #ccc border kaldırıldı ⭐ */
+        #target-box {
+            background-color: #f7f7f7;
+            border: none;
+            /* Çerçeve kaldırıldı */
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        #targetWord {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 6em;
+            flex-grow: 1;
+        }
+
+        #options-box {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        #options-box h3 {
+            max-width: 1064px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1064px;
+            margin: 0 auto;
+        }
+
+        .option {
+            width: 512px;
+            height: 512px;
+            box-sizing: border-box;
+            cursor: pointer;
+            background-color: #ffffff;
+            border-radius: 20px;
+            border: none;
+            padding: 0;
+            /* Seçeneklere de hafif bir derinlik eklendi */
+        }
+
+        .fit-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #mappings .fit-svg {
+            flex-grow: 1;
+            min-height: 0;
+        }
+
+        .fit-svg text {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
         }
 
         #words-box h3 {
@@ -73,179 +193,52 @@
             background-color: #5cb85c;
         }
 
-        .symbols {
-            font-size: 32px;
-            padding: 5px;
-            letter-spacing: 5px;
-        }
-
-        #targetWord {
-            font-weight: bold;
-            font-size: 2em;
-            padding: 10px;
-        }
-
-        #options-box {
-            max-width: 800px;
-            margin: 20px auto;
-        }
-
-        .options-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .option {
-            cursor: pointer;
-            padding: 10px;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            transition: all 0.2s;
-            background-color: #ffffff;
-            border: 2px solid #ddd;
-        }
-
-        .option:hover {
-            border-color: blue;
-            transform: scale(1.1);
-        }
-
         .correct {
-            border-color: green !important;
-            background-color: #e6ffed;
+            background-color: #e6ffed !important;
         }
 
         .wrong {
-            border-color: red !important;
-            background-color: #ffeeee;
+            background-color: #ffeeee !important;
         }
     </style>
 </head>
 
 <body>
+    <div id="svg-staging-area" style="position: absolute; visibility: hidden; width: 0; height: 0; overflow: hidden;">
+    </div>
     <span id="correctIndex" style="display:none;"></span>
-
     <h1>Hayvan Simgeli Eşleştirme Oyunu</h1>
-
     <div id="question-area">
         <div class="game-container">
             <div class="top-row">
                 <div id="words-box" class="box">
                     <h3>SÖZCÜKLER</h3>
-                    <div id="words"></div>
+                    <div id="words" class="word-item-container"></div>
                 </div>
                 <div class="arrow">→</div>
                 <div id="mappings-box" class="box">
                     <h3>EŞLEŞTİRME</h3>
-                    <div id="mappings"></div>
+                    <div id="mappings" class="word-item-container"></div>
                 </div>
             </div>
-
-            <div id="target-box" class="box" style="margin-top: 20px;">
+            <div id="target-box" class="box">
                 <h3>İSTENEN SÖZCÜK</h3>
                 <div id="targetWord"></div>
             </div>
         </div>
     </div>
-
     <div id="options-box" class="box">
         <h3>SEÇENEKLER</h3>
         <div id="options" class="options-grid"></div>
     </div>
-
     <script>
-        // JavaScript kodunda herhangi bir değişiklik yapılmamıştır.
         const animalEmojis = ['🐶', '🐱', '🐭', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷', '🐮', '🐵', '🐸', '🐔'];
-        const wordGroups = [
-            ['ALMAN', 'ANLAM', 'YALAN', 'NALAN'], ['MASA', 'SABA', 'ASMA', 'SAMA'],
-            ['KASA', 'SAKA', 'AKAS', 'ASAK'], ['TREN', 'RENT', 'TERN', 'KENT'],
-            ['KART', 'TRAK', 'KRAL', 'TARK'], ['ELMA', 'LEMA', 'AMEL', 'ALEM'],
-            ['BALIK', 'KABLI', 'BAKIL', 'AKIL'], ['LİMON', 'ONLİ', 'MİLO', 'NİLÜ'],
-            ['ODA', 'ADO', 'DOA', 'AYO'], ['KUŞ', 'ŞUT', 'TOK', 'KOŞ'],
-            ['KİTAP', 'PATİK', 'KATİP', 'TAKİP'], ['CEVİZ', 'VEZİR', 'CEZA', 'RİZE']
-        ];
-
-        function shuffle(arr) {
-            return arr.slice().sort(() => Math.random() - 0.5);
-        }
-
-        function createMapping(words) {
-            const uniqueLetters = Array.from(new Set(words.join('').toUpperCase().split('')));
-            const map = {};
-            const shuffledEmojis = shuffle(animalEmojis);
-            uniqueLetters.forEach((char, i) => {
-                map[char] = shuffledEmojis[i % shuffledEmojis.length];
-            });
-            return map;
-        }
-
-        function wordToSymbols(word, map) {
-            return word.toUpperCase().split('').map(l => map[l]).join(' ');
-        }
-
-        function initGame() {
-            document.getElementById('options').style.pointerEvents = 'auto';
-
-            const wordSet = shuffle(wordGroups)[0];
-            const letterToEmoji = createMapping(wordSet);
-            const shuffledWords = shuffle(wordSet);
-            const target = shuffledWords[0];
-
-            const wordsDiv = document.getElementById('words');
-            wordsDiv.innerHTML = '';
-            wordSet.forEach(word => {
-                const p = document.createElement('p');
-                p.textContent = word;
-                p.style.margin = '5px 0';
-                p.style.fontSize = '1.2em';
-                wordsDiv.appendChild(p);
-            });
-
-            document.getElementById('targetWord').textContent = target;
-            document.getElementById('mappings').innerHTML = '';
-            document.getElementById('options').innerHTML = '';
-
-            shuffledWords.forEach(word => {
-                const p = document.createElement('p');
-                p.className = 'symbols';
-                p.style.margin = '5px 0';
-                p.textContent = `${wordToSymbols(word, letterToEmoji)}`;
-                document.getElementById('mappings').appendChild(p);
-            });
-
-            const correctOption = wordToSymbols(target, letterToEmoji);
-            const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji));
-            const options = shuffle(allSymbolOptions);
-
-            // Scriptin okuyacağı doğru şıkkın indeksini ata
-            document.getElementById('correctIndex').textContent = options.indexOf(correctOption);
-
-            options.forEach(opt => {
-                const div = document.createElement('div');
-                // Scriptin bulacağı "option" class'ı burada atanıyor
-                div.className = 'option symbols';
-                div.textContent = opt;
-                div.addEventListener('click', () => {
-                    document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none');
-
-                    if (opt === correctOption) {
-                        div.classList.add('correct');
-                    } else {
-                        div.classList.add('wrong');
-                        document.querySelectorAll('.option').forEach(el => {
-                            if (el.textContent === correctOption) {
-                                el.classList.add('correct');
-                            }
-                        });
-                    }
-                    setTimeout(initGame, 2000);
-                });
-                document.getElementById('options').appendChild(div);
-            });
-        }
-
+        const wordGroups = [['ALMAN', 'ANLAM', 'YALAN', 'NALAN'], ['MASA', 'SABA', 'ASMA', 'SAMA'], ['KASA', 'SAKA', 'AKAS', 'ASAK'], ['TREN', 'RENT', 'TERN', 'KENT']];
+        function shuffle(arr) { return arr.slice().sort(() => Math.random() - 0.5); }
+        function createMapping(words) { const uniqueLetters = Array.from(new Set(words.join('').toUpperCase().split(''))); const map = {}; const shuffledEmojis = shuffle(animalEmojis); uniqueLetters.forEach((char, i) => { map[char] = shuffledEmojis[i % shuffledEmojis.length]; }); return map; }
+        function wordToSymbols(word, map) { return word.toUpperCase().split('').map(l => map[l] || '❓').join(' '); }
+        function createFitTextSVG(text) { const svgNS = "http://www.w3.org/2000/svg"; const stagingArea = document.getElementById('svg-staging-area'); const svg = document.createElementNS(svgNS, "svg"); svg.setAttribute("class", "fit-svg"); const textElement = document.createElementNS(svgNS, "text"); textElement.style.fontSize = "100px"; textElement.textContent = text; svg.appendChild(textElement); stagingArea.appendChild(svg); const bbox = textElement.getBBox(); stagingArea.removeChild(svg); const padding = text ? 2 : 0; svg.setAttribute("viewBox", `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + (padding * 2)} ${bbox.height + (padding * 2)}`); svg.setAttribute("preserveAspectRatio", "xMidYMid meet"); return svg; }
+        function initGame() { document.querySelectorAll('.option').forEach(el => { el.classList.remove('correct', 'wrong'); }); document.getElementById('options').style.pointerEvents = 'auto'; const wordSet = shuffle(wordGroups)[0]; const letterToEmoji = createMapping(wordSet); const shuffledWords = shuffle(wordSet); const target = shuffledWords[0]; const wordsDiv = document.getElementById('words'); wordsDiv.innerHTML = ''; wordSet.forEach(word => { const p = document.createElement('p'); p.className = 'word-item'; p.textContent = word; wordsDiv.appendChild(p); }); document.getElementById('targetWord').textContent = target; const mappingsDiv = document.getElementById('mappings'); mappingsDiv.innerHTML = ''; shuffledWords.forEach(word => { const symbolText = wordToSymbols(word, letterToEmoji); const svg = createFitTextSVG(symbolText); mappingsDiv.appendChild(svg); }); const correctOptionSymbol = wordToSymbols(target, letterToEmoji); const allSymbolOptions = wordSet.map(w => wordToSymbols(w, letterToEmoji)); const options = shuffle(allSymbolOptions); document.getElementById('correctIndex').textContent = options.indexOf(correctOptionSymbol); const optionsDiv = document.getElementById('options'); optionsDiv.innerHTML = ''; options.forEach(opt => { const div = document.createElement('div'); div.className = 'option'; const svg = createFitTextSVG(opt); div.appendChild(svg); div.dataset.symbolString = opt; div.addEventListener('click', () => { if (div.style.pointerEvents === 'none') return; document.querySelectorAll('.option').forEach(el => el.style.pointerEvents = 'none'); if (div.dataset.symbolString === correctOptionSymbol) { div.classList.add('correct'); } else { div.classList.add('wrong'); document.querySelectorAll('.option').forEach(correctEl => { if (correctEl.dataset.symbolString === correctOptionSymbol) { correctEl.classList.add('correct'); } }); } setTimeout(initGame, 2000); }); optionsDiv.appendChild(div); }); }
         initGame();
     </script>
 </body>
