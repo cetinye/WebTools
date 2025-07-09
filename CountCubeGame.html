@@ -8,48 +8,62 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: white;
+            background: #ffffff;
             margin: 0;
             padding: 20px;
             text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .game-container {
-            max-width: 1000px;
-            margin: auto;
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1600px;
+        }
+
+        #question-area {
+            width: 1600px;
+            height: 1200px;
+            background-color: #ffffff;
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
 
         .cube-display {
-            background: white;
-            padding: 40px;
-            margin: 20px 0;
-            min-height: 300px;
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            perspective: 1200px;
+            perspective: 3000px;
         }
 
         .cube-structure {
             position: absolute;
-            left: 50%;
-            top: 50%;
             transform-style: preserve-3d;
             transform: translate(-50%, -50%) rotateX(-50deg) rotateY(160deg);
         }
 
+        /* ⭐ DEĞİŞİKLİK: Boyutlar artık CSS değişkenleri ile kontrol ediliyor ⭐ */
         .cube {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: var(--cube-size);
+            height: var(--cube-size);
             transform-style: preserve-3d;
         }
 
         .cube-face {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: var(--cube-size);
+            height: var(--cube-size);
             border: 1px solid rgba(0, 0, 0, 0.4);
             box-sizing: border-box;
             backface-visibility: hidden;
@@ -57,77 +71,86 @@
 
         .front {
             background: #ef5350;
-            transform: translateZ(25px);
+            transform: translateZ(var(--cube-half-size));
         }
 
         .back {
             background: #e53935;
-            transform: rotateY(180deg) translateZ(25px);
+            transform: rotateY(180deg) translateZ(var(--cube-half-size));
         }
 
         .right {
             background: #f44336;
-            transform: rotateY(90deg) translateZ(25px);
+            transform: rotateY(90deg) translateZ(var(--cube-half-size));
         }
 
         .left {
             background: #c62828;
-            transform: rotateY(-90deg) translateZ(25px);
+            transform: rotateY(-90deg) translateZ(var(--cube-half-size));
         }
 
         .top {
             background: #ff7043;
-            transform: rotateX(90deg) translateZ(25px);
+            transform: rotateX(90deg) translateZ(var(--cube-half-size));
         }
 
         .bottom {
             background: #bf360c;
-            transform: rotateX(-90deg) translateZ(25px);
+            transform: rotateX(-90deg) translateZ(var(--cube-half-size));
         }
 
-        .answer-section {
+        #options-area {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
+            max-width: 1064px;
         }
 
         .answer-btn {
-            padding: 15px 25px;
-            font-size: 2em;
+            width: 512px;
+            height: 512px;
+            font-size: 15em;
             font-weight: bold;
-            background: white;
+            color: #333;
+            background: #ffffff;
             border: none;
             cursor: pointer;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
         }
 
-        .answer-btn.correct {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .answer-btn.incorrect {
-            background: #f44336;
-            color: white;
+        .game-controls {
+            background-color: #f7f7f7;
+            padding: 20px;
+            border-radius: 20px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 1064px;
+            box-sizing: border-box;
         }
 
         .feedback {
-            margin-top: 15px;
+            margin-bottom: 15px;
             font-weight: bold;
             min-height: 30px;
             font-size: 1.2em;
         }
 
         .score {
-            margin-top: 10px;
+            margin-bottom: 10px;
             font-size: 1.1em;
         }
 
         .next-btn {
-            margin-top: 20px;
             padding: 15px 30px;
-            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            background: #4ECDC4;
             color: white;
+            border-radius: 10px;
+            border: none;
             font-weight: bold;
             font-size: 1em;
             cursor: pointer;
@@ -136,58 +159,25 @@
 </head>
 
 <body>
-    <div class="game-container">
-        <div class="cube-display" id="cubeDisplay"></div>
-        <div class="answer-section" id="answerSection"></div>
-        <div class="feedback" id="feedback"></div>
-        <div class="score">Skor: <span id="score">0</span> / <span id="total">0</span></div>
-        <button class="next-btn" onclick="generateNewPuzzle()">Yeni Soru</button>
+    <div class="game-wrapper">
+        <div id="question-area">
+            <div class="cube-display" id="cubeDisplay"></div>
+        </div>
+        <div id="options-area">
+            <div class="answer-section" id="answerSection"></div>
+        </div>
+        <div class="game-controls">
+            <div class="feedback" id="feedback"></div>
+            <div class="score">Skor: <span id="score">0</span> / <span id="total">0</span></div>
+            <button class="next-btn" onclick="generateNewPuzzle()">Yeni Soru</button>
+        </div>
     </div>
 
     <div id="correctIndex" style="display: none;"></div>
 
     <script>
-        let currentAnswer = 0;
-        let score = 0;
-        let totalQuestions = 0;
-        let answered = false;
-
-        function generateRandomStructure() {
-            const gridW = 10, gridD = 3;
-            const maxTotalCubes = Math.floor(Math.random() * 21) + 10;
-            const maxHeight = 4;
-            const heights = Array.from({ length: gridW }, () => Array(gridD).fill(0));
-
-            // ilk derinlik (z=0): yükseklik 1-2
-            for (let x = 0; x < gridW; x++) {
-                heights[x][0] = 1 + Math.floor(Math.random() * 2);
-            }
-
-            // diğer derinlikler (z=1,2): yükseklik >= önceki, <= önceki+1
-            for (let z = 1; z < gridD; z++) {
-                for (let x = 0; x < gridW; x++) {
-                    const prev = heights[x][z - 1];
-                    const minH = prev;
-                    const maxH = Math.min(prev + 1, maxHeight);
-                    heights[x][z] = Math.floor(Math.random() * (maxH - minH + 1)) + minH;
-                }
-            }
-
-            const positions = [];
-            let total = 0;
-            outer: for (let z = 0; z < gridD; z++) {
-                for (let x = 0; x < gridW; x++) {
-                    const h = heights[x][z];
-                    for (let y = 0; y < h; y++) {
-                        positions.push({ x, y, z });
-                        total++;
-                        if (total >= maxTotalCubes) break outer;
-                    }
-                }
-            }
-
-            return positions;
-        }
+        let currentAnswer = 0; let score = 0; let totalQuestions = 0; let answered = false;
+        function generateRandomStructure() { const gridW = 10, gridD = 3; const maxTotalCubes = Math.floor(Math.random() * 21) + 10; const maxHeight = 4; const heights = Array.from({ length: gridW }, () => Array(gridD).fill(0)); for (let x = 0; x < gridW; x++) { heights[x][0] = 1 + Math.floor(Math.random() * 2); } for (let z = 1; z < gridD; z++) { for (let x = 0; x < gridW; x++) { const prev = heights[x][z - 1]; const minH = prev; const maxH = Math.min(prev + 1, maxHeight); heights[x][z] = Math.floor(Math.random() * (maxH - minH + 1)) + minH; } } const positions = []; let total = 0; outer: for (let z = 0; z < gridD; z++) { for (let x = 0; x < gridW; x++) { const h = heights[x][z]; for (let y = 0; y < h; y++) { positions.push({ x, y, z }); total++; if (total >= maxTotalCubes) break outer; } } } return positions; }
 
         function renderCubes(positions) {
             const container = document.getElementById('cubeDisplay');
@@ -195,9 +185,14 @@
             const structure = document.createElement('div');
             structure.className = 'cube-structure';
 
-            const xs = positions.map(p => p.x);
-            const ys = positions.map(p => p.y);
-            const zs = positions.map(p => p.z);
+            const gridWidthInCubes = 10;
+            const dynamicCubeSize = container.clientWidth / (gridWidthInCubes * 1.2);
+
+            // ⭐ DEĞİŞİKLİK: Hesaplanan dinamik boyut, CSS değişkenlerine atanıyor ⭐
+            structure.style.setProperty('--cube-size', `${dynamicCubeSize}px`);
+            structure.style.setProperty('--cube-half-size', `${dynamicCubeSize / 2}px`);
+
+            const xs = positions.map(p => p.x); const ys = positions.map(p => p.y); const zs = positions.map(p => p.z);
             const offsetX = (Math.min(...xs) + Math.max(...xs)) / 2;
             const offsetY = (Math.min(...ys) + Math.max(...ys)) / 2;
             const offsetZ = (Math.min(...zs) + Math.max(...zs)) / 2;
@@ -205,18 +200,20 @@
             positions.forEach(pos => {
                 const cube = document.createElement('div');
                 cube.className = 'cube';
-                const size = 52;
+
+                // Küp pozisyonu dinamik boyuta göre hesaplanıyor
+                const size = dynamicCubeSize;
                 const x = (pos.x - offsetX) * size;
                 const y = -(pos.y - offsetY) * size;
                 const z = (pos.z - offsetZ) * size;
                 cube.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
 
+                // Küpün yüzleri CSS değişkenlerini otomatik olarak alacak
                 ['front', 'back', 'left', 'right', 'top', 'bottom'].forEach(face => {
                     const el = document.createElement('div');
                     el.className = `cube-face ${face}`;
                     cube.appendChild(el);
                 });
-
                 structure.appendChild(cube);
             });
 
@@ -224,67 +221,10 @@
             return positions.length;
         }
 
-        function generateAnswerChoices(correctAnswer) {
-            const choices = new Set([correctAnswer]);
-            while (choices.size < 4) {
-                const offset = Math.floor(Math.random() * 7) - 3;
-                const wrong = correctAnswer + offset;
-                if (wrong > 0) choices.add(wrong);
-            }
-            return Array.from(choices).sort(() => Math.random() - 0.5);
-        }
-
-        function renderAnswerButtons(choices, correctAnswer) {
-            const section = document.getElementById('answerSection');
-            section.innerHTML = '';
-            choices.forEach(choice => {
-                const btn = document.createElement('button');
-                btn.className = 'answer-btn';
-                btn.textContent = choice;
-                btn.onclick = () => checkAnswer(choice, correctAnswer, btn);
-                section.appendChild(btn);
-            });
-
-            const correctIndex = choices.indexOf(correctAnswer);
-            document.getElementById('correctIndex').textContent = correctIndex;
-        }
-
-        function checkAnswer(selected, correct, btn) {
-            if (answered) return;
-            answered = true;
-            totalQuestions++;
-            const feedback = document.getElementById('feedback');
-            const buttons = document.querySelectorAll('.answer-btn');
-
-            if (selected === correct) {
-                score++;
-                btn.classList.add('correct');
-                feedback.textContent = '🎉 Doğru!';
-                feedback.style.color = '#388e3c';
-            } else {
-                btn.classList.add('incorrect');
-                feedback.textContent = `❌ Yanlış. Doğru cevap ${correct}`;
-                feedback.style.color = '#c62828';
-                buttons.forEach(b => {
-                    if (parseInt(b.textContent) === correct) {
-                        b.classList.add('correct');
-                    }
-                });
-            }
-            buttons.forEach(b => b.disabled = true);
-            document.getElementById('score').textContent = score;
-            document.getElementById('total').textContent = totalQuestions;
-        }
-
-        function generateNewPuzzle() {
-            answered = false;
-            document.getElementById('feedback').textContent = '';
-            const cubes = generateRandomStructure();
-            currentAnswer = renderCubes(cubes);
-            const choices = generateAnswerChoices(currentAnswer);
-            renderAnswerButtons(choices, currentAnswer);
-        }
-
+        function generateAnswerChoices(correctAnswer) { const choices = new Set([correctAnswer]); while (choices.size < 4) { const offset = Math.floor(Math.random() * 9) - 4; const wrong = correctAnswer + offset; if (wrong > 0 && wrong !== correctAnswer) choices.add(wrong); } return Array.from(choices).sort(() => Math.random() - 0.5); }
+        function renderAnswerButtons(choices, correctAnswer) { const section = document.getElementById('answerSection'); section.innerHTML = ''; choices.forEach(choice => { const btn = document.createElement('button'); btn.className = 'answer-btn'; btn.textContent = choice; btn.onclick = () => checkAnswer(choice, correctAnswer, btn); section.appendChild(btn); }); const correctIndex = choices.indexOf(correctAnswer); document.getElementById('correctIndex').textContent = correctIndex; }
+        function checkAnswer(selected, correct, btn) { if (answered) return; answered = true; totalQuestions++; const feedback = document.getElementById('feedback'); const buttons = document.querySelectorAll('.answer-btn'); if (selected === correct) { score++; btn.style.backgroundColor = '#4CAF50'; btn.style.color = 'white'; feedback.textContent = '🎉 Doğru!'; feedback.style.color = '#388e3c'; } else { btn.style.backgroundColor = '#f44336'; btn.style.color = 'white'; feedback.textContent = `❌ Yanlış. Doğru cevap ${correct}`; feedback.style.color = '#c62828'; buttons.forEach(b => { if (parseInt(b.textContent) === correct) { b.style.backgroundColor = '#4CAF50'; b.style.color = 'white'; } }); } buttons.forEach(b => b.disabled = true); document.getElementById('score').textContent = score; document.getElementById('total').textContent = totalQuestions; }
+        function generateNewPuzzle() { answered = false; document.getElementById('feedback').textContent = ''; const cubes = generateRandomStructure(); currentAnswer = renderCubes(cubes); const choices = generateAnswerChoices(currentAnswer); renderAnswerButtons(choices, currentAnswer); }
         window.onload = () => generateNewPuzzle();
     </script>
 </body>
