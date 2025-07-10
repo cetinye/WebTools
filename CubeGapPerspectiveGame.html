@@ -2,305 +2,228 @@
 <html lang="tr">
 
 <head>
-   
-  <meta charset="UTF-8">
-    <title>Cube Gap Perspective Game</title>
-    <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #ffffff;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Küp Sayma Oyunu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    #canvas-wrapper {
-      position: relative;
-      width: 600px;
-      height: 400px;
-      margin: 20px auto;
-    }
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
 
-    canvas {
-      background: #fff;
-      display: block;
-    }
+        #question-area {
+            width: 1200px;
+            height: 1200px;
+            background-color: #ffffff;
+            position: relative;
+        }
 
-    /* 'left' başlangıç değeri kaldırıldı, JS ile ayarlanacak */
-    .view-indicator-svg {
-      position: absolute;
-      top: 15px;
-      /* left: 50%; kaldırıldı */
-      transform: translateX(-50%);
-      /* Ortalamayı korumak için transform kalıyor */
-      width: 70px;
-      pointer-events: none;
-    }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
 
-    .options {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 20px;
-    }
+        .view-indicator-svg {
+            position: absolute;
+            width: 150px;
+            pointer-events: none;
+        }
 
-    .option {
-      display: grid;
-      grid-template-columns: repeat(4, 20px);
-      gap: 2px;
-      cursor: pointer;
-      padding: 5px;
-      border: 2px solid #ccc;
-      /* Seçenekler için temel kenarlık */
-    }
+        #options-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1064px;
+        }
 
-    .option:hover {
-      border-color: #4caf50;
-    }
+        .option {
+            width: 512px;
+            height: 512px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background-color: #ffffff;
+        }
 
-    .cell {
-      width: 20px;
-      height: 20px;
-      background-color: #ffffff;
-    }
+        .option-grid {
+            display: grid;
+            gap: 5px;
+        }
 
-    .filled {
-      background-color: #00bcd4;
-    }
+        .cell {
+            background-color: #e0e0e0;
+        }
 
-    #result {
-      margin-top: 20px;
-      font-size: 20px;
-      font-weight: bold;
-      min-height: 24px;
-    }
-  </style>
+        .filled {
+            background-color: #00bcd4;
+        }
+
+        .game-controls {
+            background-color: #f7f7f7;
+            padding: 20px;
+            border-radius: 20px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 1064px;
+            box-sizing: border-box;
+        }
+
+        .feedback {
+            margin-bottom: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            font-size: 1.2em;
+        }
+
+        .next-btn {
+            padding: 15px 30px;
+            background: #4ECDC4;
+            color: white;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
-    <span id="correctIndex" style="display:none;"></span>
+    <div class="game-wrapper">
+        <div id="question-area">
+            <canvas id="canvas"></canvas>
+            <div class="view-indicator-svg">
+                <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333"
+                        stroke-width="5" />
+                    <circle cx="50" cy="35" r="15" fill="#333" />
+                    <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+        </div>
+        <div id="options-area" class="options"></div>
+        <div class="game-controls">
+            <p id="result"></p>
+            <button id="next-btn" style="display:none;">Yeni Soru</button>
+        </div>
+    </div>
 
-    <div id="canvas-wrapper">
-        <canvas id="canvas" width="600" height="400"></canvas>
-        <div class="view-indicator-svg">
-            <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg">
-               
-        <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333"          
-          stroke-width="5" />
-               
-        <circle cx="50" cy="35" r="15" fill="#333" />
-               
-        <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4"          
-          stroke-linecap="round" stroke-linejoin="round" />
-               
-        <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4"          
-          stroke-linecap="round" stroke-linejoin="round" />
-               
-        <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4"          
-          stroke-linecap="round" stroke-linejoin="round" />
-             
-      </svg>
-          </div>
-      </div>
-    <div class="options" id="options"></div>
-    <p id="result"></p>
-   
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const cubeSize = 30;
-    const offsetX = canvas.width / 2;
-    const offsetY = 150;
-    const gridSize = 4;
-    const layers = 3;
+    <span id="correctIndex" style="display:none;"></span>
 
-    function drawIsoCube(x, y, z, color = '#00bcd4') {
-      const isoX = (x - y) * cubeSize + offsetX;
-      const isoY = (x + y) * cubeSize / 2 - z * cubeSize + offsetY;
-      ctx.beginPath();
-      ctx.moveTo(isoX, isoY);
-      ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
-      ctx.lineTo(isoX, isoY + cubeSize);
-      ctx.lineTo(isoX - cubeSize, isoY + cubeSize / 2);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(isoX - cubeSize, isoY + cubeSize / 2);
-      ctx.lineTo(isoX, isoY + cubeSize);
-      ctx.lineTo(isoX, isoY + cubeSize * 2);
-      ctx.lineTo(isoX - cubeSize, isoY + cubeSize * 1.5);
-      ctx.closePath();
-      ctx.fillStyle = darkenColor(color, 0.2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(isoX, isoY + cubeSize);
-      ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
-      ctx.lineTo(isoX + cubeSize, isoY + cubeSize * 1.5);
-      ctx.lineTo(isoX, isoY + cubeSize * 2);
-      ctx.closePath();
-      ctx.fillStyle = darkenColor(color, 0.4);
-      ctx.fill();
-    }
+    <script>
+        // Hatanın çözümü için tüm kod bu bloğun içine alınmıştır.
+        document.addEventListener('DOMContentLoaded', () => {
 
-    function darkenColor(hex, percent) {
-      const num = parseInt(hex.replace("#", ""), 16);
-      const amt = Math.round(2.55 * percent * 100);
-      const R = (num >> 16) - amt;
-      const G = ((num >> 8) & 0x00FF) - amt;
-      const B = (num & 0x0000FF) - amt;
-      return `rgb(${Math.max(R, 0)},${Math.max(G, 0)},${Math.max(B, 0)})`;
-    }
+            const canvas = document.getElementById('canvas');
+            const canvasWrapper = document.getElementById('question-area');
+            canvas.width = canvasWrapper.clientWidth;
+            canvas.height = canvasWrapper.clientHeight;
+            const ctx = canvas.getContext('2d');
 
-    function generateConnectedStructure() {
-      const structure = Array.from({ length: layers }, () =>
-        Array.from({ length: gridSize }, () => Array(gridSize).fill(0))
-      );
-      const queue = [];
-      const startX = Math.floor(Math.random() * gridSize);
-      const startY = Math.floor(Math.random() * gridSize);
-      const startZ = Math.floor(Math.random() * layers);
-      structure[startZ][startY][startX] = 1;
-      queue.push([startX, startY, startZ]);
-      let placed = 1;
-      while (placed < 6 && queue.length > 0) {
-        const [x, y, z] = queue.shift();
-        const directions = [
-          [1, 0, 0], [-1, 0, 0], [0, 1, 0],
-          [0, -1, 0], [0, 0, 1], [0, 0, -1]
-        ];
-        for (const [dx, dy, dz] of directions.sort(() => Math.random() - 0.5)) {
-          const nx = x + dx;
-          const ny = y + dy;
-          const nz = z + dz;
-          if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && nz >= 0 && nz < layers) {
-            if (!structure[nz][ny][nx]) {
-              structure[nz][ny][nx] = 1;
-              queue.push([nx, ny, nz]);
-              placed++;
-              break;
+            const cubeSize = 120;
+            const gridSize = 4;
+            const layers = 3;
+
+            function drawIsoCube(x, y, z, color = '#00bcd4', offsetX, offsetY) {
+                const isoX = (x - y) * cubeSize + offsetX;
+                const isoY = (x + y) * cubeSize / 2 - z * cubeSize + offsetY;
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(isoX, isoY);
+                ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
+                ctx.lineTo(isoX, isoY + cubeSize);
+                ctx.lineTo(isoX - cubeSize, isoY + cubeSize / 2);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill(); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(isoX - cubeSize, isoY + cubeSize / 2);
+                ctx.lineTo(isoX, isoY + cubeSize);
+                ctx.lineTo(isoX, isoY + cubeSize * 2);
+                ctx.lineTo(isoX - cubeSize, isoY + cubeSize * 1.5);
+                ctx.closePath();
+                ctx.fillStyle = darkenColor(color, 0.2);
+                ctx.fill(); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(isoX, isoY + cubeSize);
+                ctx.lineTo(isoX + cubeSize, isoY + cubeSize / 2);
+                ctx.lineTo(isoX + cubeSize, isoY + cubeSize * 1.5);
+                ctx.lineTo(isoX, isoY + cubeSize * 2);
+                ctx.closePath();
+                ctx.fillStyle = darkenColor(color, 0.4);
+                ctx.fill(); ctx.stroke();
             }
-          }
-        }
-      }
-      return structure;
-    }
 
-    function getTopView(structure) {
-      const top = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
-      for (let z = layers - 1; z >= 0; z--) {
-        for (let y = 0; y < gridSize; y++) {
-          for (let x = 0; x < gridSize; x++) {
-            if (structure[z][y][x] && top[y][x] === 0) top[y][x] = 1;
-          }
-        }
-      }
-      return top;
-    }
+            function drawGame(structure) {
+                let minIsoX = Infinity, maxIsoX = -Infinity;
+                let minIsoY = Infinity, maxIsoY = -Infinity;
+                for (let z = 0; z < layers; z++) { for (let y = 0; y < gridSize; y++) { for (let x = 0; x < gridSize; x++) { if (structure[z][y][x]) { const isoX = (x - y) * cubeSize; const isoY = (x + y) * cubeSize / 2 - z * cubeSize; minIsoX = Math.min(minIsoX, isoX - cubeSize); maxIsoX = Math.max(maxIsoX, isoX + cubeSize); minIsoY = Math.min(minIsoY, isoY); maxIsoY = Math.max(maxIsoY, isoY + cubeSize * 2); } } } }
+                const structureWidth = maxIsoX - minIsoX;
+                const structureHeight = maxIsoY - minIsoY;
+                const finalOffsetX = (canvas.width - structureWidth) / 2 - minIsoX;
+                const finalOffsetY = (canvas.height - structureHeight) / 2 - minIsoY;
 
-    function drawStructure(structure) {
-      for (let z = 0; z < layers; z++) {
-        for (let y = 0; y < gridSize; y++) {
-          for (let x = 0; x < gridSize; x++) {
-            if (structure[z][y][x]) drawIsoCube(x, y, z);
-          }
-        }
-      }
-    }
+                const indicator = document.querySelector('.view-indicator-svg');
+                const indicatorCenterX = minIsoX + (structureWidth / 2) + finalOffsetX;
+                const indicatorTopY = minIsoY + finalOffsetY;
+                const indicatorOffsetY = 60;
 
-    // Göstergeyi yapının yatay merkezine hizalayan fonksiyon
-    function centerIndicatorOnStructure(structure) {
-      let minIsoX = Infinity;
-      let maxIsoX = -Infinity;
-      let cubeFound = false;
+                indicator.style.left = `${indicatorCenterX}px`;
+                indicator.style.top = `${indicatorTopY - indicator.clientHeight - indicatorOffsetY}px`;
+                indicator.style.transform = 'translateX(-50%)';
 
-      for (let z = 0; z < layers; z++) {
-        for (let y = 0; y < gridSize; y++) {
-          for (let x = 0; x < gridSize; x++) {
-            if (structure[z][y][x]) {
-              cubeFound = true;
-              const isoX = (x - y) * cubeSize + offsetX;
-              // Her küpün tam genişliğini hesaba kat
-              minIsoX = Math.min(minIsoX, isoX - cubeSize);
-              maxIsoX = Math.max(maxIsoX, isoX + cubeSize);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let z = 0; z < layers; z++) { for (let y = 0; y < gridSize; y++) { for (let x = 0; x < gridSize; x++) { if (structure[z][y][x]) { drawIsoCube(x, y, z, '#00bcd4', finalOffsetX, finalOffsetY); } } } }
             }
-          }
-        }
-      }
 
-      if (cubeFound) {
-        const centerX = (minIsoX + maxIsoX) / 2;
-        const indicator = document.querySelector('.view-indicator-svg');
-        indicator.style.left = `${centerX}px`;
-      }
-    }
+            function darkenColor(hex, percent) { const num = parseInt(hex.replace("#", ""), 16); const amt = Math.round(2.55 * percent * 100); const R = (num >> 16) - amt, G = ((num >> 8) & 0x00FF) - amt, B = (num & 0x0000FF) - amt; return `rgb(${Math.max(R, 0)},${Math.max(G, 0)},${Math.max(B, 0)})`; }
+            function generateConnectedStructure() { const structure = Array.from({ length: layers }, () => Array.from({ length: gridSize }, () => Array(gridSize).fill(0))); const queue = []; const startX = Math.floor(Math.random() * gridSize), startY = Math.floor(Math.random() * gridSize), startZ = Math.floor(Math.random() * layers); structure[startZ][startY][startX] = 1; queue.push([startX, startY, startZ]); let placed = 1; while (placed < 10 && queue.length > 0) { const [x, y, z] = queue.shift(); const directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]; for (const [dx, dy, dz] of directions.sort(() => Math.random() - 0.5)) { const nx = x + dx, ny = y + dy, nz = z + dz; if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && nz >= 0 && nz < layers && !structure[nz][ny][nx]) { structure[nz][ny][nx] = 1; queue.push([nx, ny, nz]); placed++; break; } } } return structure; }
+            function getTopView(structure) { const top = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0)); for (let z = layers - 1; z >= 0; z--) { for (let y = 0; y < gridSize; y++) { for (let x = 0; x < gridSize; x++) { if (structure[z][y][x] && top[y][x] === 0) top[y][x] = 1; } } } return top; }
+            function cloneMatrix(matrix) { return matrix.map(row => row.slice()); }
+            function generateFakeOption(correct) { const fake = cloneMatrix(correct); const changes = Math.random() < 0.7 ? 1 : 2; for (let i = 0; i < changes; i++) { const y = Math.floor(Math.random() * gridSize); const x = Math.floor(Math.random() * gridSize); fake[y][x] = 1 - fake[y][x]; } return fake; }
+            function drawOptions(correct) { const options = [{ data: correct, correct: true }]; while (options.length < 4) { const fake = generateFakeOption(correct); if (!options.some(opt => JSON.stringify(opt.data) === JSON.stringify(fake))) { options.push({ data: fake, correct: false }); } } options.sort(() => Math.random() - 0.5); document.getElementById('correctIndex').textContent = options.findIndex(opt => opt.correct === true); const container = document.getElementById('options-area'); container.innerHTML = ''; const OPTION_TARGET_SIZE = 512; const cellSize = Math.floor(OPTION_TARGET_SIZE / gridSize) - 5; const gridGap = 5; options.forEach(option => { const div = document.createElement('div'); div.className = 'option'; const gridContainer = document.createElement('div'); gridContainer.className = 'option-grid'; gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`; gridContainer.style.gap = `${gridGap}px`; option.data.forEach(row => { row.forEach(cell => { const el = document.createElement('div'); el.className = 'cell'; el.style.width = `${cellSize}px`; el.style.height = `${cellSize}px`; if (cell) el.classList.add('filled'); gridContainer.appendChild(el); }); }); div.appendChild(gridContainer); div.onclick = () => { document.getElementById('result').textContent = option.correct ? '✅ Doğru!' : '❌ Yanlış.'; container.style.pointerEvents = 'none'; document.querySelectorAll('.option').forEach((optDiv, index) => { if (options[index].correct) { optDiv.style.border = '4px solid #4caf50'; } else if (optDiv === div) { optDiv.style.border = '4px solid #f44336'; } }); document.getElementById('next-btn').style.display = 'inline-block'; }; container.appendChild(div); }); }
 
-    function cloneMatrix(matrix) {
-      return matrix.map(row => row.slice());
-    }
+            let currentAnswer = 0; let score = 0; let totalQuestions = 0; let answered = false;
 
-    function generateFakeOption(correct) {
-      const fake = cloneMatrix(correct);
-      const changes = Math.random() < 0.7 ? 1 : 2;
-      for (let i = 0; i < changes; i++) {
-        const y = Math.floor(Math.random() * gridSize);
-        const x = Math.floor(Math.random() * gridSize);
-        fake[y][x] = 1 - fake[y][x];
-      }
-      return fake;
-    }
+            function main() {
+                document.getElementById('result').textContent = '';
+                document.getElementById('options-area').style.pointerEvents = 'auto';
+                document.getElementById('next-btn').style.display = 'none';
+                const structure = generateConnectedStructure();
+                drawGame(structure);
+                const topView = getTopView(structure);
+                drawOptions(topView);
+            }
 
-    function drawOptions(correct) {
-      const options = [{ data: correct, correct: true }];
-      while (options.length < 4) {
-        const fake = generateFakeOption(correct);
-        if (!options.some(opt => JSON.stringify(opt.data) === JSON.stringify(fake))) {
-          options.push({ data: fake, correct: false });
-        }
-      }
-      options.sort(() => Math.random() - 0.5);
+            document.getElementById('next-btn').onclick = main;
+            main();
 
-      const correctIndex = options.findIndex(opt => opt.correct === true);
-      document.getElementById('correctIndex').textContent = correctIndex;
-
-      const container = document.getElementById('options');
-      container.innerHTML = '';
-      options.forEach(option => {
-        const div = document.createElement('div');
-        div.className = 'option';
-        option.data.forEach(row => {
-          row.forEach(cell => {
-            const el = document.createElement('div');
-            el.className = 'cell';
-            if (cell) el.classList.add('filled');
-            div.appendChild(el);
-          });
         });
-        div.onclick = () => {
-          document.getElementById('result').textContent = option.correct ? '✅ Doğru cevap!' : '❌ Yanlış cevap.';
-          container.style.pointerEvents = 'none';
-          document.querySelectorAll('.option').forEach((optDiv, index) => {
-            if (options[index].correct) {
-              optDiv.style.borderColor = '#4caf50';
-              optDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
-            } else if (optDiv === div && !option.correct) {
-              optDiv.style.borderColor = '#f44336';
-              optDiv.style.backgroundColor = 'rgba(244, 67, 54, 0.2)';
-            }
-          });
-        };
-        container.appendChild(div);
-      });
-    }
-
-    // Ana program akışı
-    const structure = generateConnectedStructure();
-    drawStructure(structure);
-
-    // Göstergeyi ortalamak için fonksiyonu çağır
-    centerIndicatorOnStructure(structure);
-
-    const topView = getTopView(structure);
-    drawOptions(topView);
-  </script>
+    </script>
 </body>
 
 </html>
