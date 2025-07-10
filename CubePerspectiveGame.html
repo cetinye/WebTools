@@ -1,233 +1,220 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
     <meta charset="UTF-8" />
-    <title>CubePerspectiveGame</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cube Perspective Game</title>
     <style>
         body {
             font-family: sans-serif;
             text-align: center;
-        }
-
-        canvas {
-            margin: 10px;
-            /* Kenarlık ekleyerek tuvallerin sınırlarını belirginleştirelim */
-        }
-
-        .options {
+            background-color: #ffffff;
+            margin: 0;
+            padding: 20px;
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+            align-items: center;
         }
 
-        .view-indicator {
-            margin-bottom: -5px;
-            transition: transform 0.3s ease-in-out;
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
         #question-area {
-            display: inline-block;
-            padding: 10px;
+            width: 1200px;
+            height: 1200px;
+            position: relative;
+            background-color: #ffffff;
         }
 
-        /* Ana canvas'ın kenarlığını kaldıralım, sadece seçeneklerde kalsın */
         #mainCanvas {
-            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .view-indicator {
+            position: absolute;
+            top: 50px;
+            width: 120px;
+            pointer-events: none;
+        }
+
+        #options-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1064px;
+            flex-wrap: wrap;
+        }
+
+        .optionCanvas {
+            width: 512px;
+            height: 512px;
+            cursor: pointer;
+            background-color: #ffffff;
         }
     </style>
 </head>
 
 <body>
+    <div class="game-wrapper">
+        <div id="question-area">
+        </div>
+        <div id="options-area" class="options">
+            <canvas class="optionCanvas"></canvas>
+            <canvas class="optionCanvas"></canvas>
+            <canvas class="optionCanvas"></canvas>
+            <canvas class="optionCanvas"></canvas>
+        </div>
+    </div>
     <span id="correctIndex" style="display:none;"></span>
 
-    <div id="question-area">
-    </div>
-    <div class="options">
-        <canvas width="120" height="120" class="optionCanvas"></canvas>
-        <canvas width="120" height="120" class="optionCanvas"></canvas>
-        <canvas width="120" height="120" class="optionCanvas"></canvas>
-        <canvas width="120" height="120" class="optionCanvas"></canvas>
-    </div>
-
     <script>
-        const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'];
-        const gridSize = 3;
+        document.addEventListener('DOMContentLoaded', () => {
+            const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'];
+            const gridSize = 3;
+            const questionArea = document.getElementById('question-area');
 
-        function getRandomInt(max) {
-            return Math.floor(Math.random() * max);
-        }
+            function getRandomInt(max) { return Math.floor(Math.random() * max); }
 
-        function generateStructure() {
-            const cubes = [];
-            const heightMap = {};
-            while (cubes.length < 6) {
-                const x = getRandomInt(gridSize);
-                const y = getRandomInt(gridSize);
-                const key = `${x},${y}`;
-                const height = heightMap[key] = (heightMap[key] || 0);
-                cubes.push({ x, y, z: height, color: colors[getRandomInt(colors.length)] });
-                heightMap[key]++;
+            function generateStructure() {
+                const cubes = []; const heightMap = {};
+                while (cubes.length < 10) {
+                    const x = getRandomInt(gridSize); const y = getRandomInt(gridSize);
+                    const key = `${x},${y}`; const height = heightMap[key] = (heightMap[key] || 0);
+                    cubes.push({ x, y, z: height, color: colors[getRandomInt(colors.length)] });
+                    heightMap[key]++;
+                } return cubes;
             }
-            return cubes;
-        }
 
-        function draw3DCube(ctx, x, y, size, color) {
-            const half = size / 2;
-            const quarter = size / 4;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + half, y - quarter);
-            ctx.lineTo(x + size, y);
-            ctx.lineTo(x + half, y + quarter);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + half, y + quarter);
-            ctx.lineTo(x + half, y + quarter + size);
-            ctx.lineTo(x, y + size);
-            ctx.closePath();
-            ctx.fillStyle = shadeColor(color, -15);
-            ctx.fill();
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x + size, y);
-            ctx.lineTo(x + half, y + quarter);
-            ctx.lineTo(x + half, y + quarter + size);
-            ctx.lineTo(x + size, y + size);
-            ctx.closePath();
-            ctx.fillStyle = shadeColor(color, -30);
-            ctx.fill();
-            ctx.stroke();
-        }
-
-        function shadeColor(color, percent) {
-            const num = parseInt(color.replace("#", ""), 16);
-            const amt = Math.round(2.55 * percent);
-            const R = (num >> 16) + amt;
-            const G = (num >> 8 & 0x00FF) + amt;
-            const B = (num & 0x0000FF) + amt;
-            return "rgb(" + Math.min(255, Math.max(0, R)) + "," + Math.min(255, Math.max(0, G)) + "," + Math.min(255, Math.max(0, B)) + ")";
-        }
-
-        function drawMainScene(cubes, canvas) {
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const size = 40;
-            // Küpleri çizim sırasına göre sırala
-            cubes.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
-            for (let cube of cubes) {
-                const isoX = (canvas.width / 2) + (cube.x - cube.y) * (size * 0.5);
-                const isoY = (canvas.height / 2.5) + (cube.x + cube.y) * (size * 0.25) - cube.z * (size * 0.75);
-                draw3DCube(ctx, isoX, isoY, size, cube.color);
+            function shadeColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+                return "rgb(" + Math.min(255, Math.max(0, R)) + "," + Math.min(255, Math.max(0, G)) + "," + Math.min(255, Math.max(0, B)) + ")";
             }
-        }
 
-        function generateTopView(cubes) {
-            const view = {};
-            for (let cube of cubes) {
-                const key = `${cube.x},${cube.y}`;
-                if (!view[key] || cube.z > view[key].z) {
-                    view[key] = cube;
+            function draw3DCube(ctx, x, y, z, size, color) {
+                const half = size / 2, quarter = size / 4;
+                const offsetX = ctx.canvas.width / 2;
+                const offsetY = ctx.canvas.height / 2.2;
+                const isoX = offsetX + (x - y) * half;
+                const isoY = offsetY + (x + y) * quarter - z * (size * 0.75);
+
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(isoX, isoY); ctx.lineTo(isoX + half, isoY - quarter);
+                ctx.lineTo(isoX + size, isoY); ctx.lineTo(isoX + half, isoY + quarter);
+                ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(isoX, isoY); ctx.lineTo(isoX + half, isoY + quarter);
+                ctx.lineTo(isoX + half, isoY + quarter + size); ctx.lineTo(isoX, isoY + size);
+                ctx.closePath(); ctx.fillStyle = shadeColor(color, -15); ctx.fill(); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(isoX + size, isoY); ctx.lineTo(isoX + half, isoY + quarter);
+                ctx.lineTo(isoX + half, isoY + quarter + size); ctx.lineTo(isoX + size, isoY + size);
+                ctx.closePath(); ctx.fillStyle = shadeColor(color, -30); ctx.fill(); ctx.stroke();
+            }
+
+            function drawMainScene(cubes, canvas) {
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const size = 110;
+                cubes.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
+                for (let cube of cubes) {
+                    draw3DCube(ctx, cube.x, cube.y, cube.z, size, cube.color);
                 }
             }
-            return view;
-        }
 
-        function drawTopView(ctx, view) {
-            // GÜNCELLENDİ: Çizim boyutu artırıldı
-            const size = 30;
-            const canvas = ctx.canvas;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Izgarayı tuvalin ortasına çizmek için ofset hesapla
-            const offsetX = (canvas.width - gridSize * size) / 2;
-            const offsetY = (canvas.height - gridSize * size) / 2;
-            for (let key in view) {
-                const [x, y] = key.split(',').map(Number);
-                ctx.fillStyle = view[key].color;
-                ctx.fillRect(offsetX + x * size, offsetY + y * size, size, size);
-                ctx.strokeRect(offsetX + x * size, offsetY + y * size, size, size);
-            }
-        }
-
-        function centerIndicatorOnCubes(cubes, mainCanvas) {
-            const size = 40;
-            if (!cubes || cubes.length === 0) return;
-
-            let minIsoX = Infinity;
-            let maxIsoX = -Infinity;
-
-            for (const cube of cubes) {
-                const isoX = (mainCanvas.width / 2) + (cube.x - cube.y) * (size * 0.5);
-                minIsoX = Math.min(minIsoX, isoX);
-                maxIsoX = Math.max(maxIsoX, isoX + size);
-            }
-
-            const structureCenterX = (minIsoX + maxIsoX) / 2;
-            const canvasCenterX = mainCanvas.width / 2;
-            const offset = structureCenterX - canvasCenterX;
-
-            const indicator = document.querySelector('.view-indicator');
-            if (indicator) {
-                indicator.style.transform = `translateX(${offset}px)`;
-            }
-        }
-
-        // --- Oyun Kurulumu ---
-        const questionArea = document.getElementById('question-area');
-
-        const indicator = document.createElement('div');
-        indicator.className = 'view-indicator';
-        indicator.innerHTML = `
-            <svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg" width="50"> 
-                <path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333" stroke-width="5" /> 
-                <circle cx="50" cy="35" r="15" fill="#333" /> 
-                <path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
-                <path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
-                <path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /> 
-            </svg>
-        `;
-        questionArea.appendChild(indicator);
-
-        const mainCanvas = document.createElement('canvas');
-        mainCanvas.id = 'mainCanvas';
-        mainCanvas.width = 300;
-        mainCanvas.height = 300;
-        questionArea.appendChild(mainCanvas);
-
-        const structure = generateStructure();
-        drawMainScene(structure, mainCanvas);
-
-        centerIndicatorOnCubes(structure, mainCanvas);
-
-        const correctView = generateTopView(structure);
-        const optionCanvases = document.querySelectorAll('.optionCanvas');
-        const correctIndex = getRandomInt(4);
-        document.getElementById('correctIndex').textContent = correctIndex;
-
-        const views = [];
-        for (let i = 0; i < 4; i++) {
-            if (i === correctIndex) {
-                views.push(correctView);
-            } else {
-                views.push(generateTopView(generateStructure()));
-            }
-        }
-
-        optionCanvases.forEach((canvas, index) => {
-            const ctx = canvas.getContext('2d');
-            drawTopView(ctx, views[index]);
-            canvas.addEventListener('click', () => {
-                if (index === correctIndex) {
-                    alert("✅ Doğru Cevap!");
-                } else {
-                    alert("❌ Yanlış. Tekrar dene.");
+            function centerIndicatorOnCubes(cubes, mainCanvas) {
+                const size = 110;
+                if (!cubes || cubes.length === 0) return;
+                let minIsoX = Infinity, maxIsoX = -Infinity;
+                for (const cube of cubes) {
+                    const isoX = (mainCanvas.width / 2) + (cube.x - cube.y) * (size * 0.5);
+                    minIsoX = Math.min(minIsoX, isoX);
+                    maxIsoX = Math.max(maxIsoX, isoX + size);
                 }
-            });
+                const structureCenterX = (minIsoX + maxIsoX) / 2;
+                const indicator = document.querySelector('.view-indicator');
+                if (indicator) {
+                    indicator.style.left = `${structureCenterX}px`;
+                    indicator.style.transform = `translateX(-50%)`;
+                }
+            }
+
+            function generateTopView(cubes) {
+                const view = {};
+                for (let cube of cubes) { const key = `${cube.x},${cube.y}`; if (!view[key] || cube.z > view[key].z) { view[key] = cube; } } return view;
+            }
+
+            function drawTopView(canvas, view) {
+                const ctx = canvas.getContext('2d');
+                canvas.width = 512;
+                canvas.height = 512;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const size = Math.floor(canvas.width / gridSize) - 8;
+                const gridTotalSize = size * gridSize;
+                const offsetX = (canvas.width - gridTotalSize) / 2;
+                const offsetY = (canvas.height - gridTotalSize) / 2;
+                for (let key in view) {
+                    const [x, y] = key.split(',').map(Number);
+                    ctx.fillStyle = view[key].color;
+                    ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(offsetX + x * size, offsetY + y * size, size, size);
+                    ctx.strokeRect(offsetX + x * size, offsetY + y * size, size, size);
+                }
+            }
+
+            function main() {
+                questionArea.innerHTML = '';
+                const mainCanvas = document.createElement('canvas');
+                mainCanvas.id = 'mainCanvas';
+                questionArea.appendChild(mainCanvas);
+
+                const indicator = document.createElement('div');
+                indicator.className = 'view-indicator';
+                indicator.innerHTML = `<svg viewBox="0 0 100 85" xmlns="http://www.w3.org/2000/svg" width="120"><path d="M50 15C25 15 5 35 5 35S25 55 50 55s45-20 45-20S75 15 50 15z" fill="none" stroke="#333" stroke-width="5" /><circle cx="50" cy="35" r="15" fill="#333" /><path d="M35 55 L35 80 L30 75 M35 80 L40 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /><path d="M50 55 L50 80 L45 75 M50 80 L55 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /><path d="M65 55 L65 80 L60 75 M65 80 L70 75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+                questionArea.appendChild(indicator);
+
+                const structure = generateStructure();
+                drawMainScene(structure, mainCanvas);
+                centerIndicatorOnCubes(structure, mainCanvas);
+
+                // ⭐ YAZIM HATASI DÜZELTİLDİ: 'generateTopVew' -> 'generateTopView' ⭐
+                const correctView = generateTopView(structure);
+                const optionCanvases = document.querySelectorAll('.optionCanvas');
+                const correctIndex = getRandomInt(4);
+                document.getElementById('correctIndex').textContent = correctIndex;
+
+                const views = [];
+                for (let i = 0; i < 4; i++) {
+                    if (i === correctIndex) { views.push(correctView); }
+                    else {
+                        let fakeView;
+                        do { fakeView = generateTopView(generateStructure()); }
+                        while (JSON.stringify(fakeView) === JSON.stringify(correctView));
+                        views.push(fakeView);
+                    }
+                }
+
+                optionCanvases.forEach((canvas, index) => {
+                    drawTopView(canvas, views[index]);
+                    canvas.onclick = () => {
+                        alert(index === correctIndex ? "✅ Doğru!" : "❌ Yanlış.");
+                        main();
+                    };
+                });
+            }
+
+            main();
         });
     </script>
 </body>
