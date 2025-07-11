@@ -22,9 +22,10 @@
             color: #333;
         }
 
+        /* ✨ DEĞİŞTİRİLDİ: Soru kanvası 1200x1200 yapıldı */
         #threeJsContainer {
-            width: 500px;
-            height: 500px;
+            width: 1200px;
+            height: 1200px;
             margin: 10px;
             background-color: #ffffff;
             position: relative;
@@ -80,12 +81,15 @@
 
         #cameraIndicator {
             position: absolute;
-            width: 80px;
-            height: 60px;
-            pointer-events: none;
+            right: 20px;
+            bottom: 20px;
+            /* ✨ Boyutları iki katına çıkardık */
+            width: 270px;
+            /* 180px'den 360px'e */
+            height: 202px;
+            /* 135px'den 270px'e */
             z-index: 10;
-            transform: translate(10px, 10px);
-            transition: left 0.5s ease-out, top 0.5s ease-out;
+            pointer-events: none;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -115,7 +119,8 @@
         };
         const COLOR_KEYS = Object.keys(COLORS);
 
-        const FIXED_OPTION_BLOCK_PIXEL_SIZE = 35;
+        // ✨ DEĞİŞTİRİLDİ: Seçenek kanvas boyutu için yeni bir sabit tanımlandı
+        const OPTION_CANVAS_SIZE = 512;
 
         let currentGridDimension;
         let currentMaxTowerHeight;
@@ -143,10 +148,15 @@
             scene.background = new THREE.Color(0xffffff);
             const aspect = container.clientWidth / container.clientHeight;
 
-            // Kamera yakınlaştırma özelliği korunuyor.
-            const frustumSize = 6 * CUBE_SIZE_THREE * 1.5;
+            // ✨ DEĞİŞTİRİLDİ: Başlangıç için sabit ve büyük bir frustum boyutu ayarlıyoruz.
+            // Asıl "zoom" ayarı artık updateCameraAndLights içinde dinamik olarak yapılacak.
+            const frustumSize = 10;
 
             camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+
+            // Kamera zoom'unu başlangıçta 1 olarak ayarlıyoruz.
+            camera.zoom = 1;
+
             camera.position.set(20, 20, 20);
             camera.lookAt(0, 0, 0);
             const ambientLight = new THREE.AmbientLight(0x909090);
@@ -166,50 +176,137 @@
         function updateCameraAndLights(structure) {
             if (!camera || !renderer) return;
 
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            const structurePoints = [];
             let hasBlocks = false;
+
             for (let x = 0; x < currentGridDimension; x++) {
                 for (let y = 0; y < currentGridDimension; y++) {
                     for (let z = 0; z < currentMaxTowerHeight; z++) {
                         if (structure[x][y][z]) {
                             hasBlocks = true;
-                            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-                            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-                            minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+                            structurePoints.push(new THREE.Vector3(x, z, y));
                         }
                     }
                 }
             }
 
-            const centerX = hasBlocks ? (minX + maxX) / 2 : 0;
-            const centerY = hasBlocks ? (minZ + maxZ) / 2 : 0;
-            const centerZ = hasBlocks ? (minY + maxY) / 2 : 0;
-            const structureSize = hasBlocks ? Math.max(maxX - minX, maxY - minY, maxZ - minZ) + 2 : currentGridDimension;
-            const camPos = structureSize * 2;
-            camera.position.set(centerX + camPos, centerY + camPos, centerZ + camPos);
-            camera.lookAt(centerX, centerY, centerZ);
-            const light = scene.getObjectByName("directional_light");
-            if (light) {
-                light.position.set(centerX + camPos * 0.5, centerY + camPos, centerZ + camPos * 0.5);
+            const indicator = document.getElementById('cameraIndicator');
+            const container = document.getElementById('threeJsContainer');
+
+            if (!hasBlocks) {
+                indicator.style.display = 'none';
+                renderer.render(scene, camera);
+                return;
             }
 
-            const indicator = document.getElementById('cameraIndicator');
-            if (hasBlocks) {
-                const anchorPoint3D = new THREE.Vector3(maxX + CUBE_SIZE_THREE, minZ, minY);
-                const screenPos = project3DPointTo2D(anchorPoint3D);
-                indicator.style.display = 'block';
-                indicator.style.left = `${screenPos.x}px`;
-                indicator.style.top = `${screenPos.y}px`;
-                indicator.style.bottom = 'auto';
-                indicator.style.right = 'auto';
-            } else {
-                indicator.style.display = 'none';
+            // 1. KAMERA SIĞDIRMA (Bu kısım en kararlı haliyle kalıyor)
+            const box = new THREE.Box3().setFromPoints(structurePoints);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            const cameraDistance = Math.max(size.x, size.y, size.z) * 2;
+            camera.position.set(center.x + cameraDistance, center.y + cameraDistance, center.z + cameraDistance);
+            camera.lookAt(center);
+            camera.updateMatrixWorld();
+
+            const boxCorners = [
+                new THREE.Vector3(box.min.x, box.min.y, box.min.z), new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+                new THREE.Vector3(box.min.x, box.max.y, box.min.z), new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+                new THREE.Vector3(box.max.x, box.max.y, box.min.z), new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+                new THREE.Vector3(box.max.x, box.min.y, box.max.z), new THREE.Vector3(box.max.x, box.max.y, box.max.z)
+            ];
+
+            let maxProjectedX = 0, maxProjectedY = 0;
+            boxCorners.forEach(corner => {
+                const projected = corner.clone().project(camera);
+                if (Math.abs(projected.x) > maxProjectedX) maxProjectedX = Math.abs(projected.x);
+                if (Math.abs(projected.y) > maxProjectedY) maxProjectedY = Math.abs(projected.y);
+            });
+
+            const zoomCorrectionFactor = Math.max(maxProjectedX, maxProjectedY);
+            const padding = 2.0;
+            camera.zoom = (1 / zoomCorrectionFactor) / padding;
+            camera.updateProjectionMatrix();
+
+
+            // ✨ KÖŞEYE SABİTLEME VE ÇAKIŞMA ÖNLEME MANTIĞI ✨
+
+            // 2. İKON BOYUTUNU AYARLA (Sabit ve büyük bir boyut için CSS'i kullanıyoruz)
+            const iconWidth = indicator.offsetWidth;
+            const iconHeight = indicator.offsetHeight;
+
+            // 3. YAPININ EKRANDAKİ PİKSEL SINIRLARINI BUL
+            let pixelMinX = Infinity, pixelMinY = Infinity, pixelMaxX = -Infinity, pixelMaxY = -Infinity;
+            boxCorners.forEach(corner => {
+                const screenPos = project3DPointTo2D(corner);
+                pixelMinX = Math.min(pixelMinX, screenPos.x);
+                pixelMaxX = Math.max(pixelMaxX, screenPos.x);
+                pixelMinY = Math.min(pixelMinY, screenPos.y);
+                pixelMaxY = Math.max(pixelMaxY, screenPos.y);
+            });
+
+            // 4. İKON İÇİN GÜVENLİ BİR KÖŞE BUL
+            const margin = 20; // Konteyner kenarına olan boşluk
+
+            // Dört köşe için potansiyel konumları tanımla
+            const positions = [
+                { // 1. Öncelik: Sağ Alt Köşe
+                    x: container.clientWidth - iconWidth - margin,
+                    y: container.clientHeight - iconHeight - margin
+                },
+                { // 2. Öncelik: Sağ Üst Köşe
+                    x: container.clientWidth - iconWidth - margin,
+                    y: margin
+                },
+                { // 3. Öncelik: Sol Üst Köşe
+                    x: margin,
+                    y: margin
+                },
+                { // 4. Öncelik: Sol Alt Köşe
+                    x: margin,
+                    y: container.clientHeight - iconHeight - margin
+                }
+            ];
+
+            let finalX, finalY;
+
+            // Bu konumları sırayla dene ve çakışma olmayan ilkini kullan
+            for (const pos of positions) {
+                const iconLeft = pos.x;
+                const iconRight = pos.x + iconWidth;
+                const iconTop = pos.y;
+                const iconBottom = pos.y + iconHeight;
+
+                // İkonun bu konumdaki kutusu ile şeklin kutusu çakışıyor mu?
+                const overlaps = (iconLeft < pixelMaxX && iconRight > pixelMinX &&
+                    iconTop < pixelMaxY && iconBottom > pixelMinY);
+
+                if (!overlaps) {
+                    finalX = pos.x;
+                    finalY = pos.y;
+                    break; // Çakışma olmayan ilk konumu bulduk, döngüden çık.
+                }
             }
+
+            // Eğer çok nadir bir durumda hepsi çakışırsa, sonuncuyu kullan (sol alt)
+            if (finalX === undefined) {
+                finalX = positions[3].x;
+                finalY = positions[3].y;
+            }
+
+            // İkonu son ve güvenli pozisyonuna yerleştir
+            indicator.style.display = 'block';
+            indicator.style.left = `${finalX}px`;
+            indicator.style.top = `${finalY}px`;
+
+            // Işığı ayarla ve sahneyi render et
+            const light = scene.getObjectByName("directional_light");
+            if (light) light.position.set(center.x + cameraDistance, center.y + cameraDistance * 1.5, center.z + cameraDistance);
+
             renderer.render(scene, camera);
         }
 
         function drawStructureThreeJS(structure) {
-            // Önceki nesneleri temizle
             const objectsToRemove = [];
             scene.traverse(child => { if (child.isMesh) { objectsToRemove.push(child); } });
             objectsToRemove.forEach(obj => {
@@ -224,7 +321,6 @@
                 scene.remove(obj);
             });
 
-            // Küpleri çiz
             for (let x = 0; x < currentGridDimension; x++) {
                 for (let y = 0; y < currentGridDimension; y++) {
                     for (let z = 0; z < currentMaxTowerHeight; z++) {
@@ -242,9 +338,6 @@
                             const geometry = new THREE.BoxGeometry(CUBE_SIZE_THREE, CUBE_SIZE_THREE, CUBE_SIZE_THREE);
                             const cube = new THREE.Mesh(geometry, materials);
                             cube.position.set(x, z, y);
-
-                            // ✨ DEĞİŞTİRİLDİ: Kenar çizgisi (outline) oluşturan kod kaldırıldı.
-                            // Artık sadece küpün kendisi sahneye ekleniyor.
                             scene.add(cube);
                         }
                     }
@@ -252,8 +345,6 @@
             }
             updateCameraAndLights(structure);
         }
-
-        // --- Geri kalan JavaScript kodunda değişiklik yok ---
 
         function generateStructure() {
             let structure;
@@ -320,6 +411,10 @@
             ctx.clearRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
             ctx.fillStyle = "#fff";
             ctx.fillRect(0, 0, currentOptionCanvasWidth, currentOptionCanvasHeight);
+
+            // ✨ DEĞİŞTİRİLDİ: Blok boyutu dinamik olarak hesaplanıyor
+            const blockSize = currentOptionCanvasWidth / currentGridDimension;
+
             const finalViewGrid = Array.from({ length: currentGridDimension }, () => Array(currentMaxTowerHeight).fill(null));
             for (let x = currentGridDimension - 1; x >= 0; x--) {
                 for (let y = 0; y < currentGridDimension; y++) {
@@ -339,14 +434,15 @@
                     const colorName = finalViewGrid[col_2d][row_2d];
                     if (colorName !== null) {
                         const [, sideLightHex] = COLORS[colorName];
-                        const drawX = col_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-                        const drawY = row_2d * FIXED_OPTION_BLOCK_PIXEL_SIZE;
+                        // ✨ DEĞİŞTİRİLDİ: Çizim koordinatları ve boyutu dinamik blockSize'a göre ayarlandı
+                        const drawX = col_2d * blockSize;
+                        const drawY = row_2d * blockSize;
                         const margin = 1;
                         ctx.fillStyle = sideLightHex;
-                        ctx.fillRect(drawX + margin, drawY + margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin);
+                        ctx.fillRect(drawX + margin, drawY + margin, blockSize - 2 * margin, blockSize - 2 * margin);
                         ctx.strokeStyle = "#333";
                         ctx.lineWidth = 1;
-                        ctx.strokeRect(drawX + margin, drawY + margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2 * margin);
+                        ctx.strokeRect(drawX + margin, drawY + margin, blockSize - 2 * margin, blockSize - 2 * margin);
                     }
                 }
             }
@@ -387,12 +483,17 @@
             tempCanvas.height = correctImageData.height;
             const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
             tempCtx.putImageData(correctImageData, 0, 0);
+
+            // ✨ DEĞİŞTİRİLDİ: Blok boyutu dinamik olarak hesaplanıyor
+            const blockSize = correctImageData.width / currentGridDimension;
+
             const baseGrid = Array.from({ length: currentGridDimension }, () => Array(currentMaxTowerHeight).fill(null));
             const colorTolerance = 20;
             for (let c = 0; c < currentGridDimension; c++) {
                 for (let r = 0; r < currentMaxTowerHeight; r++) {
-                    const sampleX = Math.floor(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
-                    const sampleY = Math.floor(r * FIXED_OPTION_BLOCK_PIXEL_SIZE + FIXED_OPTION_BLOCK_PIXEL_SIZE / 2);
+                    // ✨ DEĞİŞTİRİLDİ: Örnekleme noktası dinamik blockSize'a göre ayarlandı
+                    const sampleX = Math.floor(c * blockSize + blockSize / 2);
+                    const sampleY = Math.floor(r * blockSize + blockSize / 2);
                     const pixelData = tempCtx.getImageData(sampleX, sampleY, 1, 1).data;
                     if (pixelData[3] < 255) continue;
                     for (const key of COLOR_KEYS) {
@@ -458,9 +559,10 @@
                     if (colorName !== null) {
                         const [, sideLightHex] = COLORS[colorName];
                         wrongOptCtx.fillStyle = sideLightHex;
-                        wrongOptCtx.fillRect(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, r * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2);
+                        // ✨ DEĞİŞTİRİLDİ: Yanlış seçenek çizimi de dinamik blockSize'a göre yapılıyor
+                        wrongOptCtx.fillRect(c * blockSize + 1, r * blockSize + 1, blockSize - 2, blockSize - 2);
                         wrongOptCtx.strokeStyle = "#333";
-                        wrongOptCtx.strokeRect(c * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, r * FIXED_OPTION_BLOCK_PIXEL_SIZE + 1, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2, FIXED_OPTION_BLOCK_PIXEL_SIZE - 2);
+                        wrongOptCtx.strokeRect(c * blockSize + 1, r * blockSize + 1, blockSize - 2, blockSize - 2);
                     }
                 }
             }
@@ -470,8 +572,11 @@
         function startGame() {
             currentGridDimension = 4;
             currentMaxTowerHeight = 4;
-            currentOptionCanvasWidth = currentGridDimension * FIXED_OPTION_BLOCK_PIXEL_SIZE;
-            currentOptionCanvasHeight = currentMaxTowerHeight * FIXED_OPTION_BLOCK_PIXEL_SIZE;
+
+            // ✨ DEĞİŞTİRİLDİ: Seçenek kanvas boyutu sabit değerden alınıyor
+            currentOptionCanvasWidth = OPTION_CANVAS_SIZE;
+            currentOptionCanvasHeight = OPTION_CANVAS_SIZE;
+
             initThreeJS();
             const structure = generateStructure();
             if (!structure) { return; }
