@@ -4,25 +4,31 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dice Game</title>
+    <title>Dice Game - Large Scale</title>
     <style>
+        /* ✨ DEĞİŞİKLİK: Yüksek çözünürlüklü ekran görüntüsü için tüm boyutları büyütüyoruz ✨ */
+        :root {
+            /* Tüm boyutları bu oranla çarpacağız. Kolayca değiştirebilirsiniz. */
+            --scale-factor: 10;
+        }
+
         body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            background-color: #f4f7fa;
+            /* Yüksekliği otomatik ayarlayarak büyük içeriğin sığmasını sağlıyoruz */
+            min-height: 100vh;
+            background-color: #ffffff;
+            margin: 40px 0;
+            /* İçeriğin üste ve alta yapışmasını önle */
         }
 
         .game-container {
             background-color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
+            padding: calc(20px * var(--scale-factor));
+            /* Genişliği kaldırarak içeriğe göre büyümesini sağlıyoruz */
         }
 
         .dice-stack {
@@ -30,7 +36,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            margin-bottom: 30px;
+            margin-bottom: calc(30px * var(--scale-factor));
         }
 
         .dice-row {
@@ -39,49 +45,49 @@
         }
 
         .dice-sum {
-            width: 70px;
-            height: 70px;
+            width: calc(70px * var(--scale-factor));
+            height: calc(70px * var(--scale-factor));
             background-color: #e53935;
             color: white;
-            font-size: 32px;
+            font-size: calc(32px * var(--scale-factor));
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            margin: 5px;
+            border-radius: calc(10px * var(--scale-factor));
+            margin: calc(5px * var(--scale-factor));
         }
 
         .die {
-            width: 60px;
-            height: 60px;
+            width: calc(60px * var(--scale-factor));
+            height: calc(60px * var(--scale-factor));
             background-color: #e53935;
-            border-radius: 10px;
+            border-radius: calc(10px * var(--scale-factor));
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            gap: 4px;
-            padding: 5px;
-            margin: 5px;
+            gap: calc(4px * var(--scale-factor));
+            padding: calc(5px * var(--scale-factor));
+            margin: calc(5px * var(--scale-factor));
         }
 
         .question-box {
-            width: 70px;
-            height: 70px;
+            width: calc(70px * var(--scale-factor));
+            height: calc(70px * var(--scale-factor));
             background-color: #e53935;
             color: white;
-            font-size: 32px;
+            font-size: calc(32px * var(--scale-factor));
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            margin: 5px;
+            border-radius: calc(10px * var(--scale-factor));
+            margin: calc(5px * var(--scale-factor));
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: calc(10px * var(--scale-factor));
+            height: calc(10px * var(--scale-factor));
             background-color: white;
             border-radius: 50%;
             margin: auto;
@@ -99,12 +105,12 @@
 
         .options button {
             padding: 0;
-            margin: 10px;
+            margin: calc(10px * var(--scale-factor));
             border: none;
             background: none;
             cursor: pointer;
-            width: 60px;
-            height: 60px;
+            width: calc(60px * var(--scale-factor));
+            height: calc(60px * var(--scale-factor));
         }
 
         .options button .die {
@@ -134,25 +140,14 @@
         </div>
     </div>
 
-    <!-- ✅ Doğru şık burada saklanıyor -->
     <div id="correctIndex" style="display: none;"></div>
 
     <script>
         let correctAnswer;
-
-        const DICE_PATTERNS = {
-            1: [4],
-            2: [0, 8],
-            3: [0, 4, 8],
-            4: [0, 2, 6, 8],
-            5: [0, 2, 4, 6, 8],
-            6: [0, 2, 3, 5, 6, 8]
-        };
-
+        const DICE_PATTERNS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
         function createDie(value) {
             const die = document.createElement('div');
             die.className = 'die';
-
             for (let i = 0; i < 9; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'dot';
@@ -161,59 +156,41 @@
             }
             return die;
         }
-
-        function rollDice() {
-            return Math.floor(Math.random() * 6) + 1;
-        }
-
+        function rollDice() { return Math.floor(Math.random() * 6) + 1; }
         function generateOptions(correct) {
             const options = new Set();
             options.add(correct);
             while (options.size < 4) {
                 const opt = rollDice();
-                if (!options.has(opt)) {
-                    options.add(opt);
-                }
+                if (!options.has(opt)) { options.add(opt); }
             }
             return Array.from(options).sort(() => Math.random() - 0.5);
         }
-
         function newRound() {
             const known = rollDice();
             correctAnswer = rollDice();
             const total = known + correctAnswer;
-
             document.getElementById("sum-box").textContent = total;
-
             const knownDiceContainer = document.getElementById("known-dice");
             knownDiceContainer.innerHTML = '';
             knownDiceContainer.appendChild(createDie(known));
-
             const opts = generateOptions(correctAnswer);
             const buttons = document.querySelectorAll(".options button");
             let correctIndex = -1;
-
             buttons.forEach((btn, index) => {
                 btn.innerHTML = '';
                 btn.dataset.value = opts[index];
                 btn.appendChild(createDie(opts[index]));
                 if (opts[index] === correctAnswer) correctIndex = index;
             });
-
-            // ✅ doğru şık indeksini yaz
             document.getElementById("correctIndex").textContent = correctIndex;
         }
-
         function checkAnswer(button) {
             const selected = parseInt(button.dataset.value);
-            if (selected === correctAnswer) {
-                alert("Doğru cevap!");
-            } else {
-                alert("Yanlış cevap. Doğru cevap: " + correctAnswer);
-            }
+            if (selected === correctAnswer) { alert("Doğru cevap!"); }
+            else { alert("Yanlış cevap. Doğru cevap: " + correctAnswer); }
             newRound();
         }
-
         newRound();
     </script>
 </body>
