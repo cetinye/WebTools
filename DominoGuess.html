@@ -4,8 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domino Guess</title>
+    <title>Domino Guess - Full Original Code</title>
     <style>
+        :root {
+            /* Daha büyük ve sıkı bir görünüm için büyütme oranı */
+            --scale-factor: 7;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f0f2f5;
@@ -15,46 +20,45 @@
             min-height: 100vh;
             margin: 0;
             color: #333;
-            padding: 20px 0;
+            padding: calc(20px * var(--scale-factor)) 0;
         }
 
         .game-container {
             background-color: #ffffff;
-            padding: 20px 30px 30px 30px;
-            border-radius: 12px;
+            padding: calc(20px * var(--scale-factor)) calc(30px * var(--scale-factor));
+            border-radius: calc(12px * var(--scale-factor));
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             text-align: center;
-            max-width: 1000px;
-            width: 90%;
         }
 
         h1 {
             color: #1c1e21;
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: calc(10px * var(--scale-factor));
+            font-size: calc(2em * var(--scale-factor));
         }
 
         .rule-text {
-            font-size: 0.9em;
+            font-size: calc(0.9em * var(--scale-factor));
             color: #606770;
-            margin-bottom: 20px;
+            margin-bottom: calc(20px * var(--scale-factor));
         }
 
         #domino-grid {
             display: flex;
             flex-direction: column;
-            margin: 40px auto;
-            padding-bottom: 20px;
-            padding-top: 30px;
-            /* YENİ: Sorunun üstüne beyaz boşluk eklendi */
+            justify-content: space-around;
+            /* Dikey boşluğu dağıt */
+            margin: calc(20px * var(--scale-factor)) auto;
+            padding: calc(15px * var(--scale-factor)) 0;
         }
 
         .domino-row {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 25px;
-            margin-bottom: 50px;
+            gap: calc(20px * var(--scale-factor));
+            margin-bottom: calc(20px * var(--scale-factor));
         }
 
         #domino-grid .domino-row:last-child {
@@ -62,14 +66,14 @@
         }
 
         .domino {
-            width: 150px;
-            height: 75px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
+            width: calc(180px * var(--scale-factor));
+            height: calc(90px * var(--scale-factor));
+            border: calc(2px * var(--scale-factor)) solid #ccc;
+            border-radius: calc(8px * var(--scale-factor));
             display: flex;
             align-items: center;
-            padding: 4px;
-            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+            padding: calc(4px * var(--scale-factor));
+            box-shadow: inset 0 0 calc(5px * var(--scale-factor)) rgba(0, 0, 0, 0.1);
             box-sizing: border-box;
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
         }
@@ -80,26 +84,27 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            padding: 3px;
+            padding: calc(5px * var(--scale-factor));
         }
 
         .domino .divider {
-            width: 3px;
+            width: calc(4px * var(--scale-factor));
             height: 80%;
             background-color: #333;
             opacity: 0.5;
-            border-radius: 2px;
+            border-radius: calc(2px * var(--scale-factor));
         }
 
         .pip {
-            width: 12px;
-            height: 12px;
+            width: calc(16px * var(--scale-factor));
+            height: calc(16px * var(--scale-factor));
             background-color: white;
             border-radius: 50%;
             align-self: center;
             justify-self: center;
         }
 
+        /* Pip (nokta) pozisyonları - Değişiklik Gerekmez */
         .half.face-1 .pip:nth-child(1) {
             grid-area: 2 / 2;
         }
@@ -186,14 +191,14 @@
 
         .question-mark {
             color: white;
-            font-size: 48px;
+            font-size: calc(56px * var(--scale-factor));
             font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 150px;
-            height: 75px;
-            border-radius: 8px;
+            width: calc(180px * var(--scale-factor));
+            height: calc(90px * var(--scale-factor));
+            border-radius: calc(8px * var(--scale-factor));
             box-sizing: border-box;
         }
 
@@ -202,9 +207,9 @@
             justify-content: center;
             align-items: center;
             flex-wrap: wrap;
-            gap: 15px;
-            min-height: 110px;
-            padding: 10px 0;
+            gap: calc(15px * var(--scale-factor));
+            min-height: calc(110px * var(--scale-factor));
+            padding: calc(10px * var(--scale-factor)) 0;
         }
 
         .option-domino {
@@ -227,19 +232,19 @@
         }
 
         .option-domino.correct-answer {
-            border: 3px solid #28a745;
+            border: calc(3px * var(--scale-factor)) solid #28a745;
         }
 
         .option-domino.incorrect-answer {
-            border: 3px solid #dc3545;
+            border: calc(3px * var(--scale-factor)) solid #dc3545;
             opacity: 1;
         }
 
         #result {
-            margin-top: 15px;
-            font-size: 1.2em;
+            margin-top: calc(15px * var(--scale-factor));
+            font-size: calc(1.2em * var(--scale-factor));
             font-weight: bold;
-            height: 25px;
+            height: calc(25px * var(--scale-factor));
         }
 
         .correct {
@@ -251,14 +256,14 @@
         }
 
         #new-game-btn {
-            margin-top: 15px;
-            padding: 10px 20px;
-            font-size: 1em;
+            margin-top: calc(15px * var(--scale-factor));
+            padding: calc(10px * var(--scale-factor)) calc(20px * var(--scale-factor));
+            font-size: calc(1em * var(--scale-factor));
             font-weight: bold;
             color: white;
             background-color: #1877f2;
             border: none;
-            border-radius: 6px;
+            border-radius: calc(6px * var(--scale-factor));
             cursor: pointer;
             transition: background-color 0.2s;
         }
@@ -271,8 +276,9 @@
 
 <body>
     <span id="correctIndex" style="display:none;"></span>
-
     <div class="game-container">
+        <h1>Domino Kuralını Bul</h1>
+        <p class="rule-text">Dominolar arasındaki ilişkiyi çöz ve soru işareti yerine hangi domino gelmelidir?</p>
         <div id="domino-grid"></div>
         <div id="options-container"></div>
         <div id="result"></div>
