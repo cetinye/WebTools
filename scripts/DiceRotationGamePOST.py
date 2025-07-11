@@ -1,185 +1,140 @@
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops
 import os
 import time
+import base64
 
 # === CONFIGURATION ===
-# Kaç adet soru işleneceğini belirtin
 NUM_QUESTIONS = 1
-
-# Dosyaların kaydedileceği klasör
 SAVE_DIR = "C:/Users/cetin/Desktop/DiceRotationGameQuestions"
-
-# Selenium'un açacağı yerel HTML dosyasının yolu
-LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/DiceRotationGame.html"
-
-# API bilgileri
+LOCAL_FILE_URL = "file:///C:/Users/cetin/Desktop/WebTools/DiceRotationGame.html" 
 API_URL = "https://bilsem.izzgrup.com/api/ai-question-generation"
-HEADERS = {"Authorization": "Bearer your_token_here"} # <<< KENDİ TOKEN'INIZI GİRİN
+HEADERS = {"Authorization": "Bearer your_token_here"}
 
 # --- GÖRSEL İŞLEME AYARLARI ---
-# Soru görselinin etrafına eklenecek boşluk (piksel)
-QUESTION_PADDING = 0
-# Şık görsellerinin etrafına eklenecek boşluk (piksel)
-CHOICE_PADDING = 0
-
-# Soru ve şıkların son boyutları
-QUESTION_TARGET_SIZE = (1200, 600)
-CHOICE_TARGET_SIZE = (256, 256)
+QUESTION_PADDING = 40
+CHOICE_PADDING = 30
+# ✨ DEĞİŞİKLİK: Soru için sadece hedef genişlik belirliyoruz
+QUESTION_TARGET_WIDTH = 1600
+CHOICE_TARGET_SIZE = (512, 512)
 
 # === SETUP ===
 options = webdriver.ChromeOptions()
-options.add_argument("--start-maximized")
+options.add_argument("--headless")
+options.add_argument("--window-size=5000,4000") # Çok geniş element için büyük sanal ekran
 driver = webdriver.Chrome(options=options)
-
-# Kayıt klasörünü oluştur (varsa hata verme)
 os.makedirs(SAVE_DIR, exist_ok=True)
-
 choice_labels = ['A', 'B', 'C', 'D']
 
-# === GÖRSEL İŞLEME FONKSİYONLARI ===
+
+def capture_element_with_cdp(css_selector, save_path):
+    try:
+        element = driver.find_element(By.CSS_SELECTOR, css_selector)
+        location = element.location; size = element.size
+        if not size['width'] > 0 or not size['height'] > 0: return False
+        clip = {'x': location['x'], 'y': location['y'], 'width': size['width'], 'height': size['height'], 'scale': 1}
+        result = driver.execute_cdp_cmd('Page.captureScreenshot', {'format': 'png', 'clip': clip, 'captureBeyondViewport': True})
+        screenshot_data = base64.b64decode(result['data'])
+        with open(save_path, 'wb') as f: f.write(screenshot_data)
+        return True
+    except Exception as e:
+        print(f"❌ CDP ile '{css_selector}' alınırken hata: {e}"); return False
 
 def trim_and_pad_image(image_path, padding=0):
-    """
-    Bir görüntünün kenarlarındaki arka plan rengini otomatik olarak kırpar ve
-    ardından belirtilen miktarda boşluk (padding) ekler.
-    """
     try:
         img = Image.open(image_path).convert("RGB")
-        # Arka plan rengini sol üst köşeden al
-        bg_color = img.getpixel((0, 0))
-        
-        # Arka plan rengiyle aynı olan piksellerden bir fark görüntüsü oluştur
-        bg = Image.new(img.mode, img.size, bg_color)
+        bg = Image.new(img.mode, img.size, (255, 255, 255))
         diff = ImageChops.difference(img, bg)
-        
-        # Farklı piksellerin olduğu alanın sınırlayıcı kutusunu bul
         bbox = diff.getbbox()
-
         if bbox:
-            # Görüntüyü sınırlayıcı kutuya göre kırp
             trimmed_img = img.crop(bbox)
-
             if padding > 0:
-                # Yeni bir tuval oluştur ve ortasına yapıştır
                 new_size = (trimmed_img.width + 2 * padding, trimmed_img.height + 2 * padding)
-                padded_img = Image.new(img.mode, new_size, bg_color)
+                padded_img = Image.new(img.mode, new_size, (255, 255, 255))
                 padded_img.paste(trimmed_img, (padding, padding))
                 padded_img.save(image_path)
-            else:
-                # Sadece kırpılmış halini kaydet
-                trimmed_img.save(image_path)
-        else:
-            print(f"⚠️ Image '{os.path.basename(image_path)}' is empty, no trim needed.")
+            else: trimmed_img.save(image_path)
     except Exception as e:
-        print(f"❌ Error while trimming/padding image '{os.path.basename(image_path)}': {e}")
+        print(f"❌ '{os.path.basename(image_path)}' kırpılırken hata: {e}")
 
-
-def resize_and_fill_image(path, target_size, fill_color=(255, 255, 255, 255)):
-    """
-    Bir görüntüyü, en-boy oranını koruyarak hedef boyuta sığacak şekilde
-    yeniden boyutlandırır (gerekirse büyütür) ve boşlukları belirtilen renkle doldurur.
-    Varsayılan dolgu rengi beyazdır.
-    """
+# ✨ YENİ FONKSİYON: Genişliğe göre ölçekler, dikey boşluk bırakmaz.
+def scale_to_width(path, target_width):
+    """Görüntüyü, en-boy oranını koruyarak hedef genişliğe ölçekler."""
     try:
         img = Image.open(path).convert("RGBA")
-
-        original_ratio = img.width / img.height
-        target_ratio = target_size[0] / target_size[1]
-
-        if original_ratio > target_ratio:
-            new_width = target_size[0]
-            new_height = int(new_width / original_ratio)
-        else:
-            new_height = target_size[1]
-            new_width = int(new_height * original_ratio)
-
-        # Resmi yeni boyutlara ölçekle (LANCZOS en kaliteli filtrelerden biridir)
-        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        # Hedef boyutta yeni bir tuval oluştur
-        new_img = Image.new("RGBA", target_size, fill_color)
-
-        x_offset = (target_size[0] - new_width) // 2
-        y_offset = (target_size[1] - new_height) // 2
-        new_img.paste(resized_img, (x_offset, y_offset), resized_img) # maske olarak kendisini kullan
-
-        new_img.save(path)
+        
+        # Orijinal en-boy oranına göre yeni yüksekliği hesapla
+        source_ratio = img.height / img.width
+        new_height = int(target_width * source_ratio)
+        
+        # Görüntüyü yeni boyutlara ölçekle
+        resized_img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
+        resized_img.save(path, 'PNG')
     except Exception as e:
-        print(f"❌ Error while resizing/filling image '{os.path.basename(path)}': {e}")
+        print(f"❌ '{os.path.basename(path)}' genişliğe ölçeklenirken hata: {e}")
+
+# Şıklar için standart "ortala ve doldur" fonksiyonu
+def resize_and_fill_image(path, target_size, fill_color=(255, 255, 255)):
+    try:
+        img = Image.open(path).convert("RGBA")
+        img.thumbnail(target_size, Image.Resampling.LANCZOS)
+        new_img = Image.new("RGBA", target_size, fill_color)
+        x_offset = (target_size[0] - img.width) // 2
+        y_offset = (target_size[1] - img.height) // 2
+        new_img.paste(img, (x_offset, y_offset), img)
+        new_img.save(path, 'PNG')
+    except Exception as e:
+        print(f"❌ '{os.path.basename(path)}' yeniden boyutlandırılırken hata: {e}")
 
 
 # === ANA İŞLEM DÖNGÜSÜ ===
-
 for i in range(1, NUM_QUESTIONS + 1):
     print(f"\n--- Soru {i} işleniyor ---")
-    
-    # Her döngüde sayfayı yeniden yükleyerek yeni bir soru al
     driver.get(LOCAL_FILE_URL)
-    time.sleep(0.8) # Sayfa yüklenmesi ve JS işlemleri için
+    time.sleep(1.5)
 
     # --- Soru görüntüsünü al ve işle ---
     question_path = os.path.join(SAVE_DIR, f"question_{i}.png")
-    question_elem = driver.find_element(By.CLASS_NAME, "cube-sequence")
-    question_elem.screenshot(question_path)
-    
+    if not capture_element_with_cdp('#cube-sequence', question_path):
+        print("❌ Soru görseli alınamadı, bu soru atlanıyor."); continue
+        
     trim_and_pad_image(question_path, padding=QUESTION_PADDING)
-    resize_and_fill_image(question_path, QUESTION_TARGET_SIZE)
-    print("✅ Soru görseli alındı ve işlendi.")
+    # ✨ DEĞİŞİKLİK: Yeni "genişliğe ölçekle" fonksiyonu çağrılıyor.
+    scale_to_width(question_path, QUESTION_TARGET_WIDTH)
+    print("✅ Soru görseli alındı ve genişliğe göre ölçeklendi.")
 
     # --- Şık görsellerini al ve işle ---
-    options_elements = driver.find_elements(By.CLASS_NAME, "option-btn")
     option_paths = []
-    for idx, opt in enumerate(options_elements[:4]):
-        choice_path = os.path.join(SAVE_DIR, f"choice_{choice_labels[idx]}_{i}.png")
-        opt.screenshot(choice_path)
-        
-        trim_and_pad_image(choice_path, padding=CHOICE_PADDING)
+    for idx, label in enumerate(choice_labels):
+        choice_selector = f".options-container .option-btn:nth-of-type({idx + 1})"
+        choice_path = os.path.join(SAVE_DIR, f"choice_{label}_{i}.png")
+        if not capture_element_with_cdp(choice_selector, choice_path):
+            print("❌ Şık görselleri alınamadı, bu soru atlanıyor."); break
         resize_and_fill_image(choice_path, CHOICE_TARGET_SIZE)
-        
         option_paths.append(choice_path)
-    print("✅ Şık görselleri alındı ve işlendi.")
+    else: # for-else: break olmadan döngü biterse çalışır
+        print("✅ Şık görselleri alındı ve işlendi.")
+        # --- Doğru cevabı oku ve API'ye gönder ---
+        correct_index = int(driver.execute_script("return window.correctIndex;"))
+        correct_path = option_paths[correct_index]
+        wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
+        print(f"ℹ️ Doğru cevap '{choice_labels[correct_index]}' olarak belirlendi.")
+        try:
+            with open(question_path, 'rb') as q_img, open(correct_path, 'rb') as correct, open(wrong_paths[0], 'rb') as wrong1, open(wrong_paths[1], 'rb') as wrong2, open(wrong_paths[2], 'rb') as wrong3:
+                files = {"question_image": q_img, "correct_answer": correct, "wrong_answer_1": wrong1, "wrong_answer_2": wrong2, "wrong_answer_3": wrong3}
+                data = {"category_id": "28", "grade": "[1,2,3,4,9]", "knowledge": "0", "level": "1"}
+                response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
+                response.raise_for_status()
+                print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
+        except Exception as e:
+            print(f"❌ Soru {i} API'ye gönderilirken veya dosyalar hazırlanırken hata oluştu: {e}")
+        continue # API'ye gönderdikten sonra döngüye devam et
     
-    # --- Doğru cevabı HTML'den oku ---
-    correct_index = int(driver.execute_script("return window.correctIndex;"))
-    correct_path = option_paths[correct_index]
-    wrong_paths = [p for j, p in enumerate(option_paths) if j != correct_index]
-    print(f"ℹ️ Doğru cevap '{choice_labels[correct_index]}' olarak belirlendi.")
+    # Döngü 'break' ile kırıldıysa bu satıra ulaşılır
+    print("Döngü şık alınamadığı için erken sonlandırıldı.")
 
-    # --- API'ye gönder ---
-    try:
-        with open(question_path, 'rb') as q_img, \
-             open(correct_path, 'rb') as correct, \
-             open(wrong_paths[0], 'rb') as wrong1, \
-             open(wrong_paths[1], 'rb') as wrong2, \
-             open(wrong_paths[2], 'rb') as wrong3:
 
-            files = {
-                "question_image": q_img, 
-                "correct_answer": correct,
-                "wrong_answer_1": wrong1, 
-                "wrong_answer_2": wrong2, 
-                "wrong_answer_3": wrong3
-            }
-            data = {
-                "category_id": "28",
-                "grade": "[1,2,3,4,9]", 
-                "knowledge": "0", 
-                "level": "1"
-            }
-
-            response = requests.post(API_URL, headers=HEADERS, data=data, files=files)
-            response.raise_for_status() # Hata durumunda (4xx, 5xx) exception fırlat
-            
-            print(f"🚀 Soru {i} API'ye başarıyla gönderildi. Status: {response.status_code}")
-            
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Soru {i} API'ye gönderilirken hata oluştu: {e}")
-        if 'response' in locals() and response is not None:
-            print(f"    API Yanıtı: {response.text}")
-
-# === BİTİŞ ===
 driver.quit()
 print("\n🎉 Tüm sorular başarıyla işlendi. Program sonlandırıldı.")
